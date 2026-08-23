@@ -29,6 +29,7 @@ actor TelegramService {
         case playlistDeletionUnavailable
         case playlistTrackDeletionUnavailable
         case playlistRenameUnavailable
+        case commentingUnavailable
         case invalidPhoneNumber
         case invalidEmailAddress
         case emptyLoginCode
@@ -50,6 +51,7 @@ actor TelegramService {
             case .playlistDeletionUnavailable: "Only Telegram channel playlists can be deleted."
             case .playlistTrackDeletionUnavailable: "This playlist entry cannot be deleted."
             case .playlistRenameUnavailable: "This playlist cannot be renamed."
+            case .commentingUnavailable: "This Telegram post does not have a discussion where comments can be added."
             case .invalidPhoneNumber: "Enter a valid phone number in international format, including the country code."
             case .invalidEmailAddress: "Enter a valid email address."
             case .emptyLoginCode: "Enter the login code Telegram sent you."
@@ -373,6 +375,38 @@ actor TelegramService {
             hash: 0
         )
         return TelegramMapping.comments(from: result)
+    }
+
+    func addComment(_ rawText: String, to track: Track, in chat: MusicChat) async throws {
+        let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+
+        let target: (peer: TL.InputPeerType, messageID: Int32)
+        if chat.isBroadcast == true {
+            let discussion = try await connection.client.messages.getDiscussionMessage(
+                peer: TelegramMapping.inputPeer(for: chat),
+                msgId: track.messageID
+            )
+            guard let resolved = TelegramMapping.discussionTarget(
+                from: discussion,
+                excluding: chat.id
+            ) else { throw ServiceError.commentingUnavailable }
+            target = (TelegramMapping.inputPeer(for: resolved.chat), resolved.messageID)
+        } else {
+            target = (TelegramMapping.inputPeer(for: chat), track.messageID)
+        }
+
+        let reply: TL.InputReplyToType = .inputReplyToMessage(
+            TL.InputReplyToMessage(replyToMsgId: target.messageID)
+        )
+        _ = try await connection.client.messages.sendMessage(
+            noWebpage: true,
+            peer: target.peer,
+            replyTo: reply,
+            message: text,
+            randomId: Int64.random(in: Int64.min...Int64.max)
+        )
     }
 
     func loadPlaylistChats(from chats: [MusicChat]) async throws -> [MusicChat] {

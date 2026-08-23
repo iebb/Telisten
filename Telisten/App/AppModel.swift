@@ -38,6 +38,7 @@ final class AppModel {
     var isSavingToPlaylist = false
     var lyricsState: LyricsLoadState = .idle
     var commentsState: CommentsLoadState = .idle
+    var isSendingComment = false
     var isIndexingChats = false
     var voteStates: [String: VoteState] = [:]
     private(set) var isDemo = false
@@ -638,6 +639,45 @@ final class AppModel {
         } catch {
             guard player.track?.id == track.id else { return }
             commentsState = .failed(UserFacingError.message(for: error))
+        }
+    }
+
+    func addComment(_ rawText: String, to track: Track) async -> Bool {
+        let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !isSendingComment else { return false }
+        isSendingComment = true
+        defer { isSendingComment = false }
+
+        #if DEBUG
+        if isDemo {
+            let author = accounts.first(where: { $0.id == activeAccountID })?.displayName ?? "You"
+            let comment = TrackComment(
+                id: "demo:\(UUID().uuidString)",
+                author: author,
+                text: text,
+                date: .now
+            )
+            if case let .loaded(values) = commentsState {
+                commentsState = .loaded(values + [comment])
+            } else {
+                commentsState = .loaded([comment])
+            }
+            return true
+        }
+        #endif
+
+        guard let chat = allChats.first(where: { $0.id == track.chatID }) else {
+            errorMessage = "The source chat is no longer available."
+            return false
+        }
+        do {
+            try await telegram.addComment(text, to: track, in: chat)
+            commentsTrackID = nil
+            await loadComments(for: track)
+            return true
+        } catch {
+            errorMessage = UserFacingError.message(for: error)
+            return false
         }
     }
 

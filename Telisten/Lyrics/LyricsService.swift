@@ -17,11 +17,13 @@ struct LRCLIBProvider: LyricsProviding {
     func lyrics(for track: Track) async throws -> TrackLyrics? {
         let title = cleaned(track.displayTitle)
         let artist = cleaned(track.artist)
+        var exactFallback: TrackLyrics?
 
         if !artist.isEmpty,
            let exact = try await exactMatch(title: title, artist: artist, duration: track.duration),
            let lyrics = makeLyrics(from: exact, trackID: track.id) {
-            return lyrics
+            if lyrics.isSynced { return lyrics }
+            exactFallback = lyrics
         }
 
         let candidates = try await search(title: title, artist: artist)
@@ -29,8 +31,8 @@ struct LRCLIBProvider: LyricsProviding {
             .filter({ !$0.instrumental && ($0.plainLyrics?.isEmpty == false || $0.syncedLyrics?.isEmpty == false) })
             .map({ ($0, matchScore($0, title: title, artist: artist, duration: track.duration)) })
             .filter({ $0.1 >= 35 })
-            .max(by: { $0.1 < $1.1 })?.0 else { return nil }
-        return makeLyrics(from: best, trackID: track.id)
+            .max(by: { $0.1 < $1.1 })?.0 else { return exactFallback }
+        return makeLyrics(from: best, trackID: track.id) ?? exactFallback
     }
 
     private func exactMatch(title: String, artist: String, duration: TimeInterval) async throws -> Response? {
@@ -117,7 +119,7 @@ struct LRCLIBProvider: LyricsProviding {
             if difference <= 2 { score += 20 }
             else if difference <= 8 { score += 10 }
         }
-        if candidate.syncedLyrics?.isEmpty == false { score += 5 }
+        if candidate.syncedLyrics?.isEmpty == false { score += 18 }
         return score
     }
 
@@ -157,6 +159,7 @@ actor LyricsService {
     private let provider: any LyricsProviding
     private let cacheURL: URL
     private var cached: [String: TrackLyrics] = [:]
+    private var refreshedPlainTrackIDs: Set<String> = []
 
     init(provider: any LyricsProviding = LRCLIBProvider()) {
         self.provider = provider
@@ -171,8 +174,10 @@ actor LyricsService {
     }
 
     func lyrics(for track: Track) async throws -> TrackLyrics? {
-        if let value = cached[track.id] { return value }
-        guard let value = try await provider.lyrics(for: track) else { return nil }
+        if let value = cached[track.id], value.isSynced { return value }
+        let fallback = cached[track.id]
+        if fallback != nil, !refreshedPlainTrackIDs.insert(track.id).inserted { return fallback }
+        guard let value = try await provider.lyrics(for: track) else { return fallback }
         cached[track.id] = value
         persist()
         return value

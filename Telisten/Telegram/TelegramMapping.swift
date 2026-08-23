@@ -132,6 +132,25 @@ enum TelegramMapping {
         }
     }
 
+    static func discussionTarget(
+        from result: TL.Messages.DiscussionMessage,
+        excluding sourceChatID: String
+    ) -> (chat: MusicChat, messageID: Int32)? {
+        let chats = result.chats.compactMap(map(chat:))
+        for item in result.messages {
+            let message: (id: Int32, peer: TL.PeerType)? = switch item {
+            case let .message(value): (value.id, value.peerId)
+            case let .messageService(value): (value.id, value.peerId)
+            case .messageEmpty: nil
+            }
+            guard let message,
+                  key(for: message.peer) != sourceChatID,
+                  let chat = chats.first(where: { $0.id == key(for: message.peer) }) else { continue }
+            return (chat, message.id)
+        }
+        return nil
+    }
+
     private static func map(chat: TL.ChatType) -> MusicChat? {
         switch chat {
         case let .chat(value):
@@ -144,10 +163,14 @@ enum TelegramMapping {
         case let .channel(value):
             makeChat(
                 id: "c:\(value.id)", peerID: value.id, accessHash: value.accessHash,
-                kind: .channel, title: value.title, username: value.username, photo: value.photo
+                kind: .channel, title: value.title, username: value.username, photo: value.photo,
+                isBroadcast: value.broadcast
             )
         case let .channelForbidden(value):
-            MusicChat(id: "c:\(value.id)", peerID: value.id, accessHash: value.accessHash, kind: .channel, title: value.title, username: nil)
+            MusicChat(
+                id: "c:\(value.id)", peerID: value.id, accessHash: value.accessHash,
+                kind: .channel, title: value.title, username: nil, isBroadcast: value.broadcast
+            )
         case .chatEmpty:
             nil
         }
@@ -190,7 +213,8 @@ enum TelegramMapping {
         kind: PeerKind,
         title: String,
         username: String?,
-        photo: TL.ChatPhotoType
+        photo: TL.ChatPhotoType,
+        isBroadcast: Bool? = nil
     ) -> MusicChat {
         let avatar: (photoID: Int64, dcID: Int32)? = switch photo {
         case let .chatPhoto(value): (value.photoId, value.dcId)
@@ -204,7 +228,8 @@ enum TelegramMapping {
             title: title,
             username: username,
             avatarPhotoID: avatar?.photoID,
-            avatarDCID: avatar?.dcID
+            avatarDCID: avatar?.dcID,
+            isBroadcast: isBroadcast
         )
     }
 

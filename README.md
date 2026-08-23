@@ -73,7 +73,7 @@ The handwritten application is split into four narrow layers:
 - `AudioPlayer`: AVPlayer, media keys, and now-playing metadata
 - `AppModel` and `Views`: queue/library state and adaptive SwiftUI screens
 
-The full Telegram schema is intentionally not checked in. `Generated/TelegramAPI` contains only the 33 RPC methods the player uses and their transitively required types.
+The full Telegram schema is intentionally not checked in. `Generated/TelegramAPI` contains only the 35 RPC methods the player uses and their transitively required types.
 
 Dependencies are pinned through Swift Package Manager:
 
@@ -98,7 +98,7 @@ The script downloads Telegram's official live schema and schema index, checks th
 
 - Audio is streamed in byte ranges directly from Telegram data centers. The Download action stores the complete track for offline playback; there is no Telisten server.
 - Lyrics queries send the track title, artist, and duration to [LRCLIB](https://lrclib.net); successful matches are cached on-device. For a commercial release that requires publisher-cleared coverage or service guarantees, replace `LRCLIBProvider` with a licensed provider such as Musixmatch.
-- A vote is a real 👍 Telegram message reaction. Saving forwards the original audio message, so Telegram's forwarding permissions still apply.
+- A vote is a real 👍 Telegram message reaction. Comments are Telegram replies; channel-post comments are sent through the linked discussion. Saving forwards the original audio message, so Telegram's forwarding permissions still apply.
 - New playlists are private broadcast channels. Telisten creates or updates the `_Playlist` dialog folder without changing unrelated folders or their settings.
 - The app asks Telegram not to redirect file transfers to its CDN, keeping the transfer code compact. A download reports a clear error if Telegram still returns a CDN redirect.
 - Cached files are stored in the platform Caches directory and may be removed from the Downloads screen. The cache automatically evicts least-recently-used files above 2 GB.
@@ -107,4 +107,4 @@ The script downloads Telegram's official live schema and schema index, checks th
 
 ## Reference
 
-The implementation follows Telegram's official documentation for [API credentials](https://core.telegram.org/api/obtaining_api_id), [user authorization](https://core.telegram.org/api/auth), [message search](https://core.telegram.org/api/search), [file downloads](https://core.telegram.org/api/files), [dialog folders](https://core.telegram.org/api/folders), [message reactions](https://core.telegram.org/method/messages.sendReaction), and [forwarding](https://core.telegram.org/method/messages.forwardMessages).
+The implementation follows Telegram's official documentation for [API credentials](https://core.telegram.org/api/obtaining_api_id), [user authorization](https://core.telegram.org/api/auth), [message search](https://core.telegram.org/api/search), [file downloads](https://core.telegram.org/api/files), [dialog folders](https://core.telegram.org/api/folders), [message reactions](https://core.telegram.org/method/messages.sendReaction), [discussion threads](https://core.telegram.org/api/discussion), [replying](https://core.telegram.org/method/messages.sendMessage), and [forwarding](https://core.telegram.org/method/messages.forwardMessages).

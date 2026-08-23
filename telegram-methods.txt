@@ -22,8 +22,10 @@ help.getCdnConfig
 messages.getDialogs
 messages.getHistory
 messages.getReplies
+messages.getDiscussionMessage
 messages.search
 messages.searchGlobal
+messages.sendMessage
 users.getUsers
 channels.getChannels
 channels.deleteChannel

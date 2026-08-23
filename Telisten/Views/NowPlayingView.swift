@@ -175,8 +175,45 @@ struct NowPlayingView: View {
 
 private struct CommentsPanel: View {
     @Bindable var model: AppModel
+    @State private var draft = ""
 
     var body: some View {
+        VStack(spacing: 0) {
+            comments
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Divider()
+            HStack(alignment: .bottom, spacing: 10) {
+                TextField("Add a comment", text: $draft, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...3)
+                    .submitLabel(.send)
+                    .onSubmit(send)
+
+                if model.isSendingComment {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: 28, height: 28)
+                } else {
+                    Button(action: send) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.title2)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.telistenAccent)
+                    .accessibilityLabel("Send comment")
+                    .disabled(cleanDraft.isEmpty || model.player.track == nil)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 18)
+    }
+
+    @ViewBuilder
+    private var comments: some View {
         Group {
             switch model.commentsState {
             case .idle, .loading:
@@ -233,8 +270,20 @@ private struct CommentsPanel: View {
                 )
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.bottom, 18)
+    }
+
+    private var cleanDraft: String {
+        draft.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func send() {
+        guard let track = model.player.track, !cleanDraft.isEmpty else { return }
+        let submitted = cleanDraft
+        Task {
+            if await model.addComment(submitted, to: track) {
+                draft = ""
+            }
+        }
     }
 
     private func initials(for author: String) -> String {
@@ -246,7 +295,6 @@ private struct CommentsPanel: View {
 
 private struct LyricsPanel: View {
     @Bindable var model: AppModel
-    @State private var activeID: Int?
 
     var body: some View {
         Group {
@@ -279,15 +327,20 @@ private struct LyricsPanel: View {
     }
 
     private func lyricsScroll(_ lyrics: TrackLyrics) -> some View {
-        ScrollViewReader { proxy in
+        let activeID = activeLineID(in: lyrics)
+        return ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: lyrics.isSynced ? 15 : 10) {
-                    ForEach(lyrics.lines) { line in
+                LazyVStack(alignment: .leading, spacing: lyrics.isSynced ? 12 : 9) {
+                    ForEach(Array(lyrics.lines.enumerated()), id: \.element.id) { index, line in
+                        let isActive = activeID == line.id
+                        let isPast = activeID.flatMap { active in
+                            lyrics.lines.firstIndex(where: { $0.id == active })
+                        }.map { index < $0 } ?? false
                         Text(line.text.isEmpty ? " " : line.text)
-                            .font(lyrics.isSynced ? .title3.weight(activeID == line.id ? .bold : .semibold) : .body)
-                            .foregroundStyle(activeID == line.id || !lyrics.isSynced ? .primary : .secondary)
-                            .opacity(activeID == line.id || !lyrics.isSynced ? 1 : 0.58)
-                            .scaleEffect(activeID == line.id ? 1.015 : 1, anchor: .leading)
+                            .font(lyrics.isSynced ? (isActive ? .title2.bold() : .title3.weight(.semibold)) : .body)
+                            .foregroundStyle(isActive || !lyrics.isSynced ? Color.primary : Color.secondary)
+                            .opacity(!lyrics.isSynced || isActive ? 1 : (isPast ? 0.36 : 0.64))
+                            .scaleEffect(isActive ? 1.02 : 1, anchor: .leading)
                             .id(line.id)
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -302,23 +355,22 @@ private struct LyricsPanel: View {
                 .padding(20)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .contentMargins(.vertical, lyrics.isSynced ? 90 : 0, for: .scrollContent)
             .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .onAppear { updateActiveLine(lyrics, proxy: proxy, animated: false) }
-            .onChange(of: model.player.currentTime) { _, _ in
-                updateActiveLine(lyrics, proxy: proxy, animated: true)
+            .onChange(of: activeID, initial: true) { _, lineID in
+                guard lyrics.isSynced, let lineID else { return }
+                withAnimation(.easeInOut(duration: 0.28)) {
+                    proxy.scrollTo(lineID, anchor: .center)
+                }
             }
+            .animation(.easeInOut(duration: 0.22), value: activeID)
         }
     }
 
-    private func updateActiveLine(_ lyrics: TrackLyrics, proxy: ScrollViewProxy, animated: Bool) {
-        guard lyrics.isSynced,
-              let line = lyrics.lines.last(where: { ($0.time ?? .infinity) <= model.player.currentTime }),
-              line.id != activeID else { return }
-        activeID = line.id
-        if animated {
-            withAnimation(.easeInOut(duration: 0.3)) { proxy.scrollTo(line.id, anchor: .center) }
-        } else {
-            proxy.scrollTo(line.id, anchor: .center)
-        }
+    private func activeLineID(in lyrics: TrackLyrics) -> Int? {
+        guard lyrics.isSynced else { return nil }
+        let timedLines = lyrics.lines.filter { $0.time != nil }
+        guard let first = timedLines.first else { return nil }
+        return timedLines.last(where: { ($0.time ?? .infinity) <= model.player.currentTime })?.id ?? first.id
     }
 }

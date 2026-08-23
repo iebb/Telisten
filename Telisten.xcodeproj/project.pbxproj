@@ -72,6 +72,7 @@
 		177B0DDE0A5EBE7B3B976991 /* Game.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA144858A11024F628A236B5 /* Game.swift */; };
 		180214FADA229451BED5FE09 /* StarsRevenueStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEFDC6C35F7412E5E97A4692 /* StarsRevenueStatus.swift */; };
 		196F04C92C1D7018C72B81EA /* messages.AffectedMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 436A621D1F40BF5D33FF1E41 /* messages.AffectedMessages.swift */; };
+		1A10B8FB2808B7E089E5A9D2 /* messages.DiscussionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEA687ED0E70C2FE2CEB3307 /* messages.DiscussionMessage.swift */; };
 		1B77C3D34D780E46C6B456F2 /* messages.deleteMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 303CE3812D9491162ECCD377 /* messages.deleteMessages.swift */; };
 		1D928C7D3107DE2643D21F28 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0572FBB1255C72296722042E /* AppModel.swift */; };
 		1E07C1B3CD0D6F8A8EEBD630 /* messages.EmojiGameInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9DE2BC7474640779D2ED92C /* messages.EmojiGameInfo.swift */; };
@@ -126,6 +127,7 @@
 		2F887565B7321632C1A3421E /* MessageFwdHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A8D1372A5C9377806F55C2 /* MessageFwdHeader.swift */; };
 		300BD285BB799050131F2089 /* BotMenuButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D9D086F37C43FC4E8619F3A /* BotMenuButton.swift */; };
 		303D9540129AAF671654D9F8 /* PageTableCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2CBBAA575CE05134BF0676B /* PageTableCell.swift */; };
+		306D687B1E6BDB366CF5B84B /* messages.DiscussionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEA687ED0E70C2FE2CEB3307 /* messages.DiscussionMessage.swift */; };
 		30CB9BB3839404359931CBAE /* LabeledPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B21C648A8C97B2E7B18F1C /* LabeledPrice.swift */; };
 		310CCE0129B89B597F407DBF /* TLClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C4DD782B9C96D56A11004A /* TLClient.swift */; };
 		31809822E74395F6900C9239 /* InputBotInlineMessageID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F1899F1FA199C1B056559AA /* InputBotInlineMessageID.swift */; };
@@ -152,6 +154,7 @@
 		3AA306ED9E8616CB1A8503B4 /* MaskCoords.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA6BDB0E12B20B10DB60D78A /* MaskCoords.swift */; };
 		3AB9BED09D56DB454E00B795 /* ChatTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1B4D0D7286E8FDECA7ECB4 /* ChatTheme.swift */; };
 		3AD8C182919C614F7F019907 /* StickerSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB949EB459DD006187547F2 /* StickerSet.swift */; };
+		3AE1F9D3AB59636FDAE71890 /* messages.getDiscussionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB705B54D796C4DE46740CB /* messages.getDiscussionMessage.swift */; };
 		3B17D9AA3D1F2C5175DB5688 /* messages.searchGlobal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C9181F5EEF3889CB944F2C /* messages.searchGlobal.swift */; };
 		3B40EC1F60F10165D34F6052 /* InputClientProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CAC14A86C7F3211ECD1540 /* InputClientProxy.swift */; };
 		3B4634039EF7BCF84FD356D4 /* help.getConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88393522B2F9CB9E7614FE89 /* help.getConfig.swift */; };
@@ -197,6 +200,7 @@
 		4F0076E51DDBCAF58B336B5C /* messages.Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = B98626F4810C1E32A41E65DB /* messages.Messages.swift */; };
 		4F54148C696E8AD212ED3560 /* BusinessBotRights.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74057A06A7465C681E52A2E /* BusinessBotRights.swift */; };
 		4FCD427EE43731EC80605D6C /* auth.logOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2850045F9932CB84D5A9CAFF /* auth.logOut.swift */; };
+		504BEC37EDB595C723ABE43F /* messages.sendMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347ED5B99F33428B36FC83D6 /* messages.sendMessage.swift */; };
 		51C7346F36A796E3304EF5CC /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A4A78E6E3BD5DF2EEBF247 /* KeychainStore.swift */; };
 		51D28D82F2F1A11860B61C66 /* channels.deleteChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D7DD499DF93FE83A9651121 /* channels.deleteChannel.swift */; };
 		51DAB0CE5FA913513C9D8701 /* PaymentRequestedInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1340A9507D0B0B2A492ED0AD /* PaymentRequestedInfo.swift */; };
@@ -290,6 +294,7 @@
 		7933ABDC08ABABFE356E5F5F /* InputReplyTo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E346BEEA78707591AF4F0B /* InputReplyTo.swift */; };
 		7AC5976807EA660BC2E49125 /* SuggestedPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F913A8208B754C24CF55340 /* SuggestedPost.swift */; };
 		7AF198AF81D734F993283AA0 /* SRPProof.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0C9EC357AB1A5212B207773 /* SRPProof.swift */; };
+		7B8AA17124323C9972541A2F /* messages.getDiscussionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB705B54D796C4DE46740CB /* messages.getDiscussionMessage.swift */; };
 		7BD767DCEB1CF2AA88C5ACB0 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE9FEA5BDC3AA9F3698C9E3B /* LibraryView.swift */; };
 		7C0F655824204097521A5599 /* BotBusinessConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FFDBF3FD3BAFF2E7C3D9B99 /* BotBusinessConnection.swift */; };
 		7C10A45FD6F78CA0E2DEAECB /* CodeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512C4968D970A80F5857C892 /* CodeSettings.swift */; };
@@ -301,6 +306,7 @@
 		7F9C1C76B86C7186EFABCDA1 /* invokeWithLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693B45844C5BD63D7C794A93 /* invokeWithLayer.swift */; };
 		7FA798BA05452C770B4B3AA2 /* StickerSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB949EB459DD006187547F2 /* StickerSet.swift */; };
 		7FAE2F91820DFE79D23E9D6C /* PageListOrderedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBA5D86E7AA4CD35EB670D9D /* PageListOrderedItem.swift */; };
+		81218AA11905FA3DB43E342B /* messages.sendMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347ED5B99F33428B36FC83D6 /* messages.sendMessage.swift */; };
 		816B9FFD44621DDC5D96CC96 /* GroupCallMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9894B336BFD1F6CC20D3CB3 /* GroupCallMessage.swift */; };
 		81A6B85CADE909E8E842ABCD /* StarGiftAttribute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FC8776754230181A200C5E /* StarGiftAttribute.swift */; };
 		826EA1A1C7C2536F057E871A /* MessagePeerReaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCAE98378E09EDD85DCB706 /* MessagePeerReaction.swift */; };
@@ -602,6 +608,7 @@
 		2EFD05B98196587ABDFD6316 /* TLClient+Help.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TLClient+Help.swift"; sourceTree = "<group>"; };
 		303CE3812D9491162ECCD377 /* messages.deleteMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.deleteMessages.swift; sourceTree = "<group>"; };
 		3090B7F97F74AC5ECDCCEDC9 /* Peer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Peer.swift; sourceTree = "<group>"; };
+		347ED5B99F33428B36FC83D6 /* messages.sendMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.sendMessage.swift; sourceTree = "<group>"; };
 		3497D83C04DCA420341AF00C /* ExportedChatInvite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportedChatInvite.swift; sourceTree = "<group>"; };
 		35C75AD5C0299409EA2D7CE7 /* KeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardButton.swift; sourceTree = "<group>"; };
 		35FC629B91A7611BA7D4AAEC /* help.getCdnConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = help.getCdnConfig.swift; sourceTree = "<group>"; };
@@ -655,6 +662,7 @@
 		5A9BC732A47F304047C0C62D /* RecentStory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentStory.swift; sourceTree = "<group>"; };
 		5B36E6278D20871E9785C8E9 /* PaidReactionPrivacy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaidReactionPrivacy.swift; sourceTree = "<group>"; };
 		5BAB63FC19BD0EBF8C5F9BC0 /* PageCaption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCaption.swift; sourceTree = "<group>"; };
+		5BB705B54D796C4DE46740CB /* messages.getDiscussionMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.getDiscussionMessage.swift; sourceTree = "<group>"; };
 		5D5674072EE0935170410376 /* auth.SentCodeType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = auth.SentCodeType.swift; sourceTree = "<group>"; };
 		5DC0AAB39CFB382A5301ED07 /* StickerKeyword.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerKeyword.swift; sourceTree = "<group>"; };
 		5FC3E1B10AFDAFB3728FE12D /* MessageEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageEntity.swift; sourceTree = "<group>"; };
@@ -789,6 +797,7 @@
 		DC143D1247DE1FA5025E0544 /* StarGiftAuctionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarGiftAuctionState.swift; sourceTree = "<group>"; };
 		DDA9D4E353C58289C4D18BA2 /* messages.getHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.getHistory.swift; sourceTree = "<group>"; };
 		DE3CEA19D06A27C00AE38819 /* EmailVerifyPurpose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailVerifyPurpose.swift; sourceTree = "<group>"; };
+		DEA687ED0E70C2FE2CEB3307 /* messages.DiscussionMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.DiscussionMessage.swift; sourceTree = "<group>"; };
 		DF809D17F97794FEC1860425 /* PlayerBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerBar.swift; sourceTree = "<group>"; };
 		E075F6C48F4503AB5AFA0175 /* Chat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chat.swift; sourceTree = "<group>"; };
 		E25A6EFC99C893BC0246DCA8 /* StoriesStealthMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoriesStealthMode.swift; sourceTree = "<group>"; };
@@ -1021,6 +1030,7 @@
 				B3ED7C2F7662527D281CEC83 /* messages.Chats.swift */,
 				45E463539710234A16E10EF6 /* messages.DialogFilters.swift */,
 				FDE9D451439E8937275CF911 /* messages.Dialogs.swift */,
+				DEA687ED0E70C2FE2CEB3307 /* messages.DiscussionMessage.swift */,
 				E9DE2BC7474640779D2ED92C /* messages.EmojiGameInfo.swift */,
 				8FD179D58F77E71663159F34 /* messages.EmojiGameOutcome.swift */,
 				B98626F4810C1E32A41E65DB /* messages.Messages.swift */,
@@ -1179,10 +1189,12 @@
 				7C9B063B74458BDB674AB70A /* messages.forwardMessages.swift */,
 				E8BD313870EC5A63A166F95C /* messages.getDialogFilters.swift */,
 				0FC4B872F4AC81ABC98D0216 /* messages.getDialogs.swift */,
+				5BB705B54D796C4DE46740CB /* messages.getDiscussionMessage.swift */,
 				DDA9D4E353C58289C4D18BA2 /* messages.getHistory.swift */,
 				6F06B1303C20D8D2E58885DF /* messages.getReplies.swift */,
 				EE884D9F0C04CE8326F2CBE4 /* messages.search.swift */,
 				61C9181F5EEF3889CB944F2C /* messages.searchGlobal.swift */,
+				347ED5B99F33428B36FC83D6 /* messages.sendMessage.swift */,
 				EAD75A74C51E080837F3B338 /* messages.sendReaction.swift */,
 				BF2BBAEDB0421FC6E189F720 /* messages.updateDialogFilter.swift */,
 				526F6E40F70D6D4635063300 /* upload.getCdnFile.swift */,
@@ -1615,6 +1627,7 @@
 				1E48BE3FB6B69AE7596D28EA /* messages.Chats.swift in Sources */,
 				CEB8F888399A6042D32A2185 /* messages.DialogFilters.swift in Sources */,
 				1372BE7C95B873B1EB12347C /* messages.Dialogs.swift in Sources */,
+				1A10B8FB2808B7E089E5A9D2 /* messages.DiscussionMessage.swift in Sources */,
 				5595F8B59207A9F7FE78D5D3 /* messages.EmojiGameInfo.swift in Sources */,
 				D0E3EBAEB302C98862824D4A /* messages.EmojiGameOutcome.swift in Sources */,
 				4F0076E51DDBCAF58B336B5C /* messages.Messages.swift in Sources */,
@@ -1624,10 +1637,12 @@
 				36676B84D04F0FB62451048F /* messages.forwardMessages.swift in Sources */,
 				854FF45E464E0924C8D26A06 /* messages.getDialogFilters.swift in Sources */,
 				BD74FFA038647FA792982583 /* messages.getDialogs.swift in Sources */,
+				3AE1F9D3AB59636FDAE71890 /* messages.getDiscussionMessage.swift in Sources */,
 				DC7F481539A52FAAA117387F /* messages.getHistory.swift in Sources */,
 				9B22E23F375C3A7E8885D199 /* messages.getReplies.swift in Sources */,
 				8B4BE95C393E0BE749B5446B /* messages.search.swift in Sources */,
 				3B17D9AA3D1F2C5175DB5688 /* messages.searchGlobal.swift in Sources */,
+				504BEC37EDB595C723ABE43F /* messages.sendMessage.swift in Sources */,
 				3C7690357F2148DFA0C8955A /* messages.sendReaction.swift in Sources */,
 				BC16861A7D746E13D928D81D /* messages.updateDialogFilter.swift in Sources */,
 				6FD526614289AF65D52E69BE /* storage.FileType.swift in Sources */,
@@ -1888,6 +1903,7 @@
 				F4BD32D93246EB43BCF490B9 /* messages.Chats.swift in Sources */,
 				EC854268541A8E0EDE3E8548 /* messages.DialogFilters.swift in Sources */,
 				EF89AF5E17EF3B0DB7D2FCB2 /* messages.Dialogs.swift in Sources */,
+				306D687B1E6BDB366CF5B84B /* messages.DiscussionMessage.swift in Sources */,
 				1E07C1B3CD0D6F8A8EEBD630 /* messages.EmojiGameInfo.swift in Sources */,
 				4137E6E06AF75711DF1626F4 /* messages.EmojiGameOutcome.swift in Sources */,
 				65C11D18F5A58680328F626C /* messages.Messages.swift in Sources */,
@@ -1897,10 +1913,12 @@
 				173F5D96EC99A589801F6ED1 /* messages.forwardMessages.swift in Sources */,
 				C780B8E0EC01C36ECEDC95C7 /* messages.getDialogFilters.swift in Sources */,
 				423870C2CDB39EAC0F99EDEA /* messages.getDialogs.swift in Sources */,
+				7B8AA17124323C9972541A2F /* messages.getDiscussionMessage.swift in Sources */,
 				6C6C7213698231B967EA2B7D /* messages.getHistory.swift in Sources */,
 				34590CDFFC89EA1776AF11C1 /* messages.getReplies.swift in Sources */,
 				840234BF6B0D260B994C2212 /* messages.search.swift in Sources */,
 				1706711925C16D8BE05DF53B /* messages.searchGlobal.swift in Sources */,
+				81218AA11905FA3DB43E342B /* messages.sendMessage.swift in Sources */,
 				4BD08D64F011DDD1127F243F /* messages.sendReaction.swift in Sources */,
 				01A4974351E1B0E764B9D915 /* messages.updateDialogFilter.swift in Sources */,
 				07790A34292F497256F1F1C8 /* storage.FileType.swift in Sources */,
