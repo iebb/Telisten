@@ -9,18 +9,29 @@ struct PlayerBar: View {
             ProgressView(value: model.player.currentTime, total: max(model.player.duration, 1))
                 .progressViewStyle(.linear)
                 .tint(.telistenAccent)
+                .contentShape(Rectangle())
+                .onTapGesture { model.showNowPlaying = true }
             HStack(spacing: 10) {
                 if let track = model.player.track {
-                    TrackArtwork(model: model, track: track, size: 40)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(track.displayTitle)
-                            .font(.caption.weight(.semibold))
-                            .lineLimit(1)
-                        Text(track.displayArtist)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                    Button {
+                        model.showNowPlaying = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            TrackArtwork(model: model, track: track, size: 40)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(track.displayTitle)
+                                    .font(.caption.weight(.semibold))
+                                    .lineLimit(1)
+                                Text(track.displayArtist)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .contentShape(Rectangle())
                     }
+                    .accessibilityLabel("Show Now Playing: \(track.displayTitle) by \(track.displayArtist)")
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 HStack(spacing: 13) {
@@ -40,8 +51,13 @@ struct PlayerBar: View {
                     }
                     Button("Next", systemImage: "forward.fill") { model.next() }
                         .labelStyle(.iconOnly)
-                    Button("Now Playing", systemImage: "list.bullet") { model.showNowPlaying = true }
+                    Button(model.playbackMode.title, systemImage: model.playbackMode.symbolName) {
+                        model.cyclePlaybackMode()
+                    }
                         .labelStyle(.iconOnly)
+                        .contentTransition(.symbolEffect(.replace))
+                        .accessibilityValue(model.playbackMode.title)
+                        .accessibilityHint("Switches to \(model.playbackMode.next.title.lowercased())")
                 }
                 .font(.callout)
             }
@@ -68,6 +84,8 @@ struct PlayerBar: View {
                 .frame(maxWidth: .infinity, minHeight: bottomSafeArea, alignment: .center)
                 .background(.regularMaterial)
                 .offset(y: max(bottomSafeArea - 6, 0))
+                .contentShape(Rectangle())
+                .onTapGesture { model.showNowPlaying = true }
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Lyrics preview")
             }

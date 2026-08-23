@@ -6,7 +6,7 @@ Telisten is a compact, native Telegram music player for iPhone, iPad, and Mac. I
 
 - Phone-number sign-in, Telegram or email login codes, login-email setup, and two-step verification
 - Browse every accessible cloud chat, search music in one chat or across Telegram, and lazily load long music histories
-- Queue, shuffle, repeat, seek, previous/next, favorites, and a full now-playing view
+- Queue playback in shuffle, order, reverse-order, or repeat-one mode; seek, previous/next, favorites, and a full now-playing view
 - Synchronized or plain lyrics from LRCLIB, cached locally with source attribution
 - Telegram-backed 👍 votes, including shared counts and optimistic UI updates
 - “Save to playlist” using private Telegram channels collected in a `_Playlist` folder

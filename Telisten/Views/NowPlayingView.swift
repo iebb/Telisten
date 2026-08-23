@@ -99,8 +99,6 @@ struct NowPlayingView: View {
 
     private var controls: some View {
         HStack(spacing: 30) {
-            Button("Shuffle", systemImage: "shuffle") { model.shuffle.toggle() }
-                .foregroundStyle(model.shuffle ? Color.telistenAccent : .secondary)
             Button("Previous", systemImage: "backward.fill") { model.previous() }
             if model.player.isLoading {
                 ProgressView()
@@ -115,8 +113,13 @@ struct NowPlayingView: View {
                     .font(.system(size: 52))
             }
             Button("Next", systemImage: "forward.fill") { model.next() }
-            Button("Repeat", systemImage: model.repeatMode.symbolName) { model.cycleRepeat() }
-                .foregroundStyle(model.repeatMode == .off ? .secondary : Color.telistenAccent)
+            Button(model.playbackMode.title, systemImage: model.playbackMode.symbolName) {
+                model.cyclePlaybackMode()
+            }
+            .foregroundStyle(model.playbackMode == .order ? .secondary : Color.telistenAccent)
+            .contentTransition(.symbolEffect(.replace))
+            .accessibilityValue(model.playbackMode.title)
+            .accessibilityHint("Switches to \(model.playbackMode.next.title.lowercased())")
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.plain)

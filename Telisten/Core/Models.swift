@@ -114,13 +114,34 @@ struct VoteState: Equatable, Sendable {
     var isSending = false
 }
 
-enum RepeatMode: String, CaseIterable, Codable, Sendable {
-    case off
-    case all
-    case one
+enum PlaybackMode: String, CaseIterable, Codable, Sendable {
+    case shuffle
+    case order
+    case reverseOrder
+    case repeatOne
 
     var symbolName: String {
-        self == .one ? "repeat.1" : "repeat"
+        switch self {
+        case .shuffle: "shuffle"
+        case .order: "arrow.down"
+        case .reverseOrder: "arrow.up"
+        case .repeatOne: "repeat.1"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .shuffle: "Shuffle"
+        case .order: "Order"
+        case .reverseOrder: "Reverse order"
+        case .repeatOne: "Repeat one"
+        }
+    }
+
+    var next: Self {
+        let values = Self.allCases
+        let index = values.firstIndex(of: self) ?? 0
+        return values[(index + 1) % values.count]
     }
 }
 

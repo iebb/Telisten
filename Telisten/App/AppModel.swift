@@ -51,8 +51,7 @@ final class AppModel {
     var chatMusicCounts: [String: Int] = [:]
     var queue: [Track] = []
     var currentQueueIndex: Int?
-    var repeatMode: RepeatMode = .off
-    var shuffle = false
+    var playbackMode: PlaybackMode = .order
     var showNowPlaying = false
     var cacheBytes: Int64 = 0
     var isDeletingPlaylist = false
@@ -765,27 +764,27 @@ final class AppModel {
 
     func next() {
         guard !queue.isEmpty else { return }
-        if repeatMode == .one, let track = player.track {
+        if playbackMode == .repeatOne, let track = player.track {
             player.seek(to: 0)
             player.play()
             if player.track?.id != track.id { play(track, from: queue) }
             return
         }
         let index: Int
-        if shuffle {
+        switch playbackMode {
+        case .shuffle:
             let candidates = queue.indices.filter { $0 != currentQueueIndex }
             index = candidates.randomElement() ?? 0
-        } else if let currentQueueIndex, currentQueueIndex + 1 < queue.count {
+        case .order:
+            guard let currentQueueIndex, currentQueueIndex + 1 < queue.count else { return }
             index = currentQueueIndex + 1
-        } else if repeatMode == .all {
-            index = 0
-        } else {
+        case .reverseOrder:
+            guard let currentQueueIndex, currentQueueIndex > 0 else { return }
+            index = currentQueueIndex - 1
+        case .repeatOne:
             return
         }
-        currentQueueIndex = index
-        resetTrackDetails(ifChangingTo: queue[index])
-        player.beginLoading(queue[index])
-        Task { await prepareAndPlay(queue[index]) }
+        playQueueTrack(at: index)
     }
 
     func previous() {
@@ -795,19 +794,32 @@ final class AppModel {
         }
         guard !queue.isEmpty else { return }
         let current = currentQueueIndex ?? 0
-        let index = current > 0 ? current - 1 : (repeatMode == .all ? queue.count - 1 : 0)
+        let index: Int
+        switch playbackMode {
+        case .shuffle:
+            let candidates = queue.indices.filter { $0 != currentQueueIndex }
+            index = candidates.randomElement() ?? current
+        case .order:
+            index = max(current - 1, 0)
+        case .reverseOrder:
+            index = min(current + 1, queue.count - 1)
+        case .repeatOne:
+            index = current
+        }
+        playQueueTrack(at: index)
+    }
+
+    func cyclePlaybackMode() {
+        playbackMode = playbackMode.next
+        persistLibrary()
+    }
+
+    private func playQueueTrack(at index: Int) {
+        guard queue.indices.contains(index) else { return }
         currentQueueIndex = index
         resetTrackDetails(ifChangingTo: queue[index])
         player.beginLoading(queue[index])
         Task { await prepareAndPlay(queue[index]) }
-    }
-
-    func cycleRepeat() {
-        switch repeatMode {
-        case .off: repeatMode = .all
-        case .all: repeatMode = .one
-        case .one: repeatMode = .off
-        }
     }
 
     private func prepareAndPlay(_ track: Track) async {
@@ -1185,8 +1197,16 @@ final class AppModel {
         musicChatIndex = [:]
         playlistOrders = [:]
         favorites = Set(defaults.stringArray(forKey: accountStorageKey("library.favorites")) ?? [])
-        repeatMode = RepeatMode(rawValue: defaults.string(forKey: "player.repeat") ?? "") ?? .off
-        shuffle = defaults.bool(forKey: "player.shuffle")
+        if let rawMode = defaults.string(forKey: "player.playbackMode"),
+           let savedMode = PlaybackMode(rawValue: rawMode) {
+            playbackMode = savedMode
+        } else if defaults.bool(forKey: "player.shuffle") {
+            playbackMode = .shuffle
+        } else if defaults.string(forKey: "player.repeat") == "one" {
+            playbackMode = .repeatOne
+        } else {
+            playbackMode = .order
+        }
         if defaults.object(forKey: "library.showChats") != nil {
             showChats = defaults.bool(forKey: "library.showChats")
         }
@@ -1211,8 +1231,9 @@ final class AppModel {
     private func persistLibrary() {
         let defaults = UserDefaults.standard
         defaults.set(Array(favorites), forKey: accountStorageKey("library.favorites"))
-        defaults.set(repeatMode.rawValue, forKey: "player.repeat")
-        defaults.set(shuffle, forKey: "player.shuffle")
+        defaults.set(playbackMode.rawValue, forKey: "player.playbackMode")
+        defaults.removeObject(forKey: "player.repeat")
+        defaults.removeObject(forKey: "player.shuffle")
         defaults.set(try? JSONEncoder().encode(Array(knownTracks.values)), forKey: accountStorageKey("library.tracks"))
         defaults.set(try? JSONEncoder().encode(queue), forKey: accountStorageKey("player.queue"))
         defaults.set(try? JSONEncoder().encode(playlistOrders), forKey: accountStorageKey("playlist.trackOrders"))
