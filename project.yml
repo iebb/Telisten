@@ -1,0 +1,115 @@
+name: Telisten
+options:
+  bundleIdPrefix: ad.neko
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+  xcodeVersion: "26.0"
+  groupSortPosition: top
+  generateEmptyDirectories: true
+packages:
+  SwiftMTProto:
+    url: https://github.com/UInt8Co/swift-mtproto.git
+    from: 1.0.0
+  SwiftNIOMTProto:
+    url: https://github.com/UInt8Co/swift-nio-mtproto.git
+    from: 1.0.0
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: 1.0.0
+    CURRENT_PROJECT_VERSION: 1
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 7P8CLHDH5G
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: YES
+targetTemplates:
+  TelistenApp:
+    type: application
+    configFiles:
+      Debug: Config/Telisten.xcconfig
+      Release: Config/Telisten.xcconfig
+    sources:
+      - path: Telisten
+        excludes:
+          - Info-iOS.plist
+          - Info-macOS.plist
+      - path: Generated/TelegramAPI
+      - path: Appicon.icon
+        buildPhase: resources
+    dependencies:
+      - package: SwiftMTProto
+        product: TLCoding
+      - package: SwiftMTProto
+        product: MTProtoBaseSchema
+      - package: SwiftMTProto
+        product: MTProtoCrypto
+      - package: SwiftNIOMTProto
+        product: MTProtoClientKit
+      - package: SwiftNIOMTProto
+        product: NIOMTProtoEncryption
+    settings:
+      base:
+        PRODUCT_NAME: Telisten
+        PRODUCT_BUNDLE_IDENTIFIER: ad.neko.player
+        INFOPLIST_KEY_CFBundleDisplayName: Telisten
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Telisten"
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: Telisten/Telisten.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: Appicon
+targets:
+  Telisten-iOS:
+    templates: [TelistenApp]
+    platform: iOS
+    info:
+      path: Telisten/Info-iOS.plist
+      properties:
+        TelegramAPIID: $(TELEGRAM_API_ID)
+        TelegramAPIHash: $(TELEGRAM_API_HASH)
+        UIBackgroundModes:
+          - audio
+    settings:
+      base:
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIBackgroundModes: audio
+  Telisten-macOS:
+    templates: [TelistenApp]
+    platform: macOS
+    info:
+      path: Telisten/Info-macOS.plist
+      properties:
+        TelegramAPIID: $(TELEGRAM_API_ID)
+        TelegramAPIHash: $(TELEGRAM_API_HASH)
+    settings:
+      base:
+        INFOPLIST_KEY_LSMinimumSystemVersion: "15.0"
+        INFOPLIST_KEY_NSMainStoryboardFile: ""
+schemes:
+  Telisten-iOS:
+    build:
+      targets:
+        Telisten-iOS: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
+  Telisten-macOS:
+    build:
+      targets:
+        Telisten-macOS: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release

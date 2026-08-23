@@ -1,0 +1,7 @@
+TELEGRAM_API_ID =
+TELEGRAM_API_HASH =
+
+#include? "../.local/Telegram.xcconfig"
+
+INFOPLIST_KEY_TelegramAPIID = $(TELEGRAM_API_ID)
+INFOPLIST_KEY_TelegramAPIHash = $(TELEGRAM_API_HASH)

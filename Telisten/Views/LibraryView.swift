@@ -1,0 +1,510 @@
+import SwiftUI
+
+struct LibraryView: View {
+    @Bindable var model: AppModel
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var showSettings = false
+    @State private var showDeletePlaylistConfirmation = false
+    @State private var editMode: EditMode = .inactive
+    @State private var playlistTitleDraft = ""
+    @FocusState private var playlistTitleFocused: Bool
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    var body: some View {
+        GeometryReader { geometry in
+            NavigationSplitView(columnVisibility: $columnVisibility) {
+                sidebar
+                    .navigationSplitViewColumnWidth(min: 210, ideal: 250, max: 320)
+            } detail: {
+                trackBrowser
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if model.player.track != nil {
+                    PlayerBar(model: model, bottomSafeArea: geometry.safeAreaInsets.bottom)
+                }
+            }
+            .sheet(isPresented: $model.showNowPlaying) {
+                NowPlayingView(model: model)
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView(model: model)
+            }
+            .sheet(isPresented: $model.showPlaylistSheet) {
+                if let track = model.playlistTrack {
+                    PlaylistSheet(model: model, track: track)
+                }
+            }
+            .alert(
+                "Delete playlist?",
+                isPresented: $showDeletePlaylistConfirmation,
+                presenting: selectedPlaylist
+            ) { playlist in
+                Button("Delete Playlist", role: .destructive) {
+                    Task {
+                        if await model.deletePlaylist(playlist) {
+                            withAnimation { columnVisibility = .all }
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { playlist in
+                Text("This permanently deletes \(playlist.title) from Telegram. This cannot be undone.")
+            }
+        }
+    }
+
+    private var sidebar: some View {
+        List(selection: $model.selected) {
+            Section("Library") {
+                Label("Search all music", systemImage: "magnifyingglass.circle.fill")
+                    .tag(SidebarSelection.globalSearch)
+                Label("Favorites", systemImage: "heart.fill")
+                    .tag(SidebarSelection.favorites)
+                Label("Downloads", systemImage: "arrow.down.circle.fill")
+                    .tag(SidebarSelection.downloads)
+            }
+            if !model.playlists.isEmpty {
+                Section("Playlists") {
+                    ForEach(model.playlists) { playlist in
+                        HStack(spacing: 9) {
+                            ChatAvatar(model: model, chat: playlist, size: 26, fallbackSymbol: "music.note.list")
+                            Text(playlist.title)
+                                .lineLimit(1)
+                        }
+                        .tag(SidebarSelection.chat(playlist.id))
+                    }
+                }
+            }
+            if model.showChats {
+                Section("All Chats") {
+                    ForEach(nonPlaylistChats) { chat in
+                        HStack(spacing: 9) {
+                            ChatAvatar(model: model, chat: chat, size: 26)
+                            Text(chat.title)
+                                .lineLimit(1)
+                            Spacer(minLength: 6)
+                            if let count = model.chatMusicCounts[chat.id] {
+                                Text(musicCountLabel(count))
+                                    .font(.caption2.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                    .minimumScaleFactor(0.62)
+                                    .lineLimit(1)
+                                    .frame(width: 27, height: 27)
+                                    .background(Color.secondary.opacity(0.12), in: Circle())
+                                    .accessibilityLabel("\(count) music tracks")
+                            }
+                        }
+                        .tag(SidebarSelection.chat(chat.id))
+                    }
+                    if model.isIndexingChats {
+                        HStack(spacing: 10) {
+                            ProgressView().controlSize(.small)
+                            Text("Finding chats with music…")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else if nonPlaylistChats.isEmpty {
+                        Text("No chats with music found")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar {
+            #if os(iOS)
+            ToolbarItem(placement: .topBarLeading) { accountMenu }
+            #else
+            ToolbarItem(placement: .navigation) { accountMenu }
+            #endif
+            ToolbarItem(placement: .primaryAction) {
+                Button("Settings", systemImage: "gearshape") { showSettings = true }
+            }
+        }
+        .onChange(of: model.selected) { _, value in
+            Task { await model.select(value) }
+        }
+    }
+
+    private var accountMenu: some View {
+        Menu {
+            ForEach(model.accounts) { account in
+                Button {
+                    Task { await model.switchAccount(to: account) }
+                } label: {
+                    Label(
+                        account.displayName,
+                        systemImage: account.id == model.activeAccountID
+                            ? "checkmark.circle.fill"
+                            : "person.crop.circle"
+                    )
+                }
+                .disabled(account.id == model.activeAccountID)
+            }
+            if !model.accounts.isEmpty { Divider() }
+            Button("Add Account", systemImage: "person.badge.plus") {
+                Task { await model.addAccount() }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(model.activeAccount?.initial ?? "?")
+                    .font(.caption.weight(.bold))
+                    .frame(width: 28, height: 28)
+                    .foregroundStyle(Color.telistenAccent)
+                    .background(Color.telistenAccent.opacity(0.12), in: Circle())
+                Text(model.activeAccount?.displayName ?? "Account")
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityLabel("Telegram account")
+    }
+
+    private var nonPlaylistChats: [MusicChat] {
+        let playlistIDs = Set(model.playlists.map(\.id))
+        return model.chats.filter { !playlistIDs.contains($0.id) }
+    }
+
+    private func musicCountLabel(_ count: Int) -> String {
+        count > 999 ? "999+" : String(count)
+    }
+
+    private var trackBrowser: some View {
+        VStack(spacing: 0) {
+            Group {
+                if model.isLoading && model.tracks.isEmpty {
+                    ProgressView("Finding music…")
+                } else if model.tracks.isEmpty {
+                    ContentUnavailableView(
+                        emptyTitle,
+                        systemImage: emptySymbol,
+                        description: Text(emptyDescription)
+                    )
+                } else {
+                    List {
+                        ForEach(model.tracks) { track in
+                            TrackRow(model: model, track: track)
+                                .moveDisabled(selectedPlaylist == nil)
+                                .onAppear { Task { await model.loadMoreTracks(after: track) } }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    if let playlist = selectedPlaylist {
+                                        Button("Delete", systemImage: "trash", role: .destructive) {
+                                            Task { await model.delete(track, from: playlist) }
+                                        }
+                                        .disabled(model.deletingPlaylistTrackIDs.contains(track.id))
+                                    }
+                                }
+                        }
+                        .onMove { source, destination in
+                            model.moveTracks(from: source, to: destination)
+                        }
+                        if model.isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .controlSize(.small)
+                                Spacer()
+                            }
+                            .listRowSeparator(.hidden)
+                        }
+                    }
+                    .listStyle(.plain)
+                    .environment(\.defaultMinListRowHeight, 54)
+                    .environment(\.editMode, $editMode)
+                }
+            }
+        }
+        .navigationTitle(editMode.isEditing && selectedPlaylist != nil ? "" : browserTitle)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(usesCompactBackButton)
+        #endif
+        .searchable(
+            text: $model.searchText,
+            prompt: model.isGlobalSearch ? "Song, artist, or album across every chat" : "Search music in this chat"
+        )
+        .onSubmit(of: .search) { Task { await model.search() } }
+        .onChange(of: model.selectedChat?.id) { _, _ in
+            editMode = .inactive
+            playlistTitleDraft = selectedPlaylist?.title ?? ""
+        }
+        .onChange(of: editMode) { previous, current in
+            if current.isEditing, let playlist = selectedPlaylist {
+                playlistTitleDraft = playlist.title
+            } else if previous.isEditing {
+                commitPlaylistTitle()
+                playlistTitleFocused = false
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                if let playlist = selectedPlaylist, editMode.isEditing {
+                    HStack(spacing: 7) {
+                        TextField("Playlist name", text: $playlistTitleDraft)
+                            .textFieldStyle(.plain)
+                            .font(.headline)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(1)
+                            .submitLabel(.done)
+                            .focused($playlistTitleFocused)
+                            .onSubmit {
+                                commitPlaylistTitle()
+                                playlistTitleFocused = false
+                            }
+                            .accessibilityLabel("Playlist title")
+                        if model.renamingPlaylistIDs.contains(playlist.id) {
+                            ProgressView().controlSize(.small)
+                        }
+                    }
+                    .frame(width: 180)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(Color.secondary.opacity(0.28))
+                            .frame(height: 1)
+                    }
+                }
+            }
+            #if os(iOS)
+            ToolbarItem(placement: .topBarLeading) {
+                if usesCompactBackButton {
+                    Button {
+                        withAnimation {
+                            model.selected = nil
+                            columnVisibility = .all
+                        }
+                    } label: {
+                        Label("Library", systemImage: "chevron.left")
+                    }
+                }
+            }
+            #endif
+            ToolbarItemGroup(placement: .primaryAction) {
+                if let playlist = selectedPlaylist {
+                    Button(editMode.isEditing ? "Done" : "Edit") {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            editMode = editMode.isEditing ? .inactive : .active
+                        }
+                    }
+                    if !editMode.isEditing {
+                        Menu("Playlist actions", systemImage: "ellipsis.circle") {
+                            Button("Refresh", systemImage: "arrow.clockwise") {
+                                Task { await model.search() }
+                            }
+                            Divider()
+                            Text("Track order is saved on this device")
+                            if playlist.kind == .channel {
+                                Button("Delete Playlist", systemImage: "trash", role: .destructive) {
+                                    showDeletePlaylistConfirmation = true
+                                }
+                            }
+                        }
+                        .disabled(model.isDeletingPlaylist)
+                    }
+                } else {
+                    Button(model.isGlobalSearch ? "Search" : "Refresh", systemImage: model.isGlobalSearch ? "magnifyingglass" : "arrow.clockwise") {
+                        Task { await model.search() }
+                    }
+                    .disabled(model.isGlobalSearch && model.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+
+    private var selectedPlaylist: MusicChat? {
+        guard let chat = model.selectedChat else { return nil }
+        return model.playlists.first { $0.id == chat.id }
+    }
+
+    private func commitPlaylistTitle() {
+        guard let playlist = selectedPlaylist else { return }
+        let title = playlistTitleDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, title != playlist.title else {
+            playlistTitleDraft = playlist.title
+            return
+        }
+        Task {
+            if await model.renamePlaylist(playlist, to: title) {
+                playlistTitleDraft = title
+            }
+        }
+    }
+
+    #if os(iOS)
+    private var usesCompactBackButton: Bool {
+        horizontalSizeClass == .compact && model.selected != nil
+    }
+    #endif
+
+    private var browserTitle: String {
+        return switch model.selected {
+        case .globalSearch: "Search All Music"
+        case .favorites: "Favorites"
+        case .downloads: "Downloads"
+        case .chat: model.selectedChat?.title ?? "Music"
+        case nil: "Music"
+        }
+    }
+
+    private var emptyTitle: String {
+        switch model.selected {
+        case .globalSearch: "Search every chat"
+        case .favorites: "No favorites yet"
+        case .downloads: "Nothing downloaded"
+        case .chat: "No music found"
+        case nil: "Choose a chat"
+        }
+    }
+
+    private var emptySymbol: String {
+        switch model.selected {
+        case .globalSearch: "magnifyingglass.circle"
+        case .favorites: "heart"
+        case .downloads: "arrow.down.circle"
+        default: "music.note.list"
+        }
+    }
+
+    private var emptyDescription: String {
+        switch model.selected {
+        case .globalSearch: "Find songs, artists, or albums across all of your Telegram chats."
+        case .favorites: "Tap the heart beside a track to keep it here."
+        case .downloads: "Downloaded music remains available offline."
+        case .chat: "Try another search or choose a different chat."
+        case nil: "Pick any Telegram chat from the sidebar."
+        }
+    }
+}
+
+private struct TrackRow: View {
+    @Bindable var model: AppModel
+    let track: Track
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                TrackArtwork(model: model, track: track, size: 44)
+                    .overlay(alignment: .center) {
+                        if isCurrent && model.player.isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.white)
+                        } else if isCurrent && model.player.isPlaying {
+                            Image(systemName: "waveform")
+                                .font(.callout.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .shadow(radius: 2)
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        if model.cachedIDs.contains(track.id) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(.green)
+                                .background(.background, in: Circle())
+                                .offset(x: 3, y: 3)
+                                .accessibilityLabel("Downloaded")
+                        }
+                    }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(track.displayTitle)
+                        .font(.subheadline.weight(isCurrent ? .semibold : .regular))
+                        .lineLimit(1)
+                        .foregroundStyle(isCurrent ? Color.telistenAccent : .primary)
+                    Text(metadata)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .layoutPriority(1)
+                Spacer(minLength: 2)
+                downloadProgress
+                favoriteButton
+                moreMenu
+            }
+            .padding(.vertical, 6)
+
+            Divider()
+                .padding(.leading, 54)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { model.play(track) }
+        .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 8))
+        .listRowSeparator(.hidden)
+        .contextMenu {
+            Button("Play", systemImage: "play.fill") { model.play(track) }
+            Button("Add to playlist", systemImage: "text.badge.plus") { model.openPlaylistPicker(for: track) }
+            if model.cachedIDs.contains(track.id) {
+                Button("Remove download", systemImage: "trash", role: .destructive) { model.removeDownload(track) }
+            } else {
+                Button("Download", systemImage: "arrow.down.circle") { model.cacheTrack(track) }
+            }
+        }
+    }
+
+    private var favoriteButton: some View {
+        Button {
+            model.toggleFavorite(track)
+        } label: {
+            Image(systemName: model.favorites.contains(track.id) ? "heart.fill" : "heart")
+                .font(.callout)
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(model.favorites.contains(track.id) ? Color.telistenAccent : .secondary)
+        .accessibilityLabel(model.favorites.contains(track.id) ? "Unfavorite" : "Favorite")
+    }
+
+    @ViewBuilder private var downloadProgress: some View {
+        let status = model.downloads[track.id] ?? .none
+        if status.progress > 0, !status.isCached {
+            ProgressView(value: status.progress)
+                .progressViewStyle(.circular)
+                .controlSize(.small)
+                .frame(width: 24)
+        }
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button("Add to playlist", systemImage: "text.badge.plus") {
+                model.openPlaylistPicker(for: track)
+            }
+            if model.cachedIDs.contains(track.id) {
+                Button("Remove download", systemImage: "trash", role: .destructive) {
+                    model.removeDownload(track)
+                }
+            } else {
+                Button("Download", systemImage: "arrow.down.circle") {
+                    model.cacheTrack(track)
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.callout)
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .accessibilityLabel("More actions for \(track.displayTitle)")
+    }
+
+    private var metadata: String {
+        track.duration > 0
+            ? "\(track.displayArtist)  •  \(DisplayFormat.duration(track.duration))"
+            : track.displayArtist
+    }
+
+    private var isCurrent: Bool { model.player.track?.id == track.id }
+}

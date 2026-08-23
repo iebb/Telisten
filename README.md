@@ -1,0 +1,110 @@
+# Telisten
+
+Telisten is a compact, native Telegram music player for iPhone, iPad, and Mac. It signs in as the user over MTProto, finds audio in every accessible cloud chat, and keeps downloaded tracks available offline. It does not use TDLib, a bot token, a proxy service, or a custom backend.
+
+## Features
+
+- Phone-number sign-in, Telegram or email login codes, login-email setup, and two-step verification
+- Browse every accessible cloud chat, search music in one chat or across Telegram, and lazily load long music histories
+- Queue, shuffle, repeat, seek, previous/next, favorites, and a full now-playing view
+- Synchronized or plain lyrics from LRCLIB, cached locally with source attribution
+- Telegram-backed 👍 votes, including shared counts and optimistic UI updates
+- “Save to playlist” using private Telegram channels collected in a `_Playlist` folder
+- Lock-screen/Control Center media controls and background audio on iOS
+- Seekable MTProto streaming for quick playback, plus explicit downloads with progress and a bounded 2 GB least-recently-used cache
+- Offline Downloads and Favorites libraries
+- Gitignored local Telegram app configuration; MTProto authorization keys stay in Keychain
+- Native SwiftUI interface shared by iOS and macOS
+
+“Any chat” means any Telegram cloud chat the signed-in account can access. Telegram secret chats are device-specific, end-to-end encrypted sessions and are not exposed to a newly authorized API client.
+
+## Run it
+
+Requirements:
+
+- Xcode 26 or newer
+- iOS 18+ or macOS 15+
+- A Telegram `api_id` and `api_hash` from [my.telegram.org](https://my.telegram.org)
+
+Keep the credentials in the local `.env`; they are never written into tracked Swift or project files:
+
+```sh
+cp .env.example .env
+# Fill in TELEGRAM_API_ID and TELEGRAM_API_HASH, then:
+./Scripts/generate-local-config.sh
+xcodegen generate
+```
+
+The script creates `.local/Telegram.xcconfig`, which is also gitignored. Xcode expands those values into the built app's Info.plist. Like every native Telegram client credential, they can still be extracted from the compiled app, so this protects the repository rather than treating the API hash as a user password.
+
+Open `Telisten.xcodeproj`, select either `Telisten-iOS` or `Telisten-macOS`, and run. Xcode may ask you to trust the `TLCodingMacros` package macro the first time; review and enable it.
+
+To inspect the complete interface without Telegram credentials, add the `--demo` launch argument to a Debug scheme. The fixture never writes to Telegram; it provides sample chats, votes, a playlist, and a current track so the LRCLIB and playlist interfaces can be exercised in Simulator.
+
+For an unsigned command-line verification build:
+
+```sh
+xcodebuild -project Telisten.xcodeproj \
+  -scheme Telisten-macOS \
+  -configuration Debug \
+  -derivedDataPath DerivedData \
+  CODE_SIGNING_ALLOWED=NO \
+  -skipMacroValidation build
+
+xcodebuild -project Telisten.xcodeproj \
+  -scheme Telisten-iOS \
+  -configuration Debug \
+  -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath DerivedData \
+  CODE_SIGNING_ALLOWED=NO \
+  -skipMacroValidation build
+```
+
+Do not install those unsigned artifacts in Simulator. Use Xcode Run, or omit `CODE_SIGNING_ALLOWED=NO`, so iOS can retain the MTProto authorization key in Keychain across launches.
+
+On first launch, sign in with your phone number. Telegram may deliver the code in Telegram, by email, or through another method selected by the service. Telisten also handles mandatory login-email setup and two-step verification.
+
+## Small by design
+
+The handwritten application is split into four narrow layers:
+
+- `TelegramService`: direct MTProto connection, authentication, chat search, and file transfer
+- `CacheStore`: atomic local files, metadata, and LRU eviction
+- `AudioPlayer`: AVPlayer, media keys, and now-playing metadata
+- `AppModel` and `Views`: queue/library state and adaptive SwiftUI screens
+
+The full Telegram schema is intentionally not checked in. `Generated/TelegramAPI` contains only the 33 RPC methods the player uses and their transitively required types.
+
+Dependencies are pinned through Swift Package Manager:
+
+- [`swift-mtproto`](https://github.com/UInt8Co/swift-mtproto) for TL coding, schema generation, cryptography, and SRP primitives
+- [`swift-nio-mtproto`](https://github.com/UInt8Co/swift-nio-mtproto) for the encrypted MTProto transport
+
+Both packages are small Swift building blocks rather than TDLib or a complete Telegram client.
+
+## Regenerate the Telegram API subset
+
+The checked-in sources target Telegram schema layer 223. When Telegram changes the schema, run:
+
+```sh
+./Scripts/regenerate-telegram-api.sh
+./Scripts/generate-local-config.sh
+xcodegen generate
+```
+
+The script downloads Telegram's official live schema and schema index, checks that the published layer matches `TelegramService`, and generates only the methods listed in `telegram-methods.txt`. It requires `curl`, `git`, and Swift 6.3+; `xcodegen` is only needed to recreate the project after changing file layout or `project.yml`.
+
+## Operational notes
+
+- Audio is streamed in byte ranges directly from Telegram data centers. The Download action stores the complete track for offline playback; there is no Telisten server.
+- Lyrics queries send the track title, artist, and duration to [LRCLIB](https://lrclib.net); successful matches are cached on-device. For a commercial release that requires publisher-cleared coverage or service guarantees, replace `LRCLIBProvider` with a licensed provider such as Musixmatch.
+- A vote is a real 👍 Telegram message reaction. Saving forwards the original audio message, so Telegram's forwarding permissions still apply.
+- New playlists are private broadcast channels. Telisten creates or updates the `_Playlist` dialog folder without changing unrelated folders or their settings.
+- The app asks Telegram not to redirect file transfers to its CDN, keeping the transfer code compact. A download reports a clear error if Telegram still returns a CDN redirect.
+- Cached files are stored in the platform Caches directory and may be removed from the Downloads screen. The cache automatically evicts least-recently-used files above 2 GB.
+- Playback can continue in the background. A download in progress is foreground-bound on iOS; restarting it is safe because cache commits are atomic.
+- Distribution builds use the `ad.neko.player` bundle identifier. Review Telegram's [API terms](https://core.telegram.org/api/terms) and Apple distribution requirements before release.
+
+## Reference
+
+The implementation follows Telegram's official documentation for [API credentials](https://core.telegram.org/api/obtaining_api_id), [user authorization](https://core.telegram.org/api/auth), [message search](https://core.telegram.org/api/search), [file downloads](https://core.telegram.org/api/files), [dialog folders](https://core.telegram.org/api/folders), [message reactions](https://core.telegram.org/method/messages.sendReaction), and [forwarding](https://core.telegram.org/method/messages.forwardMessages).

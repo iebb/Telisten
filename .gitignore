@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.local/
+DerivedData*/
+build/
+.build/
+Archives/
+Export/
+*.xcuserstate
+xcuserdata/

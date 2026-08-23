@@ -1,0 +1,40 @@
+# Session bootstrap and user authorization
+invokeWithLayer
+initConnection
+help.getConfig
+auth.sendCode
+auth.signIn
+account.sendVerifyEmailCode
+account.verifyEmail
+account.getPassword
+auth.checkPassword
+auth.logOut
+
+# Cross-DC authorization and file transfer
+auth.exportAuthorization
+auth.importAuthorization
+upload.getFile
+upload.getCdnFile
+upload.reuploadCdnFile
+help.getCdnConfig
+
+# Chat discovery and music search
+messages.getDialogs
+messages.getHistory
+messages.getReplies
+messages.search
+messages.searchGlobal
+users.getUsers
+channels.getChannels
+channels.deleteChannel
+channels.deleteMessages
+channels.editTitle
+messages.deleteMessages
+messages.editChatTitle
+
+# Telegram-backed playlists and votes
+messages.getDialogFilters
+messages.updateDialogFilter
+channels.createChannel
+messages.forwardMessages
+messages.sendReaction
