@@ -12,6 +12,8 @@ struct LibraryView: View {
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var nowPlayingDetent: PresentationDetent = .medium
+    #elseif os(macOS)
+    @State private var showsDesktopLyrics = false
     #endif
 
     var body: some View {
@@ -20,11 +22,27 @@ struct LibraryView: View {
                 sidebar
                     .navigationSplitViewColumnWidth(min: 210, ideal: 250, max: 320)
             } detail: {
+                #if os(macOS)
+                if showsDesktopLyrics, model.player.track != nil {
+                    DesktopLyricsView(model: model)
+                } else {
+                    trackBrowser
+                }
+                #else
                 trackBrowser
+                #endif
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if model.player.track != nil, !model.showNowPlaying {
+                    #if os(macOS)
+                    PlayerBar(
+                        model: model,
+                        showsLyrics: $showsDesktopLyrics,
+                        bottomSafeArea: geometry.safeAreaInsets.bottom
+                    )
+                    #else
                     PlayerBar(model: model, bottomSafeArea: geometry.safeAreaInsets.bottom)
+                    #endif
                 }
             }
             .sheet(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {

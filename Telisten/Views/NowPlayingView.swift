@@ -8,6 +8,7 @@ struct NowPlayingView: View {
     }
 
     @Bindable var model: AppModel
+    @Environment(\.dismiss) private var dismiss
     @State private var section: Section = .lyrics
     #if os(iOS)
     @Binding var presentationDetent: PresentationDetent
@@ -41,11 +42,29 @@ struct NowPlayingView: View {
             }
             .padding(.top, 4)
             .background(Color.telistenBackground)
+            #if os(macOS)
+            .overlay(alignment: .topTrailing) {
+                HStack(spacing: 8) {
+                    if let track = model.player.track {
+                        Button("Save to playlist", systemImage: "text.badge.plus") {
+                            model.openPlaylistPicker(for: track)
+                        }
+                        .labelStyle(.iconOnly)
+                        .accessibilityHint("Saves this track to a private playlist")
+                    }
+                    Button("Close") { dismiss() }
+                }
+                .buttonStyle(.bordered)
+                .padding(.top, 8)
+                .padding(.trailing, 12)
+            }
+            #endif
             .navigationTitle("")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .primaryAction) {
                     if let track = model.player.track {
                         Button("Save to playlist", systemImage: "text.badge.plus") {
@@ -55,6 +74,7 @@ struct NowPlayingView: View {
                         .accessibilityHint("Saves this track to a private playlist")
                     }
                 }
+                #endif
             }
         }
         #if os(iOS)
@@ -269,8 +289,29 @@ struct NowPlayingView: View {
     }
 }
 
-private struct LyricsPanel: View {
+struct DesktopLyricsView: View {
     @Bindable var model: AppModel
+
+    var body: some View {
+        LyricsPanel(model: model, style: .desktop)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.telistenBackground)
+            .navigationTitle(model.player.track?.displayTitle ?? "Lyrics")
+            .task(id: model.player.track?.id) {
+                guard let track = model.player.track else { return }
+                await model.loadLyrics(for: track)
+            }
+    }
+}
+
+struct LyricsPanel: View {
+    enum Style: Equatable {
+        case player
+        case desktop
+    }
+
+    @Bindable var model: AppModel
+    var style: Style = .player
     @State private var isShowingMatchChooser = false
 
     var body: some View {
@@ -304,8 +345,9 @@ private struct LyricsPanel: View {
                 )
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.bottom, 18)
+        .padding(.horizontal, style == .desktop ? 42 : 18)
+        .padding(.top, style == .desktop ? 10 : 0)
+        .padding(.bottom, style == .desktop ? 0 : 18)
     }
 
     private func lyricsChooser(selected: TrackLyrics) -> some View {
@@ -428,17 +470,20 @@ private struct LyricsPanel: View {
         let activeID = activeLineID(in: lyrics)
         return ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: lyrics.isSynced ? 12 : 9) {
+                LazyVStack(
+                    alignment: .leading,
+                    spacing: style == .desktop ? 22 : (lyrics.isSynced ? 12 : 9)
+                ) {
                     ForEach(Array(lyrics.lines.enumerated()), id: \.element.id) { index, line in
                         let isActive = activeID == line.id
                         let isPast = activeID.flatMap { active in
                             lyrics.lines.firstIndex(where: { $0.id == active })
                         }.map { index < $0 } ?? false
                         Text(line.text.isEmpty ? " " : line.text)
-                            .font(lyrics.isSynced ? (isActive ? .title2.bold() : .title3.weight(.semibold)) : .body)
+                            .font(lyricFont(isSynced: lyrics.isSynced, isActive: isActive))
                             .foregroundStyle(isActive || !lyrics.isSynced ? Color.primary : Color.secondary)
-                            .opacity(!lyrics.isSynced || isActive ? 1 : (isPast ? 0.36 : 0.64))
-                            .scaleEffect(isActive ? 1.02 : 1, anchor: .leading)
+                            .opacity(lyricOpacity(isSynced: lyrics.isSynced, isActive: isActive, isPast: isPast))
+                            .scaleEffect(isActive ? (style == .desktop ? 1.035 : 1.02) : 1, anchor: .leading)
                             .id(line.id)
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -450,11 +495,18 @@ private struct LyricsPanel: View {
                         .foregroundStyle(Color.telistenAccent)
                         .padding(.top, 12)
                 }
-                .padding(20)
+                .padding(style == .desktop ? 28 : 20)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .contentMargins(.vertical, lyrics.isSynced ? 90 : 0, for: .scrollContent)
-            .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .contentMargins(
+                .vertical,
+                style == .desktop ? 150 : (lyrics.isSynced ? 90 : 0),
+                for: .scrollContent
+            )
+            .background(
+                Color.primary.opacity(style == .desktop ? 0 : 0.035),
+                in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+            )
             .onChange(of: activeID, initial: true) { _, lineID in
                 guard lyrics.isSynced, let lineID else { return }
                 withAnimation(.easeInOut(duration: 0.28)) {
@@ -463,6 +515,19 @@ private struct LyricsPanel: View {
             }
             .animation(.easeInOut(duration: 0.22), value: activeID)
         }
+    }
+
+    private func lyricFont(isSynced: Bool, isActive: Bool) -> Font {
+        if style == .desktop {
+            return .system(size: isActive ? 34 : 27, weight: isActive ? .bold : .semibold)
+        }
+        return isSynced ? (isActive ? .title2.bold() : .title3.weight(.semibold)) : .body
+    }
+
+    private func lyricOpacity(isSynced: Bool, isActive: Bool, isPast: Bool) -> Double {
+        guard isSynced, !isActive else { return 1 }
+        if style == .desktop { return isPast ? 0.3 : 0.58 }
+        return isPast ? 0.36 : 0.64
     }
 
     private func activeLineID(in lyrics: TrackLyrics) -> Int? {

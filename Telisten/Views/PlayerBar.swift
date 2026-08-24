@@ -2,6 +2,9 @@ import SwiftUI
 
 struct PlayerBar: View {
     @Bindable var model: AppModel
+    #if os(macOS)
+    @Binding var showsLyrics: Bool
+    #endif
     var bottomSafeArea: CGFloat = 0
 
     var body: some View {
@@ -35,6 +38,17 @@ struct PlayerBar: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 HStack(spacing: 13) {
+                    #if os(macOS)
+                    Button(showsLyrics ? "Hide Lyrics" : "Lyrics", systemImage: "quote.bubble") {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showsLyrics.toggle()
+                        }
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .foregroundStyle(showsLyrics ? Color.telistenAccent : Color.secondary)
+                    .accessibilityValue(showsLyrics ? "Shown" : "Hidden")
+                    .keyboardShortcut("l", modifiers: .command)
+                    #endif
                     Button("Previous", systemImage: "backward.fill") { model.previous() }
                         .labelStyle(.iconOnly)
                     if model.player.isLoading {

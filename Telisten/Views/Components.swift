@@ -129,11 +129,13 @@ struct AccountAvatar: View {
     let size: CGFloat
 
     var body: some View {
-        Group {
+        ZStack {
             if let image = platformImage {
                 image
                     .resizable()
-                    .scaledToFill()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipped()
             } else {
                 Circle()
                     .fill(Color.telistenAccent.opacity(0.12))
@@ -145,6 +147,7 @@ struct AccountAvatar: View {
             }
         }
         .frame(width: size, height: size)
+        .fixedSize()
         .clipShape(Circle())
         .overlay {
             Circle()
