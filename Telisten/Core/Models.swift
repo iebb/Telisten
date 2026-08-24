@@ -10,6 +10,8 @@ struct TelegramAccount: Identifiable, Codable, Hashable, Sendable {
     var userID: Int64
     var displayName: String
     var username: String?
+    var avatarPhotoID: Int64? = nil
+    var avatarDCID: Int32? = nil
 
     var initial: String {
         displayName.trimmingCharacters(in: .whitespacesAndNewlines).first

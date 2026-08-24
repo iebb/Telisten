@@ -185,11 +185,19 @@ actor TelegramService {
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .joined(separator: " ")
+        let avatar: (photoID: Int64, dcID: Int32)? = user.photo.flatMap { photo in
+            switch photo {
+            case let .userProfilePhoto(value): (value.photoId, value.dcId)
+            case .userProfilePhotoEmpty: nil
+            }
+        }
         return TelegramAccount(
             id: accountID,
             userID: user.id,
             displayName: fullName.isEmpty ? (user.username ?? "Telegram Account") : fullName,
-            username: user.username
+            username: user.username,
+            avatarPhotoID: avatar?.photoID,
+            avatarDCID: avatar?.dcID
         )
     }
 
@@ -617,6 +625,20 @@ actor TelegramService {
         } catch {
             throw readableDownloadError(error)
         }
+    }
+
+    func avatar(for account: TelegramAccount) async throws -> Data? {
+        let peer = MusicChat(
+            id: "account:\(account.id)",
+            peerID: account.userID,
+            accessHash: nil,
+            kind: .user,
+            title: account.displayName,
+            username: account.username,
+            avatarPhotoID: account.avatarPhotoID,
+            avatarDCID: account.avatarDCID
+        )
+        return try await avatar(for: peer)
     }
 
     private func fileChunk(

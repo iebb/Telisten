@@ -50,6 +50,7 @@ final class AppModel {
     var knownTracks: [String: Track] = [:]
     var artworkData: [String: Data] = [:]
     var chatAvatarData: [String: Data] = [:]
+    var accountAvatarData: [String: Data] = [:]
     var chatMusicCounts: [String: Int] = [:]
     var queue: [Track] = []
     var currentQueueIndex: Int?
@@ -76,6 +77,8 @@ final class AppModel {
     @ObservationIgnored private var artworkResolved: Set<String> = []
     @ObservationIgnored private var avatarLoading: Set<String> = []
     @ObservationIgnored private var avatarResolved: Set<String> = []
+    @ObservationIgnored private var accountAvatarLoading: Set<String> = []
+    @ObservationIgnored private var accountAvatarResolved: Set<String> = []
     @ObservationIgnored private var allChats: [MusicChat] = []
     @ObservationIgnored private var musicChatIndex: [String: MusicChatIndexEntry] = [:]
     @ObservationIgnored private var playlistOrders: [String: [String]] = [:]
@@ -807,6 +810,30 @@ final class AppModel {
         }
     }
 
+    func loadAvatar(for account: TelegramAccount) async {
+        guard account.avatarPhotoID != nil, account.avatarDCID != nil else { return }
+        let cacheKey = "\(account.id):\(account.avatarPhotoID ?? 0)"
+        guard !accountAvatarResolved.contains(cacheKey),
+              accountAvatarLoading.insert(cacheKey).inserted else { return }
+        defer {
+            accountAvatarLoading.remove(cacheKey)
+            accountAvatarResolved.insert(cacheKey)
+        }
+
+        let peer = accountAvatarPeer(for: account)
+        if let cached = await chatAvatarStore.data(for: peer) {
+            accountAvatarData[account.id] = cached
+            return
+        }
+        #if DEBUG
+        if isDemo { return }
+        #endif
+        if let data = try? await telegram.avatar(for: account), !data.isEmpty {
+            accountAvatarData[account.id] = data
+            await chatAvatarStore.save(data, for: peer)
+        }
+    }
+
     func toggleFavorite(_ track: Track) {
         knownTracks[track.id] = track
         if favorites.contains(track.id) {
@@ -1016,6 +1043,9 @@ final class AppModel {
         chatAvatarData = [:]
         avatarLoading = []
         avatarResolved = []
+        accountAvatarData = [:]
+        accountAvatarLoading = []
+        accountAvatarResolved = []
         chatMusicCounts = [:]
         currentQueueIndex = nil
     }
@@ -1029,6 +1059,7 @@ final class AppModel {
             accounts.append(profile)
         }
         persistAccounts()
+        await loadAvatar(for: profile)
     }
 
     private func apply(_ result: TelegramService.RequestCodeResult) async throws {
@@ -1079,6 +1110,19 @@ final class AppModel {
                 return lhs.date > rhs.date
             }
         return arranged(values, in: chat)
+    }
+
+    private func accountAvatarPeer(for account: TelegramAccount) -> MusicChat {
+        MusicChat(
+            id: "account:\(account.id)",
+            peerID: account.userID,
+            accessHash: nil,
+            kind: .user,
+            title: account.displayName,
+            username: account.username,
+            avatarPhotoID: account.avatarPhotoID,
+            avatarDCID: account.avatarDCID
+        )
     }
 
     private func arranged(_ values: [Track], in chat: MusicChat) -> [Track] {

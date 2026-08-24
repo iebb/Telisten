@@ -154,11 +154,14 @@ struct LibraryView: View {
             }
         } label: {
             HStack(spacing: 6) {
-                Text(model.activeAccount?.initial ?? "?")
-                    .font(.caption.weight(.bold))
-                    .frame(width: 28, height: 28)
-                    .foregroundStyle(Color.telistenAccent)
-                    .background(Color.telistenAccent.opacity(0.12), in: Circle())
+                if let account = model.activeAccount {
+                    AccountAvatar(model: model, account: account, size: 28)
+                } else {
+                    Image(systemName: "person.crop.circle")
+                        .font(.title3)
+                        .frame(width: 28, height: 28)
+                        .foregroundStyle(.secondary)
+                }
                 Text(model.activeAccount?.displayName ?? "Account")
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)

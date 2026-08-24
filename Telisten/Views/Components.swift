@@ -123,6 +123,53 @@ struct ChatAvatar: View {
     }
 }
 
+struct AccountAvatar: View {
+    let model: AppModel
+    let account: TelegramAccount
+    let size: CGFloat
+
+    var body: some View {
+        Group {
+            if let image = platformImage {
+                image
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Circle()
+                    .fill(Color.telistenAccent.opacity(0.12))
+                    .overlay {
+                        Text(account.initial)
+                            .font(.system(size: size * 0.42, weight: .bold))
+                            .foregroundStyle(Color.telistenAccent)
+                    }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay {
+            Circle()
+                .stroke(.white.opacity(0.14), lineWidth: 0.5)
+        }
+        .accessibilityHidden(true)
+        .task(id: "\(account.id):\(account.avatarPhotoID ?? 0)") {
+            await model.loadAvatar(for: account)
+        }
+    }
+
+    private var platformImage: Image? {
+        guard let data = model.accountAvatarData[account.id] else { return nil }
+        #if os(iOS)
+        guard let image = UIImage(data: data) else { return nil }
+        return Image(uiImage: image)
+        #elseif os(macOS)
+        guard let image = NSImage(data: data) else { return nil }
+        return Image(nsImage: image)
+        #else
+        return nil
+        #endif
+    }
+}
+
 private struct CardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
