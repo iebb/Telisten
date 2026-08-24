@@ -27,3 +27,7 @@ The post-clone script also enables Xcode's noninteractive macro validation bypas
 ## TestFlight
 
 Distribute only through the internal `Admins` group. Do not create an external group or public link for Telisten. Apple requires Xcode Cloud builds to be added to the internal group after the build finishes processing; the group must contain only eligible App Store Connect users with the Account Holder or Admin role.
+
+## Verification
+
+Xcode Cloud run 4 completed successfully on 2026-08-24 from commit `a660fb9`. Both archive actions and both internal TestFlight distribution actions succeeded.
