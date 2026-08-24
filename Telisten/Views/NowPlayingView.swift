@@ -20,7 +20,6 @@ struct NowPlayingView: View {
                 hero
                 timeline
                 controls
-                quickActions
                 if showsDetails {
                     Picker("Now playing section", selection: $section) {
                         ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
@@ -48,6 +47,15 @@ struct NowPlayingView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if os(iOS)
+                ToolbarItem(placement: .topBarLeading) {
+                    voteAction
+                }
+                #else
+                ToolbarItem(placement: .navigation) {
+                    voteAction
+                }
+                #endif
                 ToolbarItem(placement: .primaryAction) {
                     if let track = model.player.track {
                         Button("Save to playlist", systemImage: "text.badge.plus") {
@@ -91,10 +99,10 @@ struct NowPlayingView: View {
             VStack(spacing: 2) {
                 ForEach(Array(lyricWindow.enumerated()), id: \.offset) { index, line in
                     Text(line)
-                        .font(.system(size: index == 1 ? 14.5 : 12, weight: index == 1 ? .semibold : .regular))
+                        .font(index == 1 ? .title3.weight(.semibold) : .body)
                         .foregroundStyle(index == 1 ? .primary : .secondary)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.72)
+                        .minimumScaleFactor(0.68)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                 }
@@ -238,27 +246,23 @@ struct NowPlayingView: View {
     }
 
     @ViewBuilder
-    private var quickActions: some View {
-        if let track = model.player.track {
+    private var voteAction: some View {
+        if let track = model.player.track, !model.isPlaylistTrack(track) {
             let vote = model.voteState(for: track)
-            if !model.isPlaylistTrack(track) {
-                Button {
-                    model.upvote(track)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: vote.chosen ? "hand.thumbsup.fill" : "hand.thumbsup")
-                        Text("\(vote.count)")
-                            .monospacedDigit()
-                    }
+            Button {
+                model.upvote(track)
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: vote.chosen ? "hand.thumbsup.fill" : "hand.thumbsup")
+                    Text("\(vote.count)")
+                        .monospacedDigit()
                 }
                 .font(.callout.weight(.semibold))
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .tint(.telistenAccent)
-                .disabled(vote.chosen || vote.isSending)
-                .accessibilityLabel(vote.chosen ? "Upvoted" : "Upvote")
-                .accessibilityValue("\(vote.count) votes")
             }
+            .tint(.telistenAccent)
+            .disabled(vote.chosen || vote.isSending)
+            .accessibilityLabel(vote.chosen ? "Upvoted" : "Upvote")
+            .accessibilityValue("\(vote.count) votes")
         }
     }
 
