@@ -22,6 +22,8 @@ Add these two workflow environment variables in App Store Connect and mark both 
 
 `ci_scripts/ci_post_clone.sh` passes them to `Scripts/generate-local-config.sh`, which writes the ignored `.local/Telegram.xcconfig`. Never put either value in a tracked file.
 
+The post-clone script also enables Xcode's noninteractive macro validation bypass for `TLCodingMacros`, the sole compiler macro and one pinned by `Package.resolved`. Local developers should continue reviewing and explicitly trusting the package in Xcode.
+
 ## TestFlight
 
 Distribute only through the internal `Admins` group. Do not create an external group or public link for Telisten. Apple requires Xcode Cloud builds to be added to the internal group after the build finishes processing; the group must contain only eligible App Store Connect users with the Account Holder or Admin role.

@@ -7,4 +7,8 @@ cd "$repository_path"
 : "${TELEGRAM_API_ID:?Set TELEGRAM_API_ID in the Xcode Cloud workflow environment}"
 : "${TELEGRAM_API_HASH:?Set TELEGRAM_API_HASH in the Xcode Cloud workflow environment}"
 
+# The only compiler macro is TLCodingMacros from the commit pinned in
+# Package.resolved. Xcode Cloud has no interactive trust prompt.
+defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
+
 ./Scripts/generate-local-config.sh
