@@ -19,10 +19,13 @@ enum TelegramMapping {
         for item in content.users {
             if let chat = map(user: item) { lookup[chat.id] = chat }
         }
-        return content.dialogs.compactMap { dialog in
+        return content.dialogs.compactMap { dialog -> MusicChat? in
             switch dialog {
-            case let .dialog(value): lookup[key(for: value.peer)]
-            case .dialogFolder: nil
+            case let .dialog(value):
+                guard var chat = lookup[key(for: value.peer)] else { return nil }
+                chat.isPinned = value.pinned
+                return chat
+            case .dialogFolder: return nil
             }
         }
     }

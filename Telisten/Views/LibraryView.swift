@@ -125,6 +125,13 @@ struct LibraryView: View {
                                     .background(Color.secondary.opacity(0.12), in: Circle())
                                     .accessibilityLabel("\(count) music tracks")
                             }
+                            if chat.isPinned == true {
+                                Image(systemName: "pin.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 14)
+                                    .accessibilityLabel("Pinned chat")
+                            }
                         }
                         .tag(SidebarSelection.chat(chat.id))
                     }

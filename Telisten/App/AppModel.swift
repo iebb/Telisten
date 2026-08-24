@@ -1068,12 +1068,18 @@ final class AppModel {
         if let transfer = activeTransfers[track.id] { return transfer }
         let location = await cache.partialLocation(for: track)
         let telegram = telegram
+        let sourceChat = allChats.first(where: { $0.id == track.chatID })
         let transfer = ProgressiveAudioTransfer(
             trackID: track.id,
             fileSize: track.size,
             location: location
         ) { offset, length in
-            try await telegram.stream(track, offset: offset, length: length)
+            try await telegram.stream(
+                track,
+                sourceChat: sourceChat,
+                offset: offset,
+                length: length
+            )
         }
         activeTransfers[track.id] = transfer
         return transfer
@@ -1342,7 +1348,8 @@ final class AppModel {
             accessHash: 1,
             kind: .channel,
             title: "Late Night Records",
-            username: "latenightrecords"
+            username: "latenightrecords",
+            isPinned: true
         )
         let discoveries = MusicChat(
             id: "g:1002",

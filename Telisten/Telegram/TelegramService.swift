@@ -58,6 +58,7 @@ actor TelegramService {
         case noConnection
         case downloadRedirect
         case incompleteDownload
+        case expiredFileReference
         case playlistCreationFailed
         case playlistFolderFailed
         case playlistDeletionUnavailable
@@ -80,6 +81,7 @@ actor TelegramService {
             case .noConnection: "The Telegram connection is not ready."
             case .downloadRedirect: "This file requires Telegram CDN handling, which was not negotiated."
             case .incompleteDownload: "The file download ended before all bytes arrived."
+            case .expiredFileReference: "Telegram expired this track reference. Telisten could not refresh it automatically."
             case .playlistCreationFailed: "Telegram created no usable playlist chat."
             case .playlistFolderFailed: "Telegram did not accept the _Playlist folder update."
             case .playlistDeletionUnavailable: "Only Telegram channel playlists can be deleted."
@@ -138,8 +140,10 @@ actor TelegramService {
     private var accountID: String
     private var primaryDC: Int32
     private var endpoints: [Int32: [Endpoint]] = [:]
+    private var endpointCursors: [ConnectionKey: Int] = [:]
     private var connections: [ConnectionKey: Connection] = [:]
     private var authorizedConnections: Set<ConnectionKey> = []
+    private var refreshedTracks: [String: Track] = [:]
     private var phoneNumber = ""
     private var phoneCodeHash = ""
     private var pendingCodeIsEmail = false
@@ -182,6 +186,7 @@ actor TelegramService {
         }
         connections.removeAll()
         authorizedConnections.removeAll()
+        refreshedTracks.removeAll()
         accountID = id
         if clearExisting {
             keychain.clearSessions(accountID: id)
@@ -590,7 +595,43 @@ actor TelegramService {
         }
     }
 
-    func stream(_ track: Track, offset requestedOffset: Int64, length requestedLength: Int32) async throws -> Data {
+    func stream(
+        _ track: Track,
+        sourceChat: MusicChat? = nil,
+        offset requestedOffset: Int64,
+        length requestedLength: Int32
+    ) async throws -> Data {
+        let activeTrack = refreshedTracks[track.id] ?? track
+        do {
+            return try await streamBytes(
+                activeTrack,
+                offset: requestedOffset,
+                length: requestedLength
+            )
+        } catch {
+            guard isExpiredFileReference(error),
+                  let sourceChat,
+                  let refreshed = try await refreshReference(for: activeTrack, in: sourceChat) else {
+                throw readableDownloadError(error)
+            }
+            refreshedTracks[track.id] = refreshed
+            do {
+                return try await streamBytes(
+                    refreshed,
+                    offset: requestedOffset,
+                    length: requestedLength
+                )
+            } catch {
+                throw readableDownloadError(error)
+            }
+        }
+    }
+
+    private func streamBytes(
+        _ track: Track,
+        offset requestedOffset: Int64,
+        length requestedLength: Int32
+    ) async throws -> Data {
         guard requestedOffset >= 0, requestedLength > 0, requestedOffset < track.size else {
             return Data()
         }
@@ -604,24 +645,52 @@ actor TelegramService {
         var offset = requestedOffset - (requestedOffset % alignment)
         var skip = Int(requestedOffset - offset)
 
-        do {
-            while result.count < targetLength {
-                try Task.checkCancellation()
-                let chunk = try await fileChunk(for: track, dcID: dcID, offset: offset, limit: chunkSize)
-                dcID = chunk.dcID
-                guard skip < chunk.bytes.count else { throw ServiceError.incompleteDownload }
-                let count = min(targetLength - result.count, chunk.bytes.count - skip)
-                result.append(chunk.bytes.subdata(in: skip..<(skip + count)))
-                offset += Int64(chunk.bytes.count)
-                skip = 0
-                if chunk.bytes.count < Int(chunkSize), result.count < targetLength {
-                    throw ServiceError.incompleteDownload
-                }
+        while result.count < targetLength {
+            try Task.checkCancellation()
+            let chunk = try await fileChunk(for: track, dcID: dcID, offset: offset, limit: chunkSize)
+            dcID = chunk.dcID
+            guard skip < chunk.bytes.count else { throw ServiceError.incompleteDownload }
+            let count = min(targetLength - result.count, chunk.bytes.count - skip)
+            result.append(chunk.bytes.subdata(in: skip..<(skip + count)))
+            offset += Int64(chunk.bytes.count)
+            skip = 0
+            if chunk.bytes.count < Int(chunkSize), result.count < targetLength {
+                throw ServiceError.incompleteDownload
             }
-            return result
-        } catch {
-            throw readableDownloadError(error)
         }
+        return result
+    }
+
+    private func refreshReference(for track: Track, in chat: MusicChat) async throws -> Track? {
+        let title = track.displayTitle.replacingOccurrences(of: "_", with: " ")
+        let fileTitle = track.fileName.deletingPathExtension.replacingOccurrences(of: "_", with: " ")
+        var queries: [String] = []
+        for value in [title, fileTitle] where !value.isEmpty && !queries.contains(value) {
+            queries.append(value)
+        }
+
+        for query in queries {
+            let values = try await searchMusic(in: chat, query: query, limit: 50)
+            if let match = referenceMatch(for: track, in: values) { return match }
+        }
+
+        let nearby = try await searchMusic(
+            in: chat,
+            query: "",
+            offsetID: track.messageID == Int32.max ? track.messageID : track.messageID + 1,
+            limit: 8
+        )
+        return referenceMatch(for: track, in: nearby)
+    }
+
+    private func referenceMatch(for track: Track, in values: [Track]) -> Track? {
+        values.first(where: { $0.messageID == track.messageID })
+            ?? values.first(where: { $0.documentID == track.documentID })
+    }
+
+    private func isExpiredFileReference(_ error: Error) -> Bool {
+        guard let rpc = error as? MTProtoRPCError else { return false }
+        return rpc.message == "FILE_REFERENCE_EXPIRED" || rpc.message == "FILE_REFERENCE_INVALID"
     }
 
     func artwork(for track: Track) async throws -> Data? {
@@ -731,34 +800,105 @@ actor TelegramService {
         limit: Int32
     ) async throws -> (bytes: Data, dcID: Int32) {
         var activeDC = dcID
-        var currentConnection = try await authorizedConnection(dcID: activeDC, media: false)
-        let response: TL.Upload.FileType
-        do {
-            response = try await currentConnection.client.upload.getFile(
-                precise: false,
-                cdnSupported: false,
-                location: location,
-                offset: offset,
-                limit: limit
-            )
-        } catch let error as MTProtoRPCError {
-            guard let migrated = migratedDC(from: error.message) else { throw error }
-            activeDC = migrated
-            currentConnection = try await authorizedConnection(dcID: migrated, media: false)
-            response = try await currentConnection.client.upload.getFile(
-                precise: false,
-                cdnSupported: false,
-                location: location,
-                offset: offset,
-                limit: limit
-            )
+        var attempt = 0
+        var migrationCount = 0
+        var useMediaConnection = false
+        var lastError: Error?
+
+        while attempt < 4 {
+            attempt += 1
+            try Task.checkCancellation()
+            do {
+                let connection = try await authorizedConnection(
+                    dcID: activeDC,
+                    media: useMediaConnection
+                )
+                let response = try await connection.client.upload.getFile(
+                    precise: false,
+                    cdnSupported: false,
+                    location: location,
+                    offset: offset,
+                    limit: limit
+                )
+                switch response {
+                case let .file(value):
+                    if !value.bytes.isEmpty || attempt == 4 {
+                        return (value.bytes, activeDC)
+                    }
+                    lastError = ServiceError.incompleteDownload
+                case .fileCdnRedirect:
+                    throw ServiceError.downloadRedirect
+                }
+            } catch let error as MTProtoRPCError {
+                if let migrated = migratedDC(from: error.message), migrationCount < 2 {
+                    activeDC = migrated
+                    migrationCount += 1
+                    useMediaConnection = false
+                    attempt -= 1
+                    lastError = error
+                    continue
+                }
+                guard (useMediaConnection || isRetryableFileError(error)), attempt < 4 else {
+                    throw error
+                }
+                lastError = error
+            } catch {
+                guard (useMediaConnection || isRetryableFileError(error)), attempt < 4 else {
+                    throw error
+                }
+                lastError = error
+            }
+
+            await invalidateConnection(dcID: activeDC, media: useMediaConnection)
+            if useMediaConnection {
+                useMediaConnection = false
+            } else if attempt >= 2,
+                      activeDC != primaryDC,
+                      hasMediaEndpoint(for: activeDC) {
+                useMediaConnection = true
+            }
+            try await Task.sleep(for: .milliseconds(150 * attempt))
         }
-        switch response {
-        case let .file(value):
-            return (value.bytes, activeDC)
-        case .fileCdnRedirect:
-            throw ServiceError.downloadRedirect
+        throw lastError ?? ServiceError.incompleteDownload
+    }
+
+    private func isRetryableFileError(_ error: Error) -> Bool {
+        if error is CancellationError { return false }
+        if let client = error as? MTProtoClientError {
+            return switch client {
+            case .timeout, .connectionClosed, .notConnected: true
+            case .protocolError, .fatalBadMessage: false
+            }
         }
+        if let rpc = error as? MTProtoRPCError {
+            return [
+                "INTERNAL_SERVER_ERROR",
+                "MSG_WAIT_FAILED",
+                "RPC_CALL_FAIL",
+                "TIMEOUT"
+            ].contains(rpc.message)
+        }
+        if let urlError = error as? URLError {
+            return [
+                .cannotConnectToHost,
+                .networkConnectionLost,
+                .notConnectedToInternet,
+                .timedOut
+            ].contains(urlError.code)
+        }
+        return false
+    }
+
+    private func invalidateConnection(dcID: Int32, media: Bool) async {
+        let key = ConnectionKey(dcID: dcID, media: media)
+        authorizedConnections.remove(key)
+        advanceEndpoint(dcID: dcID, media: media)
+        guard let connection = connections.removeValue(forKey: key) else { return }
+        try? await connection.mtproto.disconnect()
+    }
+
+    private func hasMediaEndpoint(for dcID: Int32) -> Bool {
+        endpoints[dcID]?.contains(where: { $0.mediaOnly }) == true
     }
 
     func logOut() async {
@@ -774,6 +914,7 @@ actor TelegramService {
         }
         connections.removeAll()
         authorizedConnections.removeAll()
+        refreshedTracks.removeAll()
         keychain.clearSessions(accountID: accountID)
         setAuthorizationSaved(false)
         phoneNumber = ""
@@ -788,9 +929,9 @@ actor TelegramService {
         if media, !endpoint.mediaOnly {
             return try await connection(dcID: dcID, media: false)
         }
-        let handshakeID = endpoint.mediaOnly ? -dcID : dcID
+        let sessionStorageID = endpoint.mediaOnly ? -dcID : dcID
         let sessionAccountID = accountID
-        var resumeSession = keychain.loadSession(dcID: handshakeID, accountID: sessionAccountID)
+        var resumeSession = keychain.loadSession(dcID: sessionStorageID, accountID: sessionAccountID)
         var lastError: Error?
 
         while true {
@@ -802,12 +943,16 @@ actor TelegramService {
                     port: endpoint.port,
                     configuration: MTProtoClientConfiguration(
                         rsaPublicKey: rsaKey,
-                        dcID: handshakeID,
+                        dcID: dcID,
                         resumeSession: resumeSession,
                         requestTimeout: .seconds(45),
                         connectTimeout: .seconds(45),
                         onSessionEstablished: {
-                            keys in store.saveSession(keys, dcID: handshakeID, accountID: sessionAccountID)
+                            keys in store.saveSession(
+                                keys,
+                                dcID: sessionStorageID,
+                                accountID: sessionAccountID
+                            )
                         }
                     )
                 )
@@ -826,7 +971,7 @@ actor TelegramService {
             }
 
             guard resumeSession != nil else { break }
-            keychain.deleteSession(dcID: handshakeID, accountID: sessionAccountID)
+            keychain.deleteSession(dcID: sessionStorageID, accountID: sessionAccountID)
             resumeSession = nil
         }
         throw lastError ?? ServiceError.noConnection
@@ -877,9 +1022,17 @@ actor TelegramService {
     }
 
     private func endpoint(for dcID: Int32, media: Bool) -> Endpoint? {
-        if let exact = endpoints[dcID]?.first(where: { $0.mediaOnly == media }) { return exact }
-        if let any = endpoints[dcID]?.first { return any }
-        return Self.seedEndpoints[dcID]
+        let key = ConnectionKey(dcID: dcID, media: media)
+        let exact = endpoints[dcID]?.filter { $0.mediaOnly == media } ?? []
+        let candidates = exact.isEmpty ? (endpoints[dcID] ?? []) : exact
+        guard !candidates.isEmpty else { return Self.seedEndpoints[dcID] }
+        let index = endpointCursors[key, default: 0] % candidates.count
+        return candidates[index]
+    }
+
+    private func advanceEndpoint(dcID: Int32, media: Bool) {
+        let key = ConnectionKey(dcID: dcID, media: media)
+        endpointCursors[key, default: 0] += 1
     }
 
     private func acceptAuthorization(_ authorization: TL.Auth.AuthorizationType) throws {
@@ -1021,7 +1174,7 @@ actor TelegramService {
         if let rpc = error as? MTProtoRPCError {
             switch rpc.message {
             case "FILE_REFERENCE_EXPIRED", "FILE_REFERENCE_INVALID":
-                return ServiceError.telegram("Telegram refreshed this file reference. Refresh the track list and try again.")
+                return ServiceError.expiredFileReference
             case "AUTH_KEY_UNREGISTERED":
                 return ServiceError.telegram("The media session expired. Sign in again to continue playback.")
             case "LOCATION_INVALID":
