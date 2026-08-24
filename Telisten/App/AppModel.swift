@@ -18,6 +18,7 @@ private struct MusicChatIndexEntry: Codable {
 @Observable
 final class AppModel {
     private static let chatMusicPageSize: Int32 = 30
+    private static let cacheLimitDefaultsKey = "offlineCache.limitBytes"
 
     var phase: ConnectionPhase = .connecting
     var hasCredentials = false
@@ -58,6 +59,7 @@ final class AppModel {
     var playbackMode: PlaybackMode = .order
     var showNowPlaying = false
     var cacheBytes: Int64 = 0
+    var cacheLimitBytes: Int64
     var isDeletingPlaylist = false
     var deletingPlaylistTrackIDs: Set<String> = []
     var renamingPlaylistIDs: Set<String> = []
@@ -74,6 +76,7 @@ final class AppModel {
     @ObservationIgnored private let telegram: TelegramService
     @ObservationIgnored private let lyrics: LyricsService
     @ObservationIgnored private var downloadTasks: [String: Task<URL, Error>] = [:]
+    @ObservationIgnored private var activeTransfers: [String: ProgressiveAudioTransfer] = [:]
     @ObservationIgnored private var artworkLoading: Set<String> = []
     @ObservationIgnored private var artworkResolved: Set<String> = []
     @ObservationIgnored private var avatarLoading: Set<String> = []
@@ -92,9 +95,15 @@ final class AppModel {
     @ObservationIgnored private var previousAccountID: String?
 
     init() {
+        let defaults = UserDefaults.standard
+        let storedCacheLimit = defaults.object(forKey: Self.cacheLimitDefaultsKey) == nil
+            ? CacheLimits.defaultValue
+            : Int64(defaults.integer(forKey: Self.cacheLimitDefaultsKey))
+        let cacheLimit = min(max(storedCacheLimit, CacheLimits.minimum), CacheLimits.maximum)
         let keychain = KeychainStore()
+        cacheLimitBytes = cacheLimit
         self.keychain = keychain
-        cache = CacheStore()
+        cache = CacheStore(limit: cacheLimit)
         artworkStore = ArtworkStore()
         chatAvatarStore = ChatAvatarStore()
         telegram = TelegramService(keychain: keychain)
@@ -108,14 +117,13 @@ final class AppModel {
     }
 
     func start() async {
+        await refreshCacheUsage()
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--demo") {
             await loadDemo()
             return
         }
         #endif
-        cachedIDs = await cache.cachedTrackIDs()
-        cacheBytes = await cache.totalBytes()
         do {
             let credentials = try TelegramCredentials.appCredentials()
             try await telegram.configure(credentials)
@@ -862,6 +870,23 @@ final class AppModel {
         }
     }
 
+    func refreshCacheUsage() async {
+        cachedIDs = await cache.cachedTrackIDs()
+        cacheBytes = await cache.totalBytes()
+    }
+
+    func setCacheLimit(_ bytes: Int64) {
+        let value = min(max(bytes, CacheLimits.minimum), CacheLimits.maximum)
+        guard cacheLimitBytes != value else { return }
+        cacheLimitBytes = value
+        UserDefaults.standard.set(value, forKey: Self.cacheLimitDefaultsKey)
+        let activeTrackIDs = Set(activeTransfers.keys)
+        Task {
+            await cache.setLimit(value, preserving: activeTrackIDs)
+            await refreshCacheUsage()
+        }
+    }
+
     func removeDownload(_ track: Track) {
         Task {
             do {
@@ -949,9 +974,20 @@ final class AppModel {
             player.load(track, from: url)
         } else {
             guard player.track?.id == track.id else { return }
-            let telegram = telegram
+            let transfer = await progressiveTransfer(for: track)
             player.loadStreaming(track) { offset, length in
-                try await telegram.stream(track, offset: offset, length: length)
+                try await transfer.bytes(at: offset, length: length)
+            }
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    _ = try await self.cachedFile(for: track)
+                } catch is CancellationError {
+                    return
+                } catch {
+                    guard self.player.track?.id == track.id else { return }
+                    self.errorMessage = UserFacingError.message(for: error)
+                }
             }
         }
         await loadLyrics(for: track)
@@ -966,29 +1002,51 @@ final class AppModel {
         if let existing = downloadTasks[track.id] { return try await existing.value }
         knownTracks[track.id] = track
         persistLibrary()
-        let telegram = telegram
         let cache = cache
+        let transfer = await progressiveTransfer(for: track)
         let task = Task<URL, Error> {
-            let temporary = await cache.temporaryURL(for: track)
-            do {
-                try await telegram.download(track, to: temporary) { [weak self] value in
-                    await MainActor.run {
-                        self?.downloads[track.id] = DownloadStatus(progress: value, isCached: false)
-                    }
+            let temporary = await cache.partialLocation(for: track).dataURL
+            try await transfer.downloadAll { [weak self] value in
+                let bytes = await cache.totalBytes()
+                await MainActor.run {
+                    self?.downloads[track.id] = DownloadStatus(progress: value, isCached: false)
+                    self?.cacheBytes = bytes
                 }
-                return try await cache.commit(temporary, track: track)
-            } catch {
-                try? FileManager.default.removeItem(at: temporary)
-                throw error
             }
+            let destination = try await cache.commit(temporary, track: track)
+            await transfer.didCommit(to: destination)
+            return destination
         }
         downloadTasks[track.id] = task
-        defer { downloadTasks.removeValue(forKey: track.id) }
-        let url = try await task.value
-        cachedIDs.insert(track.id)
-        downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
-        cacheBytes = await cache.totalBytes()
-        return url
+        defer {
+            downloadTasks.removeValue(forKey: track.id)
+            activeTransfers.removeValue(forKey: track.id)
+        }
+        do {
+            let url = try await task.value
+            cachedIDs.insert(track.id)
+            downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
+            cacheBytes = await cache.totalBytes()
+            return url
+        } catch {
+            cacheBytes = await cache.totalBytes()
+            throw error
+        }
+    }
+
+    private func progressiveTransfer(for track: Track) async -> ProgressiveAudioTransfer {
+        if let transfer = activeTransfers[track.id] { return transfer }
+        let location = await cache.partialLocation(for: track)
+        let telegram = telegram
+        let transfer = ProgressiveAudioTransfer(
+            trackID: track.id,
+            fileSize: track.size,
+            location: location
+        ) { offset, length in
+            try await telegram.stream(track, offset: offset, length: length)
+        }
+        activeTransfers[track.id] = transfer
+        return transfer
     }
 
     private func finishLogin() async throws {
@@ -1155,6 +1213,8 @@ final class AppModel {
     private func beginMusicChatIndexing() {
         musicChatIndexTask?.cancel()
         musicChatIndexTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
             await self?.refreshMusicChatIndex()
         }
     }
@@ -1189,12 +1249,20 @@ final class AppModel {
                 applyMusicChatIndex()
             } catch {
                 // Keep stale cache entries when a chat cannot be queried temporarily.
-                if String(describing: error).localizedCaseInsensitiveContains("FLOOD_WAIT") {
+                if isTelegramRateLimit(error) {
                     return
                 }
             }
-            try? await Task.sleep(for: .milliseconds(350))
+            try? await Task.sleep(for: .seconds(1))
         }
+    }
+
+    private func isTelegramRateLimit(_ error: Error) -> Bool {
+        let message = String(describing: error)
+        return message.localizedCaseInsensitiveContains("FLOOD_WAIT")
+            || message.localizedCaseInsensitiveContains("too many attempts")
+            || message.localizedCaseInsensitiveContains("asked you to wait")
+            || message.localizedCaseInsensitiveContains("temporarily limited")
     }
 
     private func rememberMusic(in chat: MusicChat) {
@@ -1298,6 +1366,9 @@ final class AppModel {
         player.preview(sampleTracks[0], at: 48)
 
         let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--demo-partial-cache") {
+            await seedDemoPartialCache(for: sampleTracks[0])
+        }
         if arguments.contains("--demo-chat") {
             selected = .chat(source.id)
             selectedChat = source
@@ -1317,6 +1388,19 @@ final class AppModel {
             showNowPlaying = true
         }
         await loadLyrics(for: sampleTracks[0])
+    }
+
+    private func seedDemoPartialCache(for track: Track) async {
+        let location = await cache.partialLocation(for: track)
+        let transfer = ProgressiveAudioTransfer(
+            trackID: track.id,
+            fileSize: track.size,
+            location: location
+        ) { _, length in
+            Data(repeating: 0x54, count: Int(length))
+        }
+        _ = try? await transfer.bytes(at: 0, length: 512 * 1_024)
+        await refreshCacheUsage()
     }
     #endif
 

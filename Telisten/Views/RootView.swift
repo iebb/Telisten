@@ -33,7 +33,7 @@ struct RootView: View {
 private struct LaunchView: View {
     var body: some View {
         VStack(spacing: 18) {
-            ArtworkTile(symbol: "waveform", size: 78)
+            ApplicationIconView(size: 78, cornerRadius: 18)
             ProgressView()
                 .controlSize(.small)
         }

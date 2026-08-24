@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct LoginView: View {
     @Bindable var model: AppModel
@@ -42,9 +47,7 @@ struct LoginView: View {
 
     private var brand: some View {
         HStack(spacing: 9) {
-            Image(systemName: "waveform")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.telistenAccent)
+            ApplicationIconView(size: 26, cornerRadius: 6)
             Text("MUSIC PLAYER")
                 .font(.caption.weight(.bold))
                 .tracking(2.2)
@@ -251,4 +254,31 @@ struct LoginView: View {
         .disabled(disabled || model.isLoading)
     }
 
+}
+
+struct ApplicationIconView: View {
+    let size: CGFloat
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        applicationIcon
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+
+    private var applicationIcon: Image {
+        #if os(iOS)
+        let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
+        let primaryIcon = icons?["CFBundlePrimaryIcon"] as? [String: Any]
+        let iconName = (primaryIcon?["CFBundleIconFiles"] as? [String])?.last ?? "Appicon60x60"
+        if let image = UIImage(named: iconName) {
+            return Image(uiImage: image)
+        }
+        return Image("Appicon")
+        #elseif os(macOS)
+        return Image(nsImage: NSApplication.shared.applicationIconImage)
+        #endif
+    }
 }

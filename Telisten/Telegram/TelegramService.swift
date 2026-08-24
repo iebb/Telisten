@@ -2,6 +2,29 @@ import Foundation
 import MTProtoClientKit
 import NIOMTProtoEncryption
 
+private actor FileRequestGate {
+    private var isBusy = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func enter() async {
+        guard isBusy else {
+            isBusy = true
+            return
+        }
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func leave() {
+        if waiters.isEmpty {
+            isBusy = false
+        } else {
+            waiters.removeFirst().resume()
+        }
+    }
+}
+
 actor TelegramService {
     enum RequestCodeResult: Sendable {
         case code(hint: String, isEmail: Bool)
@@ -99,6 +122,7 @@ actor TelegramService {
     ]
 
     private let keychain: KeychainStore
+    private let fileRequestGate = FileRequestGate()
     private var credentials: TelegramCredentials?
     private var accountID: String
     private var primaryDC: Int32
@@ -665,8 +689,31 @@ actor TelegramService {
         offset: Int64,
         limit: Int32
     ) async throws -> (bytes: Data, dcID: Int32) {
+        await fileRequestGate.enter()
+        do {
+            try Task.checkCancellation()
+            let value = try await performFileRequest(
+                at: location,
+                dcID: dcID,
+                offset: offset,
+                limit: limit
+            )
+            await fileRequestGate.leave()
+            return value
+        } catch {
+            await fileRequestGate.leave()
+            throw error
+        }
+    }
+
+    private func performFileRequest(
+        at location: TL.InputFileLocationType,
+        dcID: Int32,
+        offset: Int64,
+        limit: Int32
+    ) async throws -> (bytes: Data, dcID: Int32) {
         var activeDC = dcID
-        var currentConnection = try await authorizedConnection(dcID: activeDC, media: false)
+        var currentConnection = try await authorizedConnection(dcID: activeDC, media: true)
         let response: TL.Upload.FileType
         do {
             response = try await currentConnection.client.upload.getFile(
@@ -679,7 +726,7 @@ actor TelegramService {
         } catch let error as MTProtoRPCError {
             guard let migrated = migratedDC(from: error.message) else { throw error }
             activeDC = migrated
-            currentConnection = try await authorizedConnection(dcID: migrated, media: false)
+            currentConnection = try await authorizedConnection(dcID: migrated, media: true)
             response = try await currentConnection.client.upload.getFile(
                 precise: false,
                 cdnSupported: false,
