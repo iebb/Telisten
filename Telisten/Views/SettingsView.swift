@@ -8,8 +8,8 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Library") {
-                    Toggle("Show chats", isOn: $model.showChats)
-                    Text("Playlists, favorites, and downloads remain visible when chats are hidden.")
+                    Toggle("Show music sources", isOn: $model.showChats)
+                    Text("Playlists, favorites, and downloads remain visible when music sources are hidden.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

@@ -1,1 +1,1 @@
-Stream tracks from your Telegram chats, save them for offline listening, build playlists by forwarding, and follow timed lyrics in one compact native player.
+Stream your Telegram music, keep tracks offline, build private playlists, and follow synchronized lyrics in one compact native player.

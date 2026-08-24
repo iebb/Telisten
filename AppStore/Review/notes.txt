@@ -1,18 +1,18 @@
-Telisten is a focused Telegram user client for music. It connects directly from the device to Telegram with MTProto and does not use TDLib, a bot, a proxy, or a developer-operated backend.
+Telisten is a focused music player for audio available in the user's Telegram account. It connects directly from the device to Telegram with MTProto and does not use TDLib, a bot, a proxy, or a developer-operated backend.
 
-Use the Telegram account supplied in App Review Sign-In Information. Telisten supports codes delivered by Telegram or email and Telegram two-step verification. After login, the library intentionally opens with no chat selected.
+Telisten does not expose a general messaging interface. It extracts compatible audio documents for playback and ignores text, photos, video, and other message types. It does not send Telegram read-history calls, so browsing or playing music does not mark conversations as read.
+
+Use the Telegram account supplied in App Review Sign-In Information. Telisten supports codes delivered by Telegram or email and Telegram two-step verification. After login, the library intentionally opens without selecting a source.
 
 Review path:
-1. Choose a music chat or Search All Music.
-2. Tap an audio row. The player appears immediately while the first bytes stream.
-3. Tap the compact player to open Now Playing and view timed lyrics, comments, and Up Next.
-4. Add to playlist. Telisten creates or reuses a private Telegram channel in the _Playlist folder and forwards the original audio message.
-5. A vote is a Telegram thumbs-up reaction. A comment is a Telegram reply.
-
-The app does not mark messages or chats as read. It reads message history/search results and fetches audio without sending Telegram read-history calls.
+1. Choose Search All Music and search for a track.
+2. Select an audio result. The player appears immediately while the first bytes stream.
+3. Open the compact player to see playback controls, synchronized lyrics, and Up Next.
+4. Save the track to a playlist. Telisten creates or reuses private Telegram storage and forwards the original audio document.
+5. Open Downloads to confirm the cached track and cache usage.
 
 External services:
-• Telegram data centers: account authentication, chats, messages, media, reactions, replies, and playlist channels.
+• Telegram data centers: account authentication, music search, audio streaming and downloads, and private playlist storage.
 • lrclib.net: lyrics matching using track title, artist, and duration.
 
 The Debug-only --demo launch argument is not available in the submitted Release build.

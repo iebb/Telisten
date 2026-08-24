@@ -3,7 +3,6 @@ import SwiftUI
 struct NowPlayingView: View {
     private enum Section: String, CaseIterable, Identifiable {
         case lyrics = "Lyrics"
-        case comments = "Comments"
         case queue = "Up Next"
         var id: Self { self }
     }
@@ -25,12 +24,12 @@ struct NowPlayingView: View {
                         ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
                     }
                     .pickerStyle(.segmented)
+                    .labelsHidden()
                     .padding(.horizontal, 22)
 
                     Group {
                         switch section {
                         case .lyrics: LyricsPanel(model: model)
-                        case .comments: CommentsPanel(model: model)
                         case .queue: queue
                         }
                     }
@@ -47,22 +46,13 @@ struct NowPlayingView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                #if os(iOS)
-                ToolbarItem(placement: .topBarLeading) {
-                    voteAction
-                }
-                #else
-                ToolbarItem(placement: .navigation) {
-                    voteAction
-                }
-                #endif
                 ToolbarItem(placement: .primaryAction) {
                     if let track = model.player.track {
                         Button("Save to playlist", systemImage: "text.badge.plus") {
                             model.openPlaylistPicker(for: track)
                         }
                         .labelStyle(.iconOnly)
-                        .accessibilityHint("Forwards this track to a playlist chat")
+                        .accessibilityHint("Saves this track to a private playlist")
                     }
                 }
             }
@@ -79,9 +69,7 @@ struct NowPlayingView: View {
         }
         .task(id: model.player.track?.id) {
             guard let track = model.player.track else { return }
-            async let lyrics: Void = model.loadLyrics(for: track)
-            async let comments: Void = model.loadComments(for: track)
-            _ = await (lyrics, comments)
+            await model.loadLyrics(for: track)
         }
     }
 
@@ -247,27 +235,6 @@ struct NowPlayingView: View {
         .accessibilityValue(model.playbackMode.title)
     }
 
-    @ViewBuilder
-    private var voteAction: some View {
-        if let track = model.player.track, !model.isPlaylistTrack(track) {
-            let vote = model.voteState(for: track)
-            Button {
-                model.upvote(track)
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: vote.chosen ? "hand.thumbsup.fill" : "hand.thumbsup")
-                    Text("\(vote.count)")
-                        .monospacedDigit()
-                }
-                .font(.callout.weight(.semibold))
-            }
-            .tint(.telistenAccent)
-            .disabled(vote.chosen || vote.isSending)
-            .accessibilityLabel(vote.chosen ? "Upvoted" : "Upvote")
-            .accessibilityValue("\(vote.count) votes")
-        }
-    }
-
     private var queue: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
@@ -299,126 +266,6 @@ struct NowPlayingView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .padding(.horizontal, 18)
         .padding(.bottom, 18)
-    }
-}
-
-private struct CommentsPanel: View {
-    @Bindable var model: AppModel
-    @State private var draft = ""
-
-    var body: some View {
-        VStack(spacing: 0) {
-            comments
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            Divider()
-            HStack(alignment: .bottom, spacing: 10) {
-                TextField("Add a comment", text: $draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...3)
-                    .submitLabel(.send)
-                    .onSubmit(send)
-
-                if model.isSendingComment {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(width: 28, height: 28)
-                } else {
-                    Button(action: send) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.title2)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Color.telistenAccent)
-                    .accessibilityLabel("Send comment")
-                    .disabled(cleanDraft.isEmpty || model.player.track == nil)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-        }
-        .padding(.horizontal, 18)
-        .padding(.bottom, 18)
-    }
-
-    @ViewBuilder
-    private var comments: some View {
-        Group {
-            switch model.commentsState {
-            case .idle, .loading:
-                VStack(spacing: 12) {
-                    ProgressView()
-                    Text("Loading replies…")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            case let .loaded(comments) where comments.isEmpty:
-                ContentUnavailableView(
-                    "No comments yet",
-                    systemImage: "bubble.left.and.bubble.right",
-                    description: Text("Replies to this Telegram audio will appear here.")
-                )
-            case let .loaded(comments):
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(comments) { comment in
-                            HStack(alignment: .top, spacing: 12) {
-                                Text(initials(for: comment.author))
-                                    .font(.caption2.bold())
-                                    .foregroundStyle(.white)
-                                    .frame(width: 34, height: 34)
-                                    .background(Color.telistenAccent.gradient, in: Circle())
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(alignment: .firstTextBaseline) {
-                                        Text(comment.author)
-                                            .font(.subheadline.weight(.semibold))
-                                            .lineLimit(1)
-                                        Spacer()
-                                        Text(comment.date, style: .relative)
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                    Text(comment.text)
-                                        .font(.body)
-                                        .textSelection(.enabled)
-                                }
-                            }
-                            .padding(.vertical, 12)
-                            if comment.id != comments.last?.id {
-                                Divider().padding(.leading, 46)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                }
-            case let .failed(message):
-                ContentUnavailableView(
-                    "Comments unavailable",
-                    systemImage: "bubble.left.and.exclamationmark.bubble.right",
-                    description: Text(message)
-                )
-            }
-        }
-    }
-
-    private var cleanDraft: String {
-        draft.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func send() {
-        guard let track = model.player.track, !cleanDraft.isEmpty else { return }
-        let submitted = cleanDraft
-        Task {
-            if await model.addComment(submitted, to: track) {
-                draft = ""
-            }
-        }
-    }
-
-    private func initials(for author: String) -> String {
-        let parts = author.split(separator: " ").prefix(2)
-        let value = parts.compactMap(\.first).map(String.init).joined()
-        return value.isEmpty ? "?" : value.uppercased()
     }
 }
 

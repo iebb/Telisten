@@ -108,7 +108,7 @@ struct LibraryView: View {
                 }
             }
             if model.showChats {
-                Section("All Chats") {
+                Section("Music Sources") {
                     ForEach(nonPlaylistChats) { chat in
                         HStack(spacing: 9) {
                             ChatAvatar(model: model, chat: chat, size: 26)
@@ -130,7 +130,7 @@ struct LibraryView: View {
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 14)
-                                    .accessibilityLabel("Pinned chat")
+                                    .accessibilityLabel("Pinned music source")
                             }
                         }
                         .tag(SidebarSelection.chat(chat.id))
@@ -138,12 +138,12 @@ struct LibraryView: View {
                     if model.isIndexingChats {
                         HStack(spacing: 10) {
                             ProgressView().controlSize(.small)
-                            Text("Finding chats with music…")
+                            Text("Finding music sources…")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     } else if nonPlaylistChats.isEmpty {
-                        Text("No chats with music found")
+                        Text("No music sources found")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -286,7 +286,7 @@ struct LibraryView: View {
         #endif
         .searchable(
             text: $model.searchText,
-            prompt: model.isGlobalSearch ? "Song, artist, or album across every chat" : "Search music in this chat"
+            prompt: model.isGlobalSearch ? "Song, artist, or album" : "Search music here"
         )
         .onSubmit(of: .search) { Task { await model.search() } }
         .onChange(of: model.selectedChat?.id) { _, _ in
@@ -434,11 +434,11 @@ struct LibraryView: View {
 
     private var emptyTitle: String {
         switch model.selected {
-        case .globalSearch: "Search every chat"
+        case .globalSearch: "Search all music"
         case .favorites: "No favorites yet"
         case .downloads: "Nothing downloaded"
         case .chat: "No music found"
-        case nil: "Choose a chat"
+        case nil: "Choose music"
         }
     }
 
@@ -453,11 +453,11 @@ struct LibraryView: View {
 
     private var emptyDescription: String {
         switch model.selected {
-        case .globalSearch: "Find songs, artists, or albums across all of your Telegram chats."
+        case .globalSearch: "Find songs, artists, or albums across your Telegram music."
         case .favorites: "Tap the heart beside a track to keep it here."
         case .downloads: "Downloaded music remains available offline."
-        case .chat: "Try another search or choose a different chat."
-        case nil: "Pick any Telegram chat from the sidebar."
+        case .chat: "Try another search or choose a different music source."
+        case nil: "Pick a playlist, favorite, download, or music source from the sidebar."
         }
     }
 }

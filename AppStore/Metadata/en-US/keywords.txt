@@ -1,1 +1,1 @@
-music,player,audio,streaming,offline,lyrics,playlist,downloads,mtproto,chats
+music,player,audio,streaming,offline,lyrics,playlist,downloads,telegram,album

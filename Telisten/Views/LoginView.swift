@@ -66,7 +66,7 @@ struct LoginView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Your chats,\nyour music.")
+            Text("Your music,\neverywhere.")
                 .font(.system(size: 46, weight: .bold, design: .rounded))
                 .tracking(-1.5)
                 .minimumScaleFactor(0.8)

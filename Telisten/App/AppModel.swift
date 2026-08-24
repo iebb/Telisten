@@ -63,7 +63,7 @@ final class AppModel {
     var isDeletingPlaylist = false
     var deletingPlaylistTrackIDs: Set<String> = []
     var renamingPlaylistIDs: Set<String> = []
-    var showChats = true {
+    var showChats = false {
         didSet { UserDefaults.standard.set(showChats, forKey: "library.showChats") }
     }
 
@@ -503,7 +503,7 @@ final class AppModel {
             #endif
             guard let chat = allChats.first(where: { $0.id == track.chatID }) else {
                 voteStates[track.id] = previous
-                errorMessage = "The source chat is no longer available."
+                errorMessage = "The music source is no longer available."
                 return
             }
             do {
@@ -528,7 +528,7 @@ final class AppModel {
         if isDemo { return true }
         #endif
         guard let source = allChats.first(where: { $0.id == track.chatID }) else {
-            errorMessage = "The source chat is no longer available."
+            errorMessage = "The music source is no longer available."
             return false
         }
         do {
@@ -562,7 +562,7 @@ final class AppModel {
         }
         #endif
         guard let source = allChats.first(where: { $0.id == track.chatID }) else {
-            errorMessage = "The source chat is no longer available."
+            errorMessage = "The music source is no longer available."
             return false
         }
         do {
@@ -726,7 +726,7 @@ final class AppModel {
         }
         #endif
         guard let chat = allChats.first(where: { $0.id == track.chatID }) else {
-            commentsState = .failed("The source chat is no longer available.")
+            commentsState = .failed("The music source is no longer available.")
             return
         }
         do {
@@ -764,7 +764,7 @@ final class AppModel {
         #endif
 
         guard let chat = allChats.first(where: { $0.id == track.chatID }) else {
-            errorMessage = "The source chat is no longer available."
+            errorMessage = "The music source is no longer available."
             return false
         }
         do {
