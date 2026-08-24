@@ -4,6 +4,7 @@ struct LibraryView: View {
     @Bindable var model: AppModel
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showSettings = false
+    @State private var showSettingsAfterPlayerDismissal = false
     @State private var showDeletePlaylistConfirmation = false
     @State private var isEditingPlaylist = false
     @State private var playlistTitleDraft = ""
@@ -26,7 +27,7 @@ struct LibraryView: View {
                     PlayerBar(model: model, bottomSafeArea: geometry.safeAreaInsets.bottom)
                 }
             }
-            .sheet(isPresented: $model.showNowPlaying) {
+            .sheet(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {
                 #if os(iOS)
                 NowPlayingView(model: model, presentationDetent: $nowPlayingDetent)
                     .presentationDetents([.medium, .large], selection: $nowPlayingDetent)
@@ -66,6 +67,22 @@ struct LibraryView: View {
             }
             #endif
         }
+    }
+
+    private func openSettings() {
+        guard model.showNowPlaying else {
+            showSettings = true
+            return
+        }
+
+        showSettingsAfterPlayerDismissal = true
+        model.showNowPlaying = false
+    }
+
+    private func presentPendingSettings() {
+        guard showSettingsAfterPlayerDismissal else { return }
+        showSettingsAfterPlayerDismissal = false
+        showSettings = true
     }
 
     private var sidebar: some View {
@@ -138,7 +155,7 @@ struct LibraryView: View {
             ToolbarItem(placement: .navigation) { accountMenu }
             #endif
             ToolbarItem(placement: .primaryAction) {
-                Button("Settings", systemImage: "gearshape") { showSettings = true }
+                Button("Settings", systemImage: "gearshape", action: openSettings)
             }
         }
         .onChange(of: model.selected) { _, value in

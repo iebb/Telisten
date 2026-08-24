@@ -36,8 +36,8 @@ struct NowPlayingView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    Spacer(minLength: 0)
                     mediumLyrics
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
             }
             .padding(.top, 4)
@@ -99,7 +99,10 @@ struct NowPlayingView: View {
             VStack(spacing: 2) {
                 ForEach(Array(lyricWindow.enumerated()), id: \.offset) { index, line in
                     Text(line)
-                        .font(index == 1 ? .title3.weight(.semibold) : .body)
+                        .font(.system(
+                            size: index == 1 ? 23 : 20,
+                            weight: index == 1 ? .semibold : .regular
+                        ))
                         .foregroundStyle(index == 1 ? .primary : .secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.68)
@@ -108,7 +111,6 @@ struct NowPlayingView: View {
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 8)
             .animation(.easeInOut(duration: 0.2), value: lyricWindow)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Current lyrics")
