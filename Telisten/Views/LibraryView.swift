@@ -245,6 +245,7 @@ struct LibraryView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(usesCompactBackButton)
+        .simultaneousGesture(chatDetailBackGesture)
         #endif
         .searchable(
             text: $model.searchText,
@@ -294,12 +295,7 @@ struct LibraryView: View {
             #if os(iOS)
             ToolbarItem(placement: .topBarLeading) {
                 if usesCompactBackButton {
-                    Button {
-                        withAnimation {
-                            model.selected = nil
-                            columnVisibility = .all
-                        }
-                    } label: {
+                    Button(action: returnToLibrary) {
                         Label("Library", systemImage: "chevron.left")
                     }
                 }
@@ -359,6 +355,33 @@ struct LibraryView: View {
     #if os(iOS)
     private var usesCompactBackButton: Bool {
         horizontalSizeClass == .compact && model.selected != nil
+    }
+
+    private var canSwipeBackFromChat: Bool {
+        guard horizontalSizeClass == .compact else { return false }
+        if case .chat = model.selected { return true }
+        return false
+    }
+
+    private var chatDetailBackGesture: some Gesture {
+        DragGesture(minimumDistance: 16, coordinateSpace: .local)
+            .onEnded { value in
+                guard canSwipeBackFromChat,
+                      value.startLocation.x <= 28,
+                      value.translation.width > 64,
+                      value.translation.width > abs(value.translation.height) * 1.25 else { return }
+                returnToLibrary()
+            }
+    }
+
+    private func returnToLibrary() {
+        if isEditingPlaylist {
+            isEditingPlaylist = false
+        }
+        withAnimation(.easeOut(duration: 0.2)) {
+            model.selected = nil
+            columnVisibility = .all
+        }
     }
     #endif
 

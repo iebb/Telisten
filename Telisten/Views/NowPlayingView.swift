@@ -334,6 +334,7 @@ private struct CommentsPanel: View {
 
 private struct LyricsPanel: View {
     @Bindable var model: AppModel
+    @State private var isShowingMatchChooser = false
 
     var body: some View {
         Group {
@@ -371,27 +372,17 @@ private struct LyricsPanel: View {
     }
 
     private func lyricsChooser(selected: TrackLyrics) -> some View {
-        Menu {
-            ForEach(model.lyricsCandidates, id: \.matchKey) { candidate in
-                Button {
-                    model.selectLyrics(candidate)
-                } label: {
-                    Label(
-                        candidateMenuTitle(candidate),
-                        systemImage: candidate.matchKey == selected.matchKey
-                            ? "checkmark"
-                            : (candidate.isSynced ? "clock" : "text.alignleft")
-                    )
-                }
-            }
+        Button {
+            isShowingMatchChooser = true
         } label: {
             HStack(spacing: 9) {
                 Image(systemName: selected.isSynced ? "clock" : "text.alignleft")
                     .foregroundStyle(Color.telistenAccent)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(selected.isSynced ? "Timed lyrics" : "Plain lyrics")
+                    Text(candidateTitle(selected))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
                     Text(candidateDetail(selected))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -410,22 +401,72 @@ private struct LyricsPanel: View {
             .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
+        .sheet(isPresented: $isShowingMatchChooser) {
+            lyricsMatchSheet(selected: selected)
+                #if os(iOS)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                #endif
+        }
         .accessibilityLabel("Lyrics match")
         .accessibilityValue("\(selected.isSynced ? "Timed" : "Plain"), \(candidateDetail(selected))")
         .accessibilityHint("Choose another lyrics match")
     }
 
-    private func candidateMenuTitle(_ candidate: TrackLyrics) -> String {
-        let kind = candidate.isSynced ? "Timed" : "Plain"
+    private func lyricsMatchSheet(selected: TrackLyrics) -> some View {
+        NavigationStack {
+            List(model.lyricsCandidates, id: \.matchKey) { candidate in
+                Button {
+                    model.selectLyrics(candidate)
+                    isShowingMatchChooser = false
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: candidate.isSynced ? "clock" : "text.alignleft")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(Color.telistenAccent)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(candidateTitle(candidate))
+                                .font(.body)
+                                .foregroundStyle(.primary)
+                                .lineLimit(2)
+                            Text(candidateDetail(candidate))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        if candidate.matchKey == selected.matchKey {
+                            Image(systemName: "checkmark")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.telistenAccent)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .listStyle(.plain)
+            .navigationTitle("Lyrics")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { isShowingMatchChooser = false }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func candidateTitle(_ candidate: TrackLyrics) -> String {
         let title = candidate.matchedTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
         let artist = candidate.matchedArtist?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let duration = candidate.matchedDuration.map(DisplayFormat.duration) ?? "Unknown length"
         let identity = [title, artist]
             .compactMap { value in value?.isEmpty == false ? value : nil }
             .joined(separator: " — ")
-        return identity.isEmpty
-            ? "\(kind) · \(duration)"
-            : "\(kind) · \(identity) · \(duration)"
+        return identity.isEmpty ? candidate.source : identity
     }
 
     private func candidateDetail(_ candidate: TrackLyrics) -> String {
