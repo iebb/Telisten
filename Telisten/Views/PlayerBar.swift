@@ -6,11 +6,11 @@ struct PlayerBar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProgressView(value: model.player.currentTime, total: max(model.player.duration, 1))
-                .progressViewStyle(.linear)
-                .tint(.telistenAccent)
-                .contentShape(Rectangle())
-                .onTapGesture { model.showNowPlaying = true }
+            CompactSeekBar(
+                currentTime: model.player.currentTime,
+                duration: model.player.duration,
+                onSeek: model.player.seek
+            )
             HStack(spacing: 10) {
                 if let track = model.player.track {
                     Button {
@@ -66,7 +66,6 @@ struct PlayerBar: View {
             .padding(.vertical, 7)
         }
         .background(.regularMaterial)
-        .overlay(alignment: .top) { Divider() }
         .overlay(alignment: .bottom) {
             if let lyricPreview, bottomSafeArea > 0 {
                 VStack(alignment: .center, spacing: 0) {
@@ -118,5 +117,81 @@ struct PlayerBar: View {
             let lineIndex = index + offset
             return lines.indices.contains(lineIndex) ? lines[lineIndex].text : " "
         }
+    }
+}
+
+private struct CompactSeekBar: View {
+    let currentTime: TimeInterval
+    let duration: TimeInterval
+    let onSeek: (TimeInterval) -> Void
+
+    @State private var scrubFraction: CGFloat?
+
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let fraction = scrubFraction ?? playbackFraction
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.secondary.opacity(0.22))
+                    .frame(height: 3)
+
+                Capsule()
+                    .fill(Color.telistenAccent)
+                    .frame(width: width * fraction, height: 3)
+
+                if scrubFraction != nil {
+                    Circle()
+                        .fill(Color.telistenAccent)
+                        .frame(width: 10, height: 10)
+                        .shadow(color: .black.opacity(0.16), radius: 2, y: 1)
+                        .offset(x: min(max(width * fraction - 5, 0), max(width - 10, 0)))
+                }
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle().inset(by: -6))
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        guard canSeek, width > 0 else { return }
+                        scrubFraction = min(max(value.location.x / width, 0), 1)
+                    }
+                    .onEnded { value in
+                        guard canSeek, width > 0 else {
+                            scrubFraction = nil
+                            return
+                        }
+                        let fraction = min(max(value.location.x / width, 0), 1)
+                        onSeek(duration * fraction)
+                        scrubFraction = nil
+                    }
+            )
+        }
+        .frame(height: 3)
+        .accessibilityElement()
+        .accessibilityLabel("Playback position")
+        .accessibilityValue("\(DisplayFormat.duration(currentTime)) of \(DisplayFormat.duration(duration))")
+        .accessibilityAdjustableAction { direction in
+            guard canSeek else { return }
+            let step = max(duration * 0.05, 10)
+            switch direction {
+            case .increment:
+                onSeek(min(currentTime + step, duration))
+            case .decrement:
+                onSeek(max(currentTime - step, 0))
+            @unknown default:
+                break
+            }
+        }
+    }
+
+    private var canSeek: Bool {
+        duration.isFinite && duration > 0
+    }
+
+    private var playbackFraction: CGFloat {
+        guard canSeek else { return 0 }
+        return min(max(currentTime / duration, 0), 1)
     }
 }
