@@ -731,7 +731,7 @@ actor TelegramService {
         limit: Int32
     ) async throws -> (bytes: Data, dcID: Int32) {
         var activeDC = dcID
-        var currentConnection = try await authorizedConnection(dcID: activeDC, media: true)
+        var currentConnection = try await authorizedConnection(dcID: activeDC, media: false)
         let response: TL.Upload.FileType
         do {
             response = try await currentConnection.client.upload.getFile(
@@ -744,7 +744,7 @@ actor TelegramService {
         } catch let error as MTProtoRPCError {
             guard let migrated = migratedDC(from: error.message) else { throw error }
             activeDC = migrated
-            currentConnection = try await authorizedConnection(dcID: migrated, media: true)
+            currentConnection = try await authorizedConnection(dcID: migrated, media: false)
             response = try await currentConnection.client.upload.getFile(
                 precise: false,
                 cdnSupported: false,

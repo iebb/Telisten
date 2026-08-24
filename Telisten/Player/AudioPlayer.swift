@@ -30,7 +30,6 @@ final class AudioPlayer {
     }
 
     var onFinished: (@MainActor @Sendable () -> Void)?
-    var onReady: (@MainActor @Sendable (Track) -> Void)?
     var onNext: (@MainActor @Sendable () -> Void)?
     var onPrevious: (@MainActor @Sendable () -> Void)?
     var onError: (@MainActor @Sendable (String) -> Void)?
@@ -122,7 +121,6 @@ final class AudioPlayer {
                         self.isPlaying = true
                     }
                     self.updateNowPlaying()
-                    self.onReady?(track)
                 case .failed:
                     let reason = item.error?.localizedDescription ?? "The audio format is not supported on this device."
                     self.failLoading()

@@ -5,7 +5,7 @@ protocol LyricsProviding: Sendable {
 }
 
 struct LRCLIBProvider: LyricsProviding {
-    private struct Response: Decodable {
+    private struct Response: Decodable, Sendable {
         var id: Int64?
         var trackName: String
         var artistName: String
@@ -20,20 +20,75 @@ struct LRCLIBProvider: LyricsProviding {
         let title = cleaned(track.displayTitle)
         let artist = cleaned(track.artist)
         var responses: [Response] = []
+        var lastError: Error?
 
-        if !artist.isEmpty,
-           let exact = try await exactMatch(title: title, artist: artist, duration: track.duration) {
-            responses.append(exact)
+        if !artist.isEmpty {
+            do {
+                if let exact = try await exactMatch(title: title, artist: artist, duration: track.duration) {
+                    responses.append(exact)
+                }
+            } catch {
+                lastError = error
+            }
+
+            do {
+                responses.append(contentsOf: try await search(title: title, artist: artist))
+            } catch {
+                lastError = error
+            }
         }
 
         do {
-            responses.append(contentsOf: try await search(title: title, artist: artist))
+            // Telegram audio tags often contain an uploader or circle name instead of
+            // LRCLIB's canonical artist. Title and duration are enough to recover that match.
+            responses.append(contentsOf: try await search(title: title, artist: ""))
         } catch {
-            if responses.isEmpty { throw error }
+            lastError = error
         }
 
-        let ranked = responses.compactMap { response -> (lyrics: TrackLyrics, score: Int, difference: Double)? in
-            guard !response.instrumental,
+        var ranked = rank(responses, for: track, title: title, artist: artist)
+        if ranked.isEmpty {
+            do {
+                responses.append(contentsOf: try await keywordSearch(title))
+                ranked = rank(responses, for: track, title: title, artist: artist)
+            } catch {
+                lastError = error
+            }
+        }
+
+        let fileTitle = cleaned(track.fileName.deletingPathExtension)
+        if ranked.isEmpty, !fileTitle.isEmpty, comparable(fileTitle) != comparable(title) {
+            do {
+                responses.append(contentsOf: try await search(title: fileTitle, artist: ""))
+                responses.append(contentsOf: try await keywordSearch(fileTitle))
+                ranked = rank(responses, for: track, title: fileTitle, artist: artist)
+            } catch {
+                lastError = error
+            }
+        }
+
+        if ranked.isEmpty, responses.isEmpty, let lastError { throw lastError }
+
+        var seen: Set<String> = []
+        return ranked.compactMap { candidate in
+            guard seen.insert(candidate.lyrics.matchKey).inserted else { return nil }
+            return candidate.lyrics
+        }
+        .prefix(8)
+        .map { $0 }
+    }
+
+    private func rank(
+        _ values: [Response],
+        for track: Track,
+        title: String,
+        artist: String
+    ) -> [(lyrics: TrackLyrics, score: Int, difference: Double)] {
+        var seenResponses: Set<String> = []
+        return values.compactMap { response -> (lyrics: TrackLyrics, score: Int, difference: Double)? in
+            guard seenResponses.insert(responseKey(response)).inserted,
+                  isPlausible(response, title: title, artist: artist, duration: track.duration),
+                  !response.instrumental,
                   let lyrics = makeLyrics(from: response, trackID: track.id) else { return nil }
             let score = matchScore(response, title: title, artist: artist, duration: track.duration)
             guard score >= 35 else { return nil }
@@ -47,14 +102,6 @@ struct LRCLIBProvider: LyricsProviding {
             if lhs.score != rhs.score { return lhs.score > rhs.score }
             return lhs.difference < rhs.difference
         }
-
-        var seen: Set<String> = []
-        return ranked.compactMap { candidate in
-            guard seen.insert(candidate.lyrics.matchKey).inserted else { return nil }
-            return candidate.lyrics
-        }
-        .prefix(8)
-        .map { $0 }
     }
 
     private func exactMatch(title: String, artist: String, duration: TimeInterval) async throws -> Response? {
@@ -73,14 +120,18 @@ struct LRCLIBProvider: LyricsProviding {
 
     private func search(title: String, artist: String) async throws -> [Response] {
         var components = URLComponents(string: "https://lrclib.net/api/search")
-        if artist.isEmpty {
-            components?.queryItems = [URLQueryItem(name: "q", value: title)]
-        } else {
-            components?.queryItems = [
-                URLQueryItem(name: "track_name", value: title),
-                URLQueryItem(name: "artist_name", value: artist)
-            ]
+        var queryItems = [URLQueryItem(name: "track_name", value: title)]
+        if !artist.isEmpty {
+            queryItems.append(URLQueryItem(name: "artist_name", value: artist))
         }
+        components?.queryItems = queryItems
+        guard let url = components?.url else { return [] }
+        return try await request(url, as: [Response].self, permitsNotFound: false) ?? []
+    }
+
+    private func keywordSearch(_ title: String) async throws -> [Response] {
+        var components = URLComponents(string: "https://lrclib.net/api/search")
+        components?.queryItems = [URLQueryItem(name: "q", value: title)]
         guard let url = components?.url else { return [] }
         return try await request(url, as: [Response].self, permitsNotFound: false) ?? []
     }
@@ -163,6 +214,41 @@ struct LRCLIBProvider: LyricsProviding {
         }
         if candidate.syncedLyrics?.isEmpty == false { score += 18 }
         return score
+    }
+
+    private func isPlausible(
+        _ candidate: Response,
+        title: String,
+        artist: String,
+        duration: TimeInterval
+    ) -> Bool {
+        let expectedTitle = comparable(title)
+        let candidateTitle = comparable(candidate.trackName)
+        guard !expectedTitle.isEmpty,
+              candidateTitle == expectedTitle
+                || candidateTitle.contains(expectedTitle)
+                || expectedTitle.contains(candidateTitle) else { return false }
+
+        let expectedArtist = comparable(artist)
+        let candidateArtist = comparable(candidate.artistName)
+        let artistMatches = expectedArtist.isEmpty
+            || candidateArtist == expectedArtist
+            || candidateArtist.contains(expectedArtist)
+            || expectedArtist.contains(candidateArtist)
+        guard !expectedArtist.isEmpty, !artistMatches, duration > 0 else { return true }
+
+        // A mismatched artist is common in Telegram tags, but a close duration makes an
+        // exact/normalized title safe enough. Reject distant same-title covers by default.
+        return abs(candidate.duration - duration) <= 8
+    }
+
+    private func responseKey(_ value: Response) -> String {
+        if let id = value.id { return "id:\(id)" }
+        return [
+            comparable(value.trackName),
+            comparable(value.artistName),
+            String(Int(value.duration.rounded()))
+        ].joined(separator: "|")
     }
 
     private func cleaned(_ value: String) -> String {

@@ -111,7 +111,6 @@ final class AppModel {
         restoreAccounts()
         restoreLibrary()
         player.onFinished = { [weak self] in self?.trackFinished() }
-        player.onReady = { [weak self] track in self?.playbackBecameReady(track) }
         player.onNext = { [weak self] in self?.next() }
         player.onPrevious = { [weak self] in self?.previous() }
         player.onError = { [weak self] message in self?.errorMessage = message }
@@ -979,16 +978,15 @@ final class AppModel {
             player.loadStreaming(track) { offset, length in
                 try await transfer.bytes(at: offset, length: length)
             }
+            cacheDuringPlayback(track)
         }
         await loadLyrics(for: track)
     }
 
-    private func playbackBecameReady(_ track: Track) {
-        guard player.track?.id == track.id else { return }
+    private func cacheDuringPlayback(_ track: Track) {
         Task { [weak self] in
             guard let self else { return }
             do {
-                try await Task.sleep(for: .milliseconds(600))
                 _ = try await self.cachedFile(for: track)
                 await self.prefetchNextPlaylistTrack(after: track)
             } catch is CancellationError {
