@@ -22,7 +22,7 @@ struct LibraryView: View {
                 trackBrowser
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if model.player.track != nil {
+                if model.player.track != nil, !model.showNowPlaying {
                     PlayerBar(model: model, bottomSafeArea: geometry.safeAreaInsets.bottom)
                 }
             }

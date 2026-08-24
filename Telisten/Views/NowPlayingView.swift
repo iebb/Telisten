@@ -9,7 +9,6 @@ struct NowPlayingView: View {
     }
 
     @Bindable var model: AppModel
-    @Environment(\.dismiss) private var dismiss
     @State private var section: Section = .lyrics
     #if os(iOS)
     @Binding var presentationDetent: PresentationDetent
@@ -39,17 +38,24 @@ struct NowPlayingView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     Spacer(minLength: 0)
+                    mediumLyrics
                 }
             }
             .padding(.top, 4)
             .background(Color.telistenBackground)
-            .navigationTitle("Now Playing")
+            .navigationTitle("")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                ToolbarItem(placement: .primaryAction) {
+                    if let track = model.player.track {
+                        Button("Save to playlist", systemImage: "text.badge.plus") {
+                            model.openPlaylistPicker(for: track)
+                        }
+                        .labelStyle(.iconOnly)
+                        .accessibilityHint("Forwards this track to a playlist chat")
+                    }
                 }
             }
         }
@@ -77,6 +83,56 @@ struct NowPlayingView: View {
         #else
         true
         #endif
+    }
+
+    @ViewBuilder
+    private var mediumLyrics: some View {
+        if let lyricWindow {
+            VStack(spacing: 2) {
+                ForEach(Array(lyricWindow.enumerated()), id: \.offset) { index, line in
+                    Text(line)
+                        .font(.system(size: index == 1 ? 14.5 : 12, weight: index == 1 ? .semibold : .regular))
+                        .foregroundStyle(index == 1 ? .primary : .secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+            .animation(.easeInOut(duration: 0.2), value: lyricWindow)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Current lyrics")
+        }
+    }
+
+    private var lyricWindow: [String]? {
+        guard let track = model.player.track,
+              case let .loaded(lyrics) = model.lyricsState,
+              lyrics.trackID == track.id else { return nil }
+        let lines = lyrics.lines.filter {
+            !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        guard !lines.isEmpty else { return nil }
+
+        let currentIndex: Int
+        if lyrics.isSynced {
+            currentIndex = lines.lastIndex(where: {
+                guard let time = $0.time else { return false }
+                return time <= model.player.currentTime
+            }) ?? 0
+        } else if model.player.duration > 0 {
+            let progress = min(max(model.player.currentTime / model.player.duration, 0), 1)
+            currentIndex = min(Int(progress * Double(lines.count)), lines.count - 1)
+        } else {
+            currentIndex = 0
+        }
+
+        return (-1...3).map { offset in
+            let index = currentIndex + offset
+            return lines.indices.contains(index) ? lines[index].text : " "
+        }
     }
 
     private var hero: some View {
@@ -185,26 +241,24 @@ struct NowPlayingView: View {
     private var quickActions: some View {
         if let track = model.player.track {
             let vote = model.voteState(for: track)
-            HStack(spacing: 12) {
-                if !model.isPlaylistTrack(track) {
-                    Button {
-                        model.upvote(track)
-                    } label: {
-                        Label(vote.chosen ? "Voted · \(vote.count)" : "Vote up · \(vote.count)", systemImage: vote.chosen ? "hand.thumbsup.fill" : "hand.thumbsup")
-                    }
-                    .disabled(vote.chosen || vote.isSending)
-                }
-
+            if !model.isPlaylistTrack(track) {
                 Button {
-                    model.openPlaylistPicker(for: track)
+                    model.upvote(track)
                 } label: {
-                    Label("Save to playlist", systemImage: "text.badge.plus")
+                    HStack(spacing: 6) {
+                        Image(systemName: vote.chosen ? "hand.thumbsup.fill" : "hand.thumbsup")
+                        Text("\(vote.count)")
+                            .monospacedDigit()
+                    }
                 }
+                .font(.callout.weight(.semibold))
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+                .tint(.telistenAccent)
+                .disabled(vote.chosen || vote.isSending)
+                .accessibilityLabel(vote.chosen ? "Upvoted" : "Upvote")
+                .accessibilityValue("\(vote.count) votes")
             }
-            .font(.callout.weight(.semibold))
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .tint(.telistenAccent)
         }
     }
 
