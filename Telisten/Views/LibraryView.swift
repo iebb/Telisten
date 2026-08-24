@@ -5,7 +5,7 @@ struct LibraryView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var showSettings = false
     @State private var showDeletePlaylistConfirmation = false
-    @State private var editMode: EditMode = .inactive
+    @State private var isEditingPlaylist = false
     @State private var playlistTitleDraft = ""
     @FocusState private var playlistTitleFocused: Bool
     #if os(iOS)
@@ -220,11 +220,19 @@ struct LibraryView: View {
                     }
                     .listStyle(.plain)
                     .environment(\.defaultMinListRowHeight, 54)
-                    .environment(\.editMode, $editMode)
+                    #if os(iOS)
+                    .environment(
+                        \.editMode,
+                        Binding(
+                            get: { isEditingPlaylist ? .active : .inactive },
+                            set: { isEditingPlaylist = $0.isEditing }
+                        )
+                    )
+                    #endif
                 }
             }
         }
-        .navigationTitle(editMode.isEditing && selectedPlaylist != nil ? "" : browserTitle)
+        .navigationTitle(isEditingPlaylist && selectedPlaylist != nil ? "" : browserTitle)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(usesCompactBackButton)
@@ -235,20 +243,20 @@ struct LibraryView: View {
         )
         .onSubmit(of: .search) { Task { await model.search() } }
         .onChange(of: model.selectedChat?.id) { _, _ in
-            editMode = .inactive
+            isEditingPlaylist = false
             playlistTitleDraft = selectedPlaylist?.title ?? ""
         }
-        .onChange(of: editMode) { previous, current in
-            if current.isEditing, let playlist = selectedPlaylist {
+        .onChange(of: isEditingPlaylist) { wasEditing, isEditing in
+            if isEditing, let playlist = selectedPlaylist {
                 playlistTitleDraft = playlist.title
-            } else if previous.isEditing {
+            } else if wasEditing {
                 commitPlaylistTitle()
                 playlistTitleFocused = false
             }
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                if let playlist = selectedPlaylist, editMode.isEditing {
+                if let playlist = selectedPlaylist, isEditingPlaylist {
                     HStack(spacing: 7) {
                         TextField("Playlist name", text: $playlistTitleDraft)
                             .textFieldStyle(.plain)
@@ -290,12 +298,12 @@ struct LibraryView: View {
             #endif
             ToolbarItemGroup(placement: .primaryAction) {
                 if let playlist = selectedPlaylist {
-                    Button(editMode.isEditing ? "Done" : "Edit") {
+                    Button(isEditingPlaylist ? "Done" : "Edit") {
                         withAnimation(.easeInOut(duration: 0.18)) {
-                            editMode = editMode.isEditing ? .inactive : .active
+                            isEditingPlaylist.toggle()
                         }
                     }
-                    if !editMode.isEditing {
+                    if !isEditingPlaylist {
                         Menu("Playlist actions", systemImage: "ellipsis.circle") {
                             Button("Refresh", systemImage: "arrow.clockwise") {
                                 Task { await model.search() }

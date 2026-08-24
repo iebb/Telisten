@@ -1082,6 +1082,14 @@ final class AppModel {
     private func loadDemo() async {
         isDemo = true
         hasCredentials = true
+        let demoAccount = TelegramAccount(
+            id: "demo",
+            userID: 1,
+            displayName: "Neko",
+            username: "neko"
+        )
+        accounts = [demoAccount]
+        activeAccountID = demoAccount.id
         let source = MusicChat(
             id: "c:1001",
             peerID: 1001,
@@ -1109,6 +1117,7 @@ final class AppModel {
         chats = [source, discoveries, playlist]
         allChats = chats
         playlists = [playlist]
+        chatMusicCounts = [source.id: 128, discoveries.id: 42]
         let samples = [
             ("The Chain", "Fleetwood Mac", 271.0, 18),
             ("Midnight City", "M83", 244.0, 12),
@@ -1116,7 +1125,7 @@ final class AppModel {
             ("Space Song", "Beach House", 320.0, 24),
             ("Electric Feel", "MGMT", 229.0, 7)
         ]
-        tracks = samples.enumerated().map { index, item in
+        let sampleTracks = samples.enumerated().map { index, item in
             Track(
                 documentID: Int64(10_000 + index),
                 accessHash: 1,
@@ -1135,14 +1144,31 @@ final class AppModel {
                 didUpvote: index == 3
             )
         }
-        install(tracks)
-        selected = .chat(source.id)
-        selectedChat = source
-        queue = tracks
+        install(sampleTracks)
+        queue = sampleTracks
         currentQueueIndex = 0
-        player.preview(tracks[0], at: 48)
+        player.preview(sampleTracks[0], at: 48)
+
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--demo-chat") {
+            selected = .chat(source.id)
+            selectedChat = source
+            tracks = sampleTracks
+        } else if arguments.contains("--demo-playlist") {
+            selected = .chat(playlist.id)
+            selectedChat = playlist
+            tracks = sampleTracks
+        } else {
+            selected = nil
+            selectedChat = nil
+            tracks = []
+        }
+
         phase = .ready
-        await loadLyrics(for: tracks[0])
+        if arguments.contains("--demo-now-playing") {
+            showNowPlaying = true
+        }
+        await loadLyrics(for: sampleTracks[0])
     }
     #endif
 

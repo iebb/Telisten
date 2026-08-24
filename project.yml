@@ -57,7 +57,7 @@ targetTemplates:
         PRODUCT_BUNDLE_IDENTIFIER: ad.neko.player
         INFOPLIST_KEY_CFBundleDisplayName: Telisten
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Telisten"
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Kitta Ltd"
         ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_ENTITLEMENTS: Telisten/Telisten.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: Appicon

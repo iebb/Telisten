@@ -41,7 +41,9 @@ Open `Telisten.xcodeproj`, select either `Telisten-iOS` or `Telisten-macOS`, and
 
 ### Xcode Cloud
 
-The repository includes `ci_scripts/ci_post_clone.sh` for Xcode Cloud. Configure the workflow to archive the `Telisten-iOS` scheme from pushes to `master`, distribute successful archives to internal TestFlight, and add `TELEGRAM_API_ID` plus `TELEGRAM_API_HASH` as secret environment variables. The hook generates the ignored `.local/Telegram.xcconfig` before Xcode builds.
+The repository includes `ci_scripts/ci_post_clone.sh` for Xcode Cloud. Configure one workflow from pushes to `master` with two archive actions: `Telisten-iOS` for iOS and `Telisten-macOS` for macOS. Distribute successful archives only to the admins-only internal TestFlight group. Add `TELEGRAM_API_ID` plus `TELEGRAM_API_HASH` as secret environment variables; the hook generates the ignored `.local/Telegram.xcconfig` before Xcode builds.
+
+The App Store copy, review notes, submission checklist, and verified screenshot output folders live in `AppStore`.
 
 To inspect the complete interface without Telegram credentials, add the `--demo` launch argument to a Debug scheme. The fixture never writes to Telegram; it provides sample chats, votes, a playlist, and a current track so the LRCLIB and playlist interfaces can be exercised in Simulator.
 

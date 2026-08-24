@@ -1,0 +1,3 @@
+Initial release.
+
+Play and search audio from Telegram chats, stream before downloads finish, keep music offline, create Telegram-backed playlists, follow timed lyrics, vote, and reply to comments.
