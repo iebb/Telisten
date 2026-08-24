@@ -6,17 +6,20 @@ environment_file="$project_dir/.env"
 output_directory="$project_dir/.local"
 output_file="$output_directory/Telegram.xcconfig"
 
-if [ ! -f "$environment_file" ]; then
-  echo "Missing $environment_file. Copy .env.example to .env and add the Telegram app credentials." >&2
-  exit 1
-fi
-
 read_value() {
   sed -n "s/^$1=//p" "$environment_file" | tail -n 1 | sed 's/^"//; s/"$//'
 }
 
-api_id=$(read_value TELEGRAM_API_ID)
-api_hash=$(read_value TELEGRAM_API_HASH)
+if [ -n "${TELEGRAM_API_ID:-}" ] && [ -n "${TELEGRAM_API_HASH:-}" ]; then
+  api_id=$TELEGRAM_API_ID
+  api_hash=$TELEGRAM_API_HASH
+elif [ -f "$environment_file" ]; then
+  api_id=$(read_value TELEGRAM_API_ID)
+  api_hash=$(read_value TELEGRAM_API_HASH)
+else
+  echo "Missing Telegram credentials. Set TELEGRAM_API_ID and TELEGRAM_API_HASH, or copy .env.example to .env." >&2
+  exit 1
+fi
 
 case "$api_id" in
   ''|*[!0-9]*)

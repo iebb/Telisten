@@ -39,6 +39,10 @@ The script creates `.local/Telegram.xcconfig`, which is also gitignored. Xcode e
 
 Open `Telisten.xcodeproj`, select either `Telisten-iOS` or `Telisten-macOS`, and run. Xcode may ask you to trust the `TLCodingMacros` package macro the first time; review and enable it.
 
+### Xcode Cloud
+
+The repository includes `ci_scripts/ci_post_clone.sh` for Xcode Cloud. Configure the workflow to archive the `Telisten-iOS` scheme from pushes to `master`, distribute successful archives to internal TestFlight, and add `TELEGRAM_API_ID` plus `TELEGRAM_API_HASH` as secret environment variables. The hook generates the ignored `.local/Telegram.xcconfig` before Xcode builds.
+
 To inspect the complete interface without Telegram credentials, add the `--demo` launch argument to a Debug scheme. The fixture never writes to Telegram; it provides sample chats, votes, a playlist, and a current track so the LRCLIB and playlist interfaces can be exercised in Simulator.
 
 For an unsigned command-line verification build:
