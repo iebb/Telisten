@@ -10,6 +10,7 @@ struct LibraryView: View {
     @FocusState private var playlistTitleFocused: Bool
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var nowPlayingDetent: PresentationDetent = .medium
     #endif
 
     var body: some View {
@@ -26,7 +27,14 @@ struct LibraryView: View {
                 }
             }
             .sheet(isPresented: $model.showNowPlaying) {
+                #if os(iOS)
+                NowPlayingView(model: model, presentationDetent: $nowPlayingDetent)
+                    .presentationDetents([.medium, .large], selection: $nowPlayingDetent)
+                    .presentationDragIndicator(.visible)
+                    .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                #else
                 NowPlayingView(model: model)
+                #endif
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(model: model)
@@ -52,6 +60,11 @@ struct LibraryView: View {
             } message: { playlist in
                 Text("This permanently deletes \(playlist.title) from Telegram. This cannot be undone.")
             }
+            #if os(iOS)
+            .onChange(of: model.showNowPlaying) { _, isPresented in
+                if isPresented { nowPlayingDetent = .medium }
+            }
+            #endif
         }
     }
 

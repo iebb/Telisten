@@ -11,6 +11,9 @@ struct NowPlayingView: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @State private var section: Section = .lyrics
+    #if os(iOS)
+    @Binding var presentationDetent: PresentationDetent
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -19,20 +22,24 @@ struct NowPlayingView: View {
                 timeline
                 controls
                 quickActions
-                Picker("Now playing section", selection: $section) {
-                    ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 22)
-
-                Group {
-                    switch section {
-                    case .lyrics: LyricsPanel(model: model)
-                    case .comments: CommentsPanel(model: model)
-                    case .queue: queue
+                if showsDetails {
+                    Picker("Now playing section", selection: $section) {
+                        ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
                     }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 22)
+
+                    Group {
+                        switch section {
+                        case .lyrics: LyricsPanel(model: model)
+                        case .comments: CommentsPanel(model: model)
+                        case .queue: queue
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    Spacer(minLength: 0)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .padding(.top, 4)
             .background(Color.telistenBackground)
@@ -46,7 +53,11 @@ struct NowPlayingView: View {
                 }
             }
         }
+        #if os(iOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #else
         .frame(minWidth: 360, minHeight: 620)
+        #endif
         .sheet(isPresented: $model.showPlaylistSheet) {
             if let track = model.playlistTrack {
                 PlaylistSheet(model: model, track: track)
@@ -58,6 +69,14 @@ struct NowPlayingView: View {
             async let comments: Void = model.loadComments(for: track)
             _ = await (lyrics, comments)
         }
+    }
+
+    private var showsDetails: Bool {
+        #if os(iOS)
+        presentationDetent == .large
+        #else
+        true
+        #endif
     }
 
     private var hero: some View {
@@ -190,22 +209,33 @@ struct NowPlayingView: View {
     }
 
     private var queue: some View {
-        List(Array(model.queue.enumerated()), id: \.element.id) { index, track in
-            HStack(spacing: 12) {
-                TrackArtwork(model: model, track: track, size: 38)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(track.displayTitle).lineLimit(1)
-                    Text(track.displayArtist).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                }
-                Spacer()
-                if index == model.currentQueueIndex {
-                    Image(systemName: "speaker.wave.2.fill").foregroundStyle(Color.telistenAccent)
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(model.queue.enumerated()), id: \.element.id) { index, track in
+                    HStack(spacing: 12) {
+                        TrackArtwork(model: model, track: track, size: 38)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(track.displayTitle).lineLimit(1)
+                            Text(track.displayArtist).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer()
+                        if index == model.currentQueueIndex {
+                            Image(systemName: "speaker.wave.2.fill").foregroundStyle(Color.telistenAccent)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.play(track, from: model.queue) }
+
+                    if index < model.queue.count - 1 {
+                        Divider().padding(.leading, 64)
+                    }
                 }
             }
-            .contentShape(Rectangle())
-            .onTapGesture { model.play(track, from: model.queue) }
+            .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
-        .listStyle(.plain)
+        .scrollIndicators(.hidden)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .padding(.horizontal, 18)
         .padding(.bottom, 18)
