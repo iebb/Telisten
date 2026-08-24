@@ -310,7 +310,12 @@ actor TelegramService {
         return result
     }
 
-    func searchMusic(in chat: MusicChat, query: String, offsetID: Int32 = 0) async throws -> [Track] {
+    func searchMusic(
+        in chat: MusicChat,
+        query: String,
+        offsetID: Int32 = 0,
+        limit: Int32 = 30
+    ) async throws -> [Track] {
         let connection = try await authorizedConnection(dcID: primaryDC, media: false)
         let result = try await connection.client.messages.search(
             peer: TelegramMapping.inputPeer(for: chat),
@@ -320,7 +325,7 @@ actor TelegramService {
             maxDate: 0,
             offsetId: offsetID,
             addOffset: 0,
-            limit: 100,
+            limit: limit,
             maxId: 0,
             minId: 0,
             hash: 0

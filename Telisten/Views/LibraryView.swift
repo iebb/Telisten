@@ -195,7 +195,6 @@ struct LibraryView: View {
                         ForEach(model.tracks) { track in
                             TrackRow(model: model, track: track)
                                 .moveDisabled(selectedPlaylist == nil)
-                                .onAppear { Task { await model.loadMoreTracks(after: track) } }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     if let playlist = selectedPlaylist {
                                         Button("Delete", systemImage: "trash", role: .destructive) {
@@ -208,12 +207,19 @@ struct LibraryView: View {
                         .onMove { source, destination in
                             model.moveTracks(from: source, to: destination)
                         }
-                        if model.isLoadingMore {
+                        if model.hasMoreTracks {
                             HStack {
                                 Spacer()
-                                ProgressView()
-                                    .controlSize(.small)
+                                if model.isLoadingMore {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                }
                                 Spacer()
+                            }
+                            .frame(height: 28)
+                            .contentShape(Rectangle())
+                            .onAppear {
+                                Task { await model.loadMoreTracks() }
                             }
                             .listRowSeparator(.hidden)
                         }

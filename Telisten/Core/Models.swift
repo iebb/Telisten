@@ -123,8 +123,8 @@ enum PlaybackMode: String, CaseIterable, Codable, Sendable {
     var symbolName: String {
         switch self {
         case .shuffle: "shuffle"
-        case .order: "arrow.down"
-        case .reverseOrder: "arrow.up"
+        case .order: "list.number"
+        case .reverseOrder: "arrow.up.arrow.down"
         case .repeatOne: "repeat.1"
         }
     }

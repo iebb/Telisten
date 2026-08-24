@@ -17,6 +17,8 @@ private struct MusicChatIndexEntry: Codable {
 @MainActor
 @Observable
 final class AppModel {
+    private static let chatMusicPageSize: Int32 = 30
+
     var phase: ConnectionPhase = .connecting
     var hasCredentials = false
     var accounts: [TelegramAccount] = []
@@ -78,6 +80,8 @@ final class AppModel {
     @ObservationIgnored private var musicChatIndex: [String: MusicChatIndexEntry] = [:]
     @ObservationIgnored private var playlistOrders: [String: [String]] = [:]
     @ObservationIgnored private var trackSearchOffsetID: Int32 = 0
+    @ObservationIgnored private var remoteHasMoreTracks = false
+    @ObservationIgnored private var visibleTrackLimit = 30
     @ObservationIgnored private var musicChatIndexTask: Task<Void, Never>?
     @ObservationIgnored private var commentsTrackID: String?
     @ObservationIgnored private var loginPhone = ""
@@ -282,18 +286,44 @@ final class AppModel {
 
     func loadTracks() async {
         guard let chat = selectedChat else { return }
-        isLoading = true
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        trackSearchOffsetID = 0
+        remoteHasMoreTracks = true
+        visibleTrackLimit = Int(Self.chatMusicPageSize)
+
+        if query.isEmpty {
+            tracks = Array(cachedTracks(in: chat).prefix(visibleTrackLimit))
+        } else {
+            tracks = []
+        }
+
+        isLoading = tracks.isEmpty
         defer { isLoading = false }
         do {
-            let rawValues = try await telegram.searchMusic(in: chat, query: searchText)
+            let rawValues = try await telegram.searchMusic(
+                in: chat,
+                query: query,
+                limit: Self.chatMusicPageSize
+            )
             let values = deduplicated(rawValues)
             install(values)
             trackSearchOffsetID = rawValues.last?.messageID ?? 0
-            tracks = arranged(values, in: chat)
-            hasMoreTracks = rawValues.count == 100
+            remoteHasMoreTracks = rawValues.count == Int(Self.chatMusicPageSize)
+            if query.isEmpty {
+                let cached = cachedTracks(in: chat)
+                tracks = Array(cached.prefix(visibleTrackLimit))
+                hasMoreTracks = cached.count > tracks.count || remoteHasMoreTracks
+            } else {
+                tracks = arranged(values, in: chat)
+                hasMoreTracks = remoteHasMoreTracks
+            }
             if !values.isEmpty { rememberMusic(in: chat) }
             errorMessage = nil
         } catch {
+            if query.isEmpty {
+                let cached = cachedTracks(in: chat)
+                hasMoreTracks = cached.count > tracks.count
+            }
             errorMessage = UserFacingError.message(for: error)
         }
     }
@@ -335,25 +365,72 @@ final class AppModel {
         }
     }
 
-    func loadMoreTracks(after track: Track) async {
+    func loadMoreTracks() async {
         guard !isGlobalSearch,
               hasMoreTracks,
               !isLoading,
               !isLoadingMore,
-              track.id == tracks.last?.id,
               let chat = selectedChat else { return }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         isLoadingMore = true
         defer { isLoadingMore = false }
+        var revealedCachedPage = false
+
+        if query.isEmpty {
+            let cached = cachedTracks(in: chat)
+            if cached.count > tracks.count {
+                visibleTrackLimit = min(
+                    cached.count,
+                    max(visibleTrackLimit, tracks.count) + Int(Self.chatMusicPageSize)
+                )
+                tracks = Array(cached.prefix(visibleTrackLimit))
+                revealedCachedPage = true
+            }
+        }
+
         do {
-            let values = try await telegram.searchMusic(in: chat, query: searchText, offsetID: trackSearchOffsetID)
-            let existing = Set(tracks.map(\.id))
-            let additions = deduplicated(values).filter { !existing.contains($0.id) }
-            install(additions)
-            trackSearchOffsetID = values.last?.messageID ?? trackSearchOffsetID
-            tracks = arranged(tracks + additions, in: chat)
-            hasMoreTracks = values.count == 100 && !additions.isEmpty
+            if remoteHasMoreTracks {
+                let previousOffset = trackSearchOffsetID
+                let values = try await telegram.searchMusic(
+                    in: chat,
+                    query: query,
+                    offsetID: previousOffset,
+                    limit: Self.chatMusicPageSize
+                )
+                install(deduplicated(values))
+                let nextOffset = values.last?.messageID ?? previousOffset
+                trackSearchOffsetID = nextOffset
+                remoteHasMoreTracks = values.count == Int(Self.chatMusicPageSize)
+                    && nextOffset != previousOffset
+
+                if query.isEmpty {
+                    let cached = cachedTracks(in: chat)
+                    if !revealedCachedPage {
+                        visibleTrackLimit = min(
+                            cached.count,
+                            visibleTrackLimit + Int(Self.chatMusicPageSize)
+                        )
+                    }
+                    tracks = Array(cached.prefix(visibleTrackLimit))
+                    hasMoreTracks = cached.count > tracks.count || remoteHasMoreTracks
+                } else {
+                    let existing = Set(tracks.map(\.id))
+                    let additions = deduplicated(values).filter { !existing.contains($0.id) }
+                    tracks = arranged(tracks + additions, in: chat)
+                    hasMoreTracks = remoteHasMoreTracks
+                }
+            } else if query.isEmpty {
+                let cached = cachedTracks(in: chat)
+                hasMoreTracks = cached.count > tracks.count
+            } else {
+                hasMoreTracks = false
+            }
             errorMessage = nil
         } catch {
+            if query.isEmpty {
+                let cached = cachedTracks(in: chat)
+                hasMoreTracks = cached.count > tracks.count || remoteHasMoreTracks
+            }
             errorMessage = UserFacingError.message(for: error)
         }
     }
@@ -814,6 +891,11 @@ final class AppModel {
         persistLibrary()
     }
 
+    func setPlaybackMode(_ mode: PlaybackMode) {
+        playbackMode = mode
+        persistLibrary()
+    }
+
     private func playQueueTrack(at index: Int) {
         guard queue.indices.contains(index) else { return }
         currentQueueIndex = index
@@ -987,6 +1069,16 @@ final class AppModel {
     private func deduplicated(_ values: [Track]) -> [Track] {
         var seen: Set<String> = []
         return values.filter { seen.insert($0.id).inserted }
+    }
+
+    private func cachedTracks(in chat: MusicChat) -> [Track] {
+        let values = knownTracks.values
+            .filter { $0.chatID == chat.id }
+            .sorted { lhs, rhs in
+                if lhs.date == rhs.date { return lhs.messageID > rhs.messageID }
+                return lhs.date > rhs.date
+            }
+        return arranged(values, in: chat)
     }
 
     private func arranged(_ values: [Track], in chat: MusicChat) -> [Track] {

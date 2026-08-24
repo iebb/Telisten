@@ -14,7 +14,7 @@ struct NowPlayingView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 18) {
+            VStack(spacing: 14) {
                 hero
                 timeline
                 controls
@@ -34,9 +34,12 @@ struct NowPlayingView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .padding(.top, 12)
+            .padding(.top, 4)
             .background(Color.telistenBackground)
             .navigationTitle("Now Playing")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -58,21 +61,18 @@ struct NowPlayingView: View {
     }
 
     private var hero: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 16) {
             if let track = model.player.track {
-                TrackArtwork(model: model, track: track, size: 108, fallbackSymbol: "waveform")
-                    .shadow(color: .black.opacity(0.16), radius: 18, y: 10)
-                VStack(alignment: .leading, spacing: 7) {
+                TrackArtwork(model: model, track: track, size: 92, fallbackSymbol: "waveform")
+                    .shadow(color: .black.opacity(0.12), radius: 12, y: 7)
+                VStack(alignment: .leading, spacing: 5) {
                     Text(track.displayTitle)
                         .font(.title2.bold())
                         .lineLimit(2)
                     Text(track.displayArtist)
-                        .font(.title3)
+                        .font(.body)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    Label("Telegram audio", systemImage: "paperplane.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.telistenAccent)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -98,32 +98,68 @@ struct NowPlayingView: View {
     }
 
     private var controls: some View {
-        HStack(spacing: 30) {
-            Button("Previous", systemImage: "backward.fill") { model.previous() }
-            if model.player.isLoading {
-                ProgressView()
-                    .controlSize(.large)
-                    .frame(width: 52, height: 52)
-                    .accessibilityLabel("Loading track")
-            } else {
-                Button(
-                    model.player.isPlaying ? "Pause" : "Play",
-                    systemImage: model.player.isPlaying ? "pause.circle.fill" : "play.circle.fill"
-                ) { model.player.toggle() }
-                    .font(.system(size: 52))
+        HStack(spacing: 0) {
+            Button {
+                model.player.toggleMute()
+            } label: {
+                Image(systemName: model.player.volumeSymbolName)
+                    .frame(width: 44, height: 44)
             }
-            Button("Next", systemImage: "forward.fill") { model.next() }
-            Button(model.playbackMode.title, systemImage: model.playbackMode.symbolName) {
-                model.cyclePlaybackMode()
+            .foregroundStyle(model.player.isMuted ? Color.telistenAccent : .secondary)
+            .accessibilityLabel(model.player.isMuted ? "Unmute" : "Mute")
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 30) {
+                Button("Previous", systemImage: "backward.fill") { model.previous() }
+                    .labelStyle(.iconOnly)
+                if model.player.isLoading {
+                    ProgressView()
+                        .controlSize(.large)
+                        .frame(width: 52, height: 52)
+                        .accessibilityLabel("Loading track")
+                } else {
+                    Button(
+                        model.player.isPlaying ? "Pause" : "Play",
+                        systemImage: model.player.isPlaying ? "pause.circle.fill" : "play.circle.fill"
+                    ) { model.player.toggle() }
+                        .labelStyle(.iconOnly)
+                        .font(.system(size: 52))
+                }
+                Button("Next", systemImage: "forward.fill") { model.next() }
+                    .labelStyle(.iconOnly)
             }
-            .foregroundStyle(model.playbackMode == .order ? .secondary : Color.telistenAccent)
-            .contentTransition(.symbolEffect(.replace))
-            .accessibilityValue(model.playbackMode.title)
-            .accessibilityHint("Switches to \(model.playbackMode.next.title.lowercased())")
+
+            Spacer(minLength: 12)
+
+            playbackModeMenu
         }
-        .labelStyle(.iconOnly)
         .buttonStyle(.plain)
         .font(.title2)
+        .padding(.horizontal, 24)
+    }
+
+    private var playbackModeMenu: some View {
+        Menu {
+            ForEach(PlaybackMode.allCases, id: \.rawValue) { mode in
+                Button {
+                    model.setPlaybackMode(mode)
+                } label: {
+                    Label(
+                        mode.title,
+                        systemImage: mode == model.playbackMode ? "checkmark" : mode.symbolName
+                    )
+                }
+            }
+        } label: {
+            Image(systemName: model.playbackMode.symbolName)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 44, height: 44)
+        }
+        .menuIndicator(.hidden)
+        .foregroundStyle(model.playbackMode == .order ? .secondary : Color.telistenAccent)
+        .accessibilityLabel("Play mode")
+        .accessibilityValue(model.playbackMode.title)
     }
 
     @ViewBuilder

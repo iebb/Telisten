@@ -12,7 +12,21 @@ final class AudioPlayer {
     private(set) var currentTime: TimeInterval = 0
     private(set) var duration: TimeInterval = 0
     var volume: Float = 1 {
-        didSet { player.volume = volume }
+        didSet {
+            player.volume = volume
+            if volume > 0.001 { volumeBeforeMute = volume }
+        }
+    }
+
+    var isMuted: Bool { volume <= 0.001 }
+
+    var volumeSymbolName: String {
+        switch volume {
+        case ...0.001: "speaker.slash.fill"
+        case ..<0.34: "speaker.wave.1.fill"
+        case ..<0.67: "speaker.wave.2.fill"
+        default: "speaker.wave.3.fill"
+        }
     }
 
     var onFinished: (@MainActor @Sendable () -> Void)?
@@ -28,6 +42,7 @@ final class AudioPlayer {
     private var streamingResource: StreamingAudioResource?
     private let resourceLoaderQueue = DispatchQueue(label: "ad.neko.player.resource-loader")
     private var wantsPlayback = false
+    private var volumeBeforeMute: Float = 1
 
     init() {
         configureAudioSession()
@@ -156,6 +171,10 @@ final class AudioPlayer {
 
     func toggle() {
         isPlaying ? pause() : play()
+    }
+
+    func toggleMute() {
+        volume = isMuted ? max(volumeBeforeMute, 0.5) : 0
     }
 
     func seek(to seconds: TimeInterval) {
