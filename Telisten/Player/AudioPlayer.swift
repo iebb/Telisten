@@ -30,6 +30,7 @@ final class AudioPlayer {
     }
 
     var onFinished: (@MainActor @Sendable () -> Void)?
+    var onReady: (@MainActor @Sendable (Track) -> Void)?
     var onNext: (@MainActor @Sendable () -> Void)?
     var onPrevious: (@MainActor @Sendable () -> Void)?
     var onError: (@MainActor @Sendable (String) -> Void)?
@@ -45,6 +46,7 @@ final class AudioPlayer {
     private var volumeBeforeMute: Float = 1
 
     init() {
+        player.automaticallyWaitsToMinimizeStalling = false
         configureAudioSession()
         installTimeObserver()
         installTimeControlObserver()
@@ -52,6 +54,7 @@ final class AudioPlayer {
     }
 
     func beginLoading(_ track: Track) {
+        activateAudioSession()
         clearCurrentItem()
         self.track = track
         duration = track.duration
@@ -81,7 +84,10 @@ final class AudioPlayer {
         let fileExtension = (track.fileName as NSString).pathExtension
         let suffix = fileExtension.isEmpty ? "audio" : fileExtension
         let url = URL(string: "telisten-stream://track/\(track.documentID).\(suffix)")!
-        let asset = AVURLAsset(url: url)
+        let asset = AVURLAsset(
+            url: url,
+            options: [AVURLAssetPreferPreciseDurationAndTimingKey: false]
+        )
         asset.resourceLoader.setDelegate(resource, queue: resourceLoaderQueue)
         install(AVPlayerItem(asset: asset), track: track, autoplay: autoplay)
     }
@@ -102,10 +108,12 @@ final class AudioPlayer {
         currentTime = 0
         wantsPlayback = autoplay
         isLoading = autoplay
+        item.preferredForwardBufferDuration = 2
         player.replaceCurrentItem(with: item)
         statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
             Task { @MainActor in
                 guard let self else { return }
+                guard self.player.currentItem === item, self.track?.id == track.id else { return }
                 switch item.status {
                 case .readyToPlay:
                     self.isLoading = false
@@ -114,6 +122,7 @@ final class AudioPlayer {
                         self.isPlaying = true
                     }
                     self.updateNowPlaying()
+                    self.onReady?(track)
                 case .failed:
                     let reason = item.error?.localizedDescription ?? "The audio format is not supported on this device."
                     self.failLoading()
@@ -143,6 +152,7 @@ final class AudioPlayer {
 
     func play() {
         guard let item = player.currentItem, item.status != .failed else { return }
+        activateAudioSession()
         wantsPlayback = true
         player.play()
         isPlaying = true
@@ -257,6 +267,12 @@ final class AudioPlayer {
         } catch {
             // Playback can still work while inactive; the UI reports file errors separately.
         }
+        #endif
+    }
+
+    private func activateAudioSession() {
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setActive(true)
         #endif
     }
 

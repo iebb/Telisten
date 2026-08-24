@@ -2,17 +2,27 @@ import Foundation
 import MTProtoClientKit
 import NIOMTProtoEncryption
 
-private actor FileRequestGate {
-    private var isBusy = false
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+private enum FileRequestPriority {
+    case playback
+    case background
+}
 
-    func enter() async {
+private actor FileRequestGate {
+    private struct Waiter {
+        var priority: FileRequestPriority
+        var continuation: CheckedContinuation<Void, Never>
+    }
+
+    private var isBusy = false
+    private var waiters: [Waiter] = []
+
+    func enter(priority: FileRequestPriority) async {
         guard isBusy else {
             isBusy = true
             return
         }
         await withCheckedContinuation { continuation in
-            waiters.append(continuation)
+            waiters.append(Waiter(priority: priority, continuation: continuation))
         }
     }
 
@@ -20,7 +30,8 @@ private actor FileRequestGate {
         if waiters.isEmpty {
             isBusy = false
         } else {
-            waiters.removeFirst().resume()
+            let nextIndex = waiters.firstIndex { $0.priority == .playback } ?? waiters.startIndex
+            waiters.remove(at: nextIndex).continuation.resume()
         }
     }
 }
@@ -680,16 +691,23 @@ actor TelegramService {
                 thumbSize: thumbSize
             )
         )
-        return try await fileChunk(at: location, dcID: dcID, offset: offset, limit: limit)
+        return try await fileChunk(
+            at: location,
+            dcID: dcID,
+            offset: offset,
+            limit: limit,
+            priority: thumbSize.isEmpty ? .playback : .background
+        )
     }
 
     private func fileChunk(
         at location: TL.InputFileLocationType,
         dcID: Int32,
         offset: Int64,
-        limit: Int32
+        limit: Int32,
+        priority: FileRequestPriority = .background
     ) async throws -> (bytes: Data, dcID: Int32) {
-        await fileRequestGate.enter()
+        await fileRequestGate.enter(priority: priority)
         do {
             try Task.checkCancellation()
             let value = try await performFileRequest(

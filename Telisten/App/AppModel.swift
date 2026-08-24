@@ -111,6 +111,7 @@ final class AppModel {
         restoreAccounts()
         restoreLibrary()
         player.onFinished = { [weak self] in self?.trackFinished() }
+        player.onReady = { [weak self] track in self?.playbackBecameReady(track) }
         player.onNext = { [weak self] in self?.next() }
         player.onPrevious = { [weak self] in self?.previous() }
         player.onError = { [weak self] message in self?.errorMessage = message }
@@ -978,19 +979,50 @@ final class AppModel {
             player.loadStreaming(track) { offset, length in
                 try await transfer.bytes(at: offset, length: length)
             }
-            Task { [weak self] in
-                guard let self else { return }
-                do {
-                    _ = try await self.cachedFile(for: track)
-                } catch is CancellationError {
-                    return
-                } catch {
-                    guard self.player.track?.id == track.id else { return }
-                    self.errorMessage = UserFacingError.message(for: error)
-                }
-            }
         }
         await loadLyrics(for: track)
+    }
+
+    private func playbackBecameReady(_ track: Track) {
+        guard player.track?.id == track.id else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(600))
+                _ = try await self.cachedFile(for: track)
+                await self.prefetchNextPlaylistTrack(after: track)
+            } catch is CancellationError {
+                return
+            } catch {
+                guard self.player.track?.id == track.id else { return }
+                self.errorMessage = UserFacingError.message(for: error)
+            }
+        }
+    }
+
+    private func prefetchNextPlaylistTrack(after track: Track) async {
+        guard isPlaylistTrack(track),
+              let index = currentQueueIndex,
+              queue.indices.contains(index),
+              queue[index].id == track.id else { return }
+
+        let nextIndex: Int?
+        switch playbackMode {
+        case .order:
+            nextIndex = queue.indices.contains(index + 1) ? index + 1 : nil
+        case .reverseOrder:
+            nextIndex = queue.indices.contains(index - 1) ? index - 1 : nil
+        case .repeatOne, .shuffle:
+            nextIndex = nil
+        }
+        guard let nextIndex else { return }
+
+        let nextTrack = queue[nextIndex]
+        do {
+            _ = try await cachedFile(for: nextTrack)
+        } catch {
+            // Prefetch is opportunistic. Normal playback will retry if it is still needed.
+        }
     }
 
     private func cachedFile(for track: Track) async throws -> URL {
@@ -1334,6 +1366,8 @@ final class AppModel {
         allChats = chats
         playlists = [playlist]
         chatMusicCounts = [source.id: 128, discoveries.id: 42]
+        let arguments = ProcessInfo.processInfo.arguments
+        let demoTrackChatID = arguments.contains("--demo-playlist") ? playlist.id : source.id
         let samples = [
             ("The Chain", "Fleetwood Mac", 271.0, 18),
             ("Midnight City", "M83", 244.0, 12),
@@ -1348,7 +1382,7 @@ final class AppModel {
                 fileReference: Data(),
                 dcID: 2,
                 messageID: Int32(500 - index),
-                chatID: source.id,
+                chatID: demoTrackChatID,
                 title: item.0,
                 artist: item.1,
                 fileName: "\(item.0).m4a",
@@ -1365,7 +1399,6 @@ final class AppModel {
         currentQueueIndex = 0
         player.preview(sampleTracks[0], at: 48)
 
-        let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("--demo-partial-cache") {
             await seedDemoPartialCache(for: sampleTracks[0])
         }
