@@ -1,38 +1,60 @@
 import Foundation
 
 protocol LyricsProviding: Sendable {
-    func lyrics(for track: Track) async throws -> TrackLyrics?
+    func lyricsCandidates(for track: Track) async throws -> [TrackLyrics]
 }
 
 struct LRCLIBProvider: LyricsProviding {
     private struct Response: Decodable {
+        var id: Int64?
         var trackName: String
         var artistName: String
+        var albumName: String?
         var duration: Double
         var instrumental: Bool
         var plainLyrics: String?
         var syncedLyrics: String?
     }
 
-    func lyrics(for track: Track) async throws -> TrackLyrics? {
+    func lyricsCandidates(for track: Track) async throws -> [TrackLyrics] {
         let title = cleaned(track.displayTitle)
         let artist = cleaned(track.artist)
-        var exactFallback: TrackLyrics?
+        var responses: [Response] = []
 
         if !artist.isEmpty,
-           let exact = try await exactMatch(title: title, artist: artist, duration: track.duration),
-           let lyrics = makeLyrics(from: exact, trackID: track.id) {
-            if lyrics.isSynced { return lyrics }
-            exactFallback = lyrics
+           let exact = try await exactMatch(title: title, artist: artist, duration: track.duration) {
+            responses.append(exact)
         }
 
-        let candidates = try await search(title: title, artist: artist)
-        guard let best = candidates
-            .filter({ !$0.instrumental && ($0.plainLyrics?.isEmpty == false || $0.syncedLyrics?.isEmpty == false) })
-            .map({ ($0, matchScore($0, title: title, artist: artist, duration: track.duration)) })
-            .filter({ $0.1 >= 35 })
-            .max(by: { $0.1 < $1.1 })?.0 else { return exactFallback }
-        return makeLyrics(from: best, trackID: track.id) ?? exactFallback
+        do {
+            responses.append(contentsOf: try await search(title: title, artist: artist))
+        } catch {
+            if responses.isEmpty { throw error }
+        }
+
+        let ranked = responses.compactMap { response -> (lyrics: TrackLyrics, score: Int, difference: Double)? in
+            guard !response.instrumental,
+                  let lyrics = makeLyrics(from: response, trackID: track.id) else { return nil }
+            let score = matchScore(response, title: title, artist: artist, duration: track.duration)
+            guard score >= 35 else { return nil }
+            let difference = track.duration > 0 ? abs(response.duration - track.duration) : 0
+            return (lyrics, score, difference)
+        }
+        .sorted { lhs, rhs in
+            if lhs.lyrics.isSynced != rhs.lyrics.isSynced {
+                return lhs.lyrics.isSynced
+            }
+            if lhs.score != rhs.score { return lhs.score > rhs.score }
+            return lhs.difference < rhs.difference
+        }
+
+        var seen: Set<String> = []
+        return ranked.compactMap { candidate in
+            guard seen.insert(candidate.lyrics.matchKey).inserted else { return nil }
+            return candidate.lyrics
+        }
+        .prefix(8)
+        .map { $0 }
     }
 
     private func exactMatch(title: String, artist: String, duration: TimeInterval) async throws -> Response? {
@@ -86,14 +108,34 @@ struct LRCLIBProvider: LyricsProviding {
         if let synced = value.syncedLyrics, !synced.isEmpty {
             let lines = parseLRC(synced)
             if !lines.isEmpty {
-                return TrackLyrics(trackID: trackID, source: "LRCLIB", lines: lines, isSynced: true)
+                return TrackLyrics(
+                    trackID: trackID,
+                    source: "LRCLIB",
+                    lines: lines,
+                    isSynced: true,
+                    matchID: value.id,
+                    matchedTitle: value.trackName,
+                    matchedArtist: value.artistName,
+                    matchedAlbum: value.albumName,
+                    matchedDuration: value.duration
+                )
             }
         }
         guard let plain = value.plainLyrics, !plain.isEmpty else { return nil }
         let lines = plain.components(separatedBy: .newlines).enumerated().map {
             LyricLine(sequence: $0.offset, time: nil, text: $0.element)
         }
-        return TrackLyrics(trackID: trackID, source: "LRCLIB", lines: lines, isSynced: false)
+        return TrackLyrics(
+            trackID: trackID,
+            source: "LRCLIB",
+            lines: lines,
+            isSynced: false,
+            matchID: value.id,
+            matchedTitle: value.trackName,
+            matchedArtist: value.artistName,
+            matchedAlbum: value.albumName,
+            matchedDuration: value.duration
+        )
     }
 
     private func matchScore(
@@ -158,8 +200,10 @@ struct LRCLIBProvider: LyricsProviding {
 actor LyricsService {
     private let provider: any LyricsProviding
     private let cacheURL: URL
+    private let selectionsURL: URL
     private var cached: [String: TrackLyrics] = [:]
-    private var refreshedPlainTrackIDs: Set<String> = []
+    private var fetchedMatches: [String: [TrackLyrics]] = [:]
+    private var selectedMatchKeys: [String: String] = [:]
 
     init(provider: any LyricsProviding = LRCLIBProvider()) {
         self.provider = provider
@@ -167,25 +211,70 @@ actor LyricsService {
         let root = caches.appending(path: "Telisten", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         cacheURL = root.appending(path: "lyrics-index.json")
+        selectionsURL = root.appending(path: "lyrics-selections.json")
         if let data = try? Data(contentsOf: cacheURL),
            let values = try? JSONDecoder().decode([TrackLyrics].self, from: data) {
             cached = Dictionary(uniqueKeysWithValues: values.map { ($0.trackID, $0) })
         }
+        if let data = try? Data(contentsOf: selectionsURL),
+           let values = try? JSONDecoder().decode([String: String].self, from: data) {
+            selectedMatchKeys = values
+        }
     }
 
-    func lyrics(for track: Track) async throws -> TrackLyrics? {
-        if let value = cached[track.id], value.isSynced { return value }
+    func lyrics(for track: Track) async throws -> LyricsResult? {
+        if let matches = fetchedMatches[track.id], !matches.isEmpty {
+            return result(for: track.id, matches: matches)
+        }
+
         let fallback = cached[track.id]
-        if fallback != nil, !refreshedPlainTrackIDs.insert(track.id).inserted { return fallback }
-        guard let value = try await provider.lyrics(for: track) else { return fallback }
-        cached[track.id] = value
+        var matches: [TrackLyrics]
+        do {
+            matches = try await provider.lyricsCandidates(for: track)
+        } catch {
+            guard let fallback else { throw error }
+            matches = [fallback]
+        }
+
+        if let fallback,
+           !matches.contains(where: { $0.matchKey == fallback.matchKey }),
+           selectedMatchKeys[track.id] == fallback.matchKey {
+            matches.append(fallback)
+        }
+        guard !matches.isEmpty else {
+            return fallback.map { LyricsResult(selected: $0, matches: [$0]) }
+        }
+
+        fetchedMatches[track.id] = matches
+        guard let result = result(for: track.id, matches: matches) else { return nil }
+        cached[track.id] = result.selected
         persist()
-        return value
+        return result
+    }
+
+    func select(_ value: TrackLyrics) {
+        cached[value.trackID] = value
+        selectedMatchKeys[value.trackID] = value.matchKey
+        persist()
+        persistSelections()
+    }
+
+    private func result(for trackID: String, matches: [TrackLyrics]) -> LyricsResult? {
+        guard let defaultMatch = matches.first else { return nil }
+        let selected = selectedMatchKeys[trackID].flatMap { key in
+            matches.first(where: { $0.matchKey == key })
+        } ?? defaultMatch
+        return LyricsResult(selected: selected, matches: matches)
     }
 
     private func persist() {
         let values = cached.values.sorted { $0.trackID < $1.trackID }
         guard let data = try? JSONEncoder().encode(values) else { return }
         try? data.write(to: cacheURL, options: .atomic)
+    }
+
+    private func persistSelections() {
+        guard let data = try? JSONEncoder().encode(selectedMatchKeys) else { return }
+        try? data.write(to: selectionsURL, options: .atomic)
     }
 }

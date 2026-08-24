@@ -86,6 +86,26 @@ struct TrackLyrics: Codable, Hashable, Sendable {
     var source: String
     var lines: [LyricLine]
     var isSynced: Bool
+    var matchID: Int64? = nil
+    var matchedTitle: String? = nil
+    var matchedArtist: String? = nil
+    var matchedAlbum: String? = nil
+    var matchedDuration: TimeInterval? = nil
+
+    var matchKey: String {
+        if let matchID { return "\(source):\(matchID)" }
+        return [
+            source,
+            matchedTitle ?? "",
+            matchedArtist ?? "",
+            matchedDuration.map { String($0) } ?? ""
+        ].joined(separator: "|")
+    }
+}
+
+struct LyricsResult: Sendable {
+    var selected: TrackLyrics
+    var matches: [TrackLyrics]
 }
 
 enum LyricsLoadState: Equatable, Sendable {

@@ -341,12 +341,17 @@ private struct LyricsPanel: View {
             case .idle, .loading:
                 VStack(spacing: 12) {
                     ProgressView()
-                    Text("Finding the best lyrics match…")
+                    Text("Finding lyrics…")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
             case let .loaded(lyrics):
-                lyricsScroll(lyrics)
+                VStack(spacing: 8) {
+                    if model.lyricsCandidates.count > 1 {
+                        lyricsChooser(selected: lyrics)
+                    }
+                    lyricsScroll(lyrics)
+                }
             case .unavailable:
                 ContentUnavailableView(
                     "No lyrics found",
@@ -363,6 +368,82 @@ private struct LyricsPanel: View {
         }
         .padding(.horizontal, 18)
         .padding(.bottom, 18)
+    }
+
+    private func lyricsChooser(selected: TrackLyrics) -> some View {
+        Menu {
+            ForEach(model.lyricsCandidates, id: \.matchKey) { candidate in
+                Button {
+                    model.selectLyrics(candidate)
+                } label: {
+                    Label(
+                        candidateMenuTitle(candidate),
+                        systemImage: candidate.matchKey == selected.matchKey
+                            ? "checkmark"
+                            : (candidate.isSynced ? "clock" : "text.alignleft")
+                    )
+                }
+            }
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: selected.isSynced ? "clock" : "text.alignleft")
+                    .foregroundStyle(Color.telistenAccent)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(selected.isSynced ? "Timed lyrics" : "Plain lyrics")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(candidateDetail(selected))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Text(selectionPosition(selected))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Lyrics match")
+        .accessibilityValue("\(selected.isSynced ? "Timed" : "Plain"), \(candidateDetail(selected))")
+        .accessibilityHint("Choose another lyrics match")
+    }
+
+    private func candidateMenuTitle(_ candidate: TrackLyrics) -> String {
+        let kind = candidate.isSynced ? "Timed" : "Plain"
+        let title = candidate.matchedTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let artist = candidate.matchedArtist?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let duration = candidate.matchedDuration.map(DisplayFormat.duration) ?? "Unknown length"
+        let identity = [title, artist]
+            .compactMap { value in value?.isEmpty == false ? value : nil }
+            .joined(separator: " — ")
+        return identity.isEmpty
+            ? "\(kind) · \(duration)"
+            : "\(kind) · \(identity) · \(duration)"
+    }
+
+    private func candidateDetail(_ candidate: TrackLyrics) -> String {
+        let duration = candidate.matchedDuration.map(DisplayFormat.duration) ?? "Unknown length"
+        let edition = candidate.matchedAlbum?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let edition, !edition.isEmpty {
+            return "\(duration) · \(edition)"
+        }
+        let artist = candidate.matchedArtist?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let artist, !artist.isEmpty {
+            return "\(duration) · \(artist)"
+        }
+        return "\(duration) · \(candidate.source)"
+    }
+
+    private func selectionPosition(_ selected: TrackLyrics) -> String {
+        let index = model.lyricsCandidates.firstIndex(where: { $0.matchKey == selected.matchKey }) ?? 0
+        return "\(index + 1)/\(model.lyricsCandidates.count)"
     }
 
     private func lyricsScroll(_ lyrics: TrackLyrics) -> some View {

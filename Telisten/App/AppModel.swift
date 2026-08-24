@@ -39,6 +39,7 @@ final class AppModel {
     var showPlaylistSheet = false
     var isSavingToPlaylist = false
     var lyricsState: LyricsLoadState = .idle
+    var lyricsCandidates: [TrackLyrics] = []
     var commentsState: CommentsLoadState = .idle
     var isSendingComment = false
     var isIndexingChats = false
@@ -688,13 +689,22 @@ final class AppModel {
         if case let .loaded(value) = lyricsState, value.trackID == track.id { return }
         lyricsState = .loading
         do {
-            let value = try await lyrics.lyrics(for: track)
+            let result = try await lyrics.lyrics(for: track)
             guard player.track?.id == track.id else { return }
-            lyricsState = value.map(LyricsLoadState.loaded) ?? .unavailable
+            lyricsCandidates = result?.matches ?? []
+            lyricsState = result.map { .loaded($0.selected) } ?? .unavailable
         } catch {
             guard player.track?.id == track.id else { return }
+            lyricsCandidates = []
             lyricsState = .failed(UserFacingError.message(for: error))
         }
+    }
+
+    func selectLyrics(_ value: TrackLyrics) {
+        guard player.track?.id == value.trackID,
+              lyricsCandidates.contains(where: { $0.matchKey == value.matchKey }) else { return }
+        lyricsState = .loaded(value)
+        Task { await lyrics.select(value) }
     }
 
     func loadComments(for track: Track) async {
@@ -1034,6 +1044,7 @@ final class AppModel {
         showPlaylistSheet = false
         showNowPlaying = false
         lyricsState = .idle
+        lyricsCandidates = []
         commentsState = .idle
         commentsTrackID = nil
         voteStates = [:]
@@ -1210,6 +1221,7 @@ final class AppModel {
     private func resetTrackDetails(ifChangingTo track: Track) {
         guard player.track?.id != track.id else { return }
         lyricsState = .idle
+        lyricsCandidates = []
         commentsState = .idle
         commentsTrackID = nil
     }
