@@ -70,6 +70,7 @@
 		1706711925C16D8BE05DF53B /* messages.searchGlobal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61C9181F5EEF3889CB944F2C /* messages.searchGlobal.swift */; };
 		173F5D96EC99A589801F6ED1 /* messages.forwardMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9B063B74458BDB674AB70A /* messages.forwardMessages.swift */; };
 		177B0DDE0A5EBE7B3B976991 /* Game.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA144858A11024F628A236B5 /* Game.swift */; };
+		17A80FD38178138540F30E06 /* LocalLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B077ECC539382C0709F1A6D2 /* LocalLibraryStore.swift */; };
 		180214FADA229451BED5FE09 /* StarsRevenueStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEFDC6C35F7412E5E97A4692 /* StarsRevenueStatus.swift */; };
 		196F04C92C1D7018C72B81EA /* messages.AffectedMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 436A621D1F40BF5D33FF1E41 /* messages.AffectedMessages.swift */; };
 		1A10B8FB2808B7E089E5A9D2 /* messages.DiscussionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEA687ED0E70C2FE2CEB3307 /* messages.DiscussionMessage.swift */; };
@@ -242,6 +243,7 @@
 		5CACACB8FA2342258532D4D8 /* Page.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149E59FBD153065D82757F6D /* Page.swift */; };
 		5CBF67CEB6C7B70C0AD78662 /* Reaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7C9D69CB7D2ED0675334864 /* Reaction.swift */; };
 		5CC272E04F34490F8C19FE42 /* ChatTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE1B4D0D7286E8FDECA7ECB4 /* ChatTheme.swift */; };
+		5D39DB3997982E6690D756E9 /* LocalLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B077ECC539382C0709F1A6D2 /* LocalLibraryStore.swift */; };
 		5D42350454C4493CE1B04CE8 /* MessageReplyHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D569C79FEC1EBB9FCAA79399 /* MessageReplyHeader.swift */; };
 		5D90DB373E54FBE6C66E6494 /* PrivacyKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = D62497E04E25FCCF454AFE1B /* PrivacyKey.swift */; };
 		602D7356D45045FBD205F882 /* WallPaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4905C0058FF7F6A82E531F24 /* WallPaper.swift */; };
@@ -742,6 +744,7 @@
 		AF40346C0DE9AAA863C020D8 /* auth.Authorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = auth.Authorization.swift; sourceTree = "<group>"; };
 		AF74DADA8E169E8407942C29 /* account.verifyEmail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = account.verifyEmail.swift; sourceTree = "<group>"; };
 		B00697BDC79B79970446E0FC /* SearchPostsFlood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPostsFlood.swift; sourceTree = "<group>"; };
+		B077ECC539382C0709F1A6D2 /* LocalLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLibraryStore.swift; sourceTree = "<group>"; };
 		B0C9EC357AB1A5212B207773 /* SRPProof.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRPProof.swift; sourceTree = "<group>"; };
 		B27D5890390E4029A77CF2B0 /* Username.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Username.swift; sourceTree = "<group>"; };
 		B3199242A7101595CCF1B0DD /* ReactionCount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReactionCount.swift; sourceTree = "<group>"; };
@@ -1232,6 +1235,7 @@
 				865CD00C4B2A6BB5461E1469 /* CacheStore.swift */,
 				7CBC653D37B65D391F853EFE /* ChatAvatarStore.swift */,
 				89A4A78E6E3BD5DF2EEBF247 /* KeychainStore.swift */,
+				B077ECC539382C0709F1A6D2 /* LocalLibraryStore.swift */,
 			);
 			path = Storage;
 			sourceTree = "<group>";
@@ -1470,6 +1474,7 @@
 				DC3093E4DBAEC12DE9E70D15 /* LangPackDifference.swift in Sources */,
 				8C3A507D28452BD58212D066 /* LangPackString.swift in Sources */,
 				E4697251FA843DE5358075AC /* LibraryView.swift in Sources */,
+				17A80FD38178138540F30E06 /* LocalLibraryStore.swift in Sources */,
 				E52A532A15FB89FF6339EC9F /* LoginView.swift in Sources */,
 				0454A092D39A0C796E147CDF /* LyricsService.swift in Sources */,
 				87289D9D50059C78CCF5CF66 /* MaskCoords.swift in Sources */,
@@ -1746,6 +1751,7 @@
 				589DAC71EC9EFB7AAC07380F /* LangPackDifference.swift in Sources */,
 				2F6BEDD0B5F0A91C20A0B7F5 /* LangPackString.swift in Sources */,
 				7BD767DCEB1CF2AA88C5ACB0 /* LibraryView.swift in Sources */,
+				5D39DB3997982E6690D756E9 /* LocalLibraryStore.swift in Sources */,
 				390AFF216D76065DE5928271 /* LoginView.swift in Sources */,
 				33FBFEB23C223FAA41A29551 /* LyricsService.swift in Sources */,
 				3AA306ED9E8616CB1A8503B4 /* MaskCoords.swift in Sources */,

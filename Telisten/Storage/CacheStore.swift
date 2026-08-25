@@ -211,6 +211,8 @@ actor CacheStore {
     private let indexURL: URL
     private var entries: [String: Entry] = [:]
     private var limit: Int64
+    nonisolated let initialCachedTrackIDs: Set<String>
+    nonisolated let initialByteCount: Int64
 
     init(limit: Int64 = CacheLimits.defaultValue) {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -218,10 +220,16 @@ actor CacheStore {
         indexURL = root.appending(path: "cache-index.json")
         self.limit = min(max(limit, CacheLimits.minimum), CacheLimits.maximum)
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let restoredEntries: [String: Entry]
         if let data = try? Data(contentsOf: indexURL),
            let values = try? JSONDecoder().decode([Entry].self, from: data) {
-            entries = Dictionary(uniqueKeysWithValues: values.map { ($0.trackID, $0) })
+            restoredEntries = Dictionary(uniqueKeysWithValues: values.map { ($0.trackID, $0) })
+        } else {
+            restoredEntries = [:]
         }
+        entries = restoredEntries
+        initialCachedTrackIDs = Set(restoredEntries.keys)
+        initialByteCount = restoredEntries.values.reduce(0) { $0 + $1.byteCount }
     }
 
     func localURL(for track: Track) -> URL? {

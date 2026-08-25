@@ -5,12 +5,9 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            switch model.phase {
-            case .ready:
+            if model.canOpenLibrary {
                 LibraryView(model: model)
-            case .connecting:
-                LaunchView()
-            case .signedOut, .code, .emailAddress, .emailVerification, .password:
+            } else {
                 LoginView(model: model)
             }
         }
@@ -27,17 +24,5 @@ struct RootView: View {
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
         )
-    }
-}
-
-private struct LaunchView: View {
-    var body: some View {
-        VStack(spacing: 18) {
-            ApplicationIconView(size: 78, cornerRadius: 18)
-            ProgressView()
-                .controlSize(.small)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.telistenBackground)
     }
 }

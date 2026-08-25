@@ -68,10 +68,21 @@ targets:
     info:
       path: Telisten/Info-iOS.plist
       properties:
+        ITSAppUsesNonExemptEncryption: false
         TelegramAPIID: $(TELEGRAM_API_ID)
         TelegramAPIHash: $(TELEGRAM_API_HASH)
         UIBackgroundModes:
           - audio
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -86,6 +97,7 @@ targets:
     info:
       path: Telisten/Info-macOS.plist
       properties:
+        ITSAppUsesNonExemptEncryption: false
         TelegramAPIID: $(TELEGRAM_API_ID)
         TelegramAPIHash: $(TELEGRAM_API_HASH)
     settings:

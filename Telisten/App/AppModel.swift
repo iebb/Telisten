@@ -20,7 +20,7 @@ final class AppModel {
     private static let chatMusicPageSize: Int32 = 30
     private static let cacheLimitDefaultsKey = "offlineCache.limitBytes"
 
-    var phase: ConnectionPhase = .connecting
+    var phase: ConnectionPhase = .signedOut
     var hasCredentials = false
     var accounts: [TelegramAccount] = []
     var activeAccountID: String?
@@ -67,10 +67,16 @@ final class AppModel {
         didSet { UserDefaults.standard.set(showChats, forKey: "library.showChats") }
     }
 
+    var canOpenLibrary: Bool {
+        guard !isAddingAccount else { return false }
+        return !accounts.isEmpty || !cachedIDs.isEmpty || !playlists.isEmpty
+    }
+
     let player = AudioPlayer()
 
     @ObservationIgnored private let keychain: KeychainStore
     @ObservationIgnored private let cache: CacheStore
+    @ObservationIgnored private let localLibrary: LocalLibraryStore
     @ObservationIgnored private let artworkStore: ArtworkStore
     @ObservationIgnored private let chatAvatarStore: ChatAvatarStore
     @ObservationIgnored private let telegram: TelegramService
@@ -86,6 +92,8 @@ final class AppModel {
     @ObservationIgnored private var allChats: [MusicChat] = []
     @ObservationIgnored private var musicChatIndex: [String: MusicChatIndexEntry] = [:]
     @ObservationIgnored private var playlistOrders: [String: [String]] = [:]
+    @ObservationIgnored private var playlistTrackMirrors: [String: [Track]] = [:]
+    @ObservationIgnored private var sharedDownloadedTracks: [String: Track] = [:]
     @ObservationIgnored private var trackSearchOffsetID: Int32 = 0
     @ObservationIgnored private var remoteHasMoreTracks = false
     @ObservationIgnored private var visibleTrackLimit = 30
@@ -101,13 +109,20 @@ final class AppModel {
             : Int64(defaults.integer(forKey: Self.cacheLimitDefaultsKey))
         let cacheLimit = min(max(storedCacheLimit, CacheLimits.minimum), CacheLimits.maximum)
         let keychain = KeychainStore()
+        let cache = CacheStore(limit: cacheLimit)
+        let localLibrary = LocalLibraryStore()
         cacheLimitBytes = cacheLimit
         self.keychain = keychain
-        cache = CacheStore(limit: cacheLimit)
+        self.cache = cache
+        self.localLibrary = localLibrary
         artworkStore = ArtworkStore()
         chatAvatarStore = ChatAvatarStore()
         telegram = TelegramService(keychain: keychain)
         lyrics = LyricsService()
+        hasCredentials = (try? TelegramCredentials.appCredentials()) != nil
+        cachedIDs = cache.initialCachedTrackIDs
+        cacheBytes = cache.initialByteCount
+        sharedDownloadedTracks = localLibrary.downloadedTracks
         restoreAccounts()
         restoreLibrary()
         player.onFinished = { [weak self] in self?.trackFinished() }
@@ -119,6 +134,10 @@ final class AppModel {
     func start() async {
         await refreshCacheUsage()
         #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--offline") {
+            phase = canOpenLibrary ? .ready : .signedOut
+            return
+        }
         if ProcessInfo.processInfo.arguments.contains("--demo") {
             await loadDemo()
             return
@@ -130,8 +149,10 @@ final class AppModel {
             hasCredentials = true
         } catch {
             hasCredentials = false
-            phase = .signedOut
-            errorMessage = UserFacingError.message(for: error)
+            phase = canOpenLibrary ? .ready : .signedOut
+            if !canOpenLibrary {
+                errorMessage = UserFacingError.message(for: error)
+            }
             return
         }
         if let activeAccountID {
@@ -143,18 +164,20 @@ final class AppModel {
         }
         do {
             phase = .connecting
-            allChats = try await telegram.restoreSession()
+            allChats = mergedChats(try await telegram.restoreSession(), with: playlists)
+            await refreshActiveAccountProfile()
             applyMusicChatIndex()
             await refreshPlaylists()
-            await refreshActiveAccountProfile()
             phase = .ready
             beginMusicChatIndexing()
         } catch {
-            phase = .signedOut
+            phase = canOpenLibrary ? .ready : .signedOut
             if UserFacingError.isExpiredTelegramSession(error) {
                 await telegram.discardSession()
             }
-            errorMessage = UserFacingError.message(for: error)
+            if !canOpenLibrary {
+                errorMessage = UserFacingError.message(for: error)
+            }
         }
     }
 
@@ -319,6 +342,7 @@ final class AppModel {
             )
             let values = deduplicated(rawValues)
             install(values)
+            if query.isEmpty { mergePlaylistTracks(values, in: chat, appending: false) }
             trackSearchOffsetID = rawValues.last?.messageID ?? 0
             remoteHasMoreTracks = rawValues.count == Int(Self.chatMusicPageSize)
             if query.isEmpty {
@@ -409,7 +433,9 @@ final class AppModel {
                     offsetID: previousOffset,
                     limit: Self.chatMusicPageSize
                 )
-                install(deduplicated(values))
+                let deduplicatedValues = deduplicated(values)
+                install(deduplicatedValues)
+                if query.isEmpty { mergePlaylistTracks(deduplicatedValues, in: chat, appending: true) }
                 let nextOffset = values.last?.messageID ?? previousOffset
                 trackSearchOffsetID = nextOffset
                 remoteHasMoreTracks = values.count == Int(Self.chatMusicPageSize)
@@ -481,7 +507,13 @@ final class AppModel {
         let insertionIndex = min(max(destination - removedBeforeDestination, 0), remaining.count)
         remaining.insert(contentsOf: moving, at: insertionIndex)
         tracks = remaining
-        playlistOrders[chat.id] = remaining.map(\.id)
+        let visibleIDs = Set(remaining.map(\.id))
+        let hiddenTracks = (playlistTrackMirrors[chat.id] ?? []).filter {
+            !visibleIDs.contains($0.id)
+        }
+        let completeMirror = remaining + hiddenTracks
+        playlistTrackMirrors[chat.id] = completeMirror
+        playlistOrders[chat.id] = completeMirror.map(\.id)
         persistLibrary()
     }
 
@@ -533,6 +565,7 @@ final class AppModel {
         }
         do {
             try await telegram.save(track, from: source, to: playlist)
+            mirrorSavedTrack(track, in: playlist)
             return true
         } catch {
             errorMessage = UserFacingError.message(for: error)
@@ -558,6 +591,7 @@ final class AppModel {
             playlists.append(playlist)
             allChats.append(playlist)
             chats.append(playlist)
+            mirrorSavedTrack(track, in: playlist)
             return true
         }
         #endif
@@ -570,6 +604,7 @@ final class AppModel {
             playlists.append(playlist)
             allChats.append(playlist)
             try await telegram.save(track, from: source, to: playlist)
+            mirrorSavedTrack(track, in: playlist)
             rememberMusic(in: playlist)
             return true
         } catch {
@@ -607,6 +642,7 @@ final class AppModel {
         chatMusicCounts.removeValue(forKey: playlist.id)
         chatAvatarData.removeValue(forKey: playlist.id)
         playlistOrders.removeValue(forKey: playlist.id)
+        playlistTrackMirrors.removeValue(forKey: playlist.id)
         if selectedChat?.id == playlist.id {
             selected = nil
             selectedChat = nil
@@ -641,10 +677,19 @@ final class AppModel {
         }
         #endif
 
-        tracks.removeAll {
-            $0.chatID == playlist.id && $0.messageID == track.messageID
+        tracks.removeAll { $0.id == track.id }
+        if var mirroredTracks = playlistTrackMirrors[playlist.id] {
+            mirroredTracks.removeAll { $0.id == track.id }
+            playlistTrackMirrors[playlist.id] = mirroredTracks
+        } else {
+            playlistTrackMirrors[playlist.id] = tracks
         }
-        playlistOrders[playlist.id] = tracks.map(\.id)
+        if var order = playlistOrders[playlist.id] {
+            order.removeAll { $0 == track.id }
+            playlistOrders[playlist.id] = order
+        } else {
+            playlistOrders[playlist.id] = playlistTrackMirrors[playlist.id]?.map(\.id) ?? []
+        }
         persistLibrary()
         errorMessage = nil
     }
@@ -689,6 +734,7 @@ final class AppModel {
         playlists.sort {
             $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
         }
+        persistLibrary()
         errorMessage = nil
         return true
     }
@@ -871,8 +917,13 @@ final class AppModel {
     }
 
     func refreshCacheUsage() async {
-        cachedIDs = await cache.cachedTrackIDs()
+        let actualCachedIDs = await cache.cachedTrackIDs()
+        cachedIDs = actualCachedIDs
         cacheBytes = await cache.totalBytes()
+        reconcileSharedDownloads(with: actualCachedIDs)
+        if selected == .downloads {
+            tracks = actualCachedIDs.compactMap { knownTracks[$0] }.sorted { $0.date > $1.date }
+        }
     }
 
     func setCacheLimit(_ bytes: Int64) {
@@ -894,6 +945,7 @@ final class AppModel {
                 cachedIDs.remove(track.id)
                 downloads[track.id] = DownloadStatus.none
                 cacheBytes = await cache.totalBytes()
+                reconcileSharedDownloads(with: cachedIDs)
                 if selected == .downloads { tracks.removeAll { $0.id == track.id } }
             } catch {
                 errorMessage = UserFacingError.message(for: error)
@@ -971,6 +1023,8 @@ final class AppModel {
             guard player.track?.id == track.id else { return }
             cachedIDs.insert(track.id)
             downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
+            knownTracks[track.id] = track
+            persistLibrary()
             player.load(track, from: url)
         } else {
             guard player.track?.id == track.id else { return }
@@ -1027,6 +1081,8 @@ final class AppModel {
         if let url = await cache.localURL(for: track) {
             cachedIDs.insert(track.id)
             downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
+            knownTracks[track.id] = track
+            persistLibrary()
             return url
         }
         if let existing = downloadTasks[track.id] { return try await existing.value }
@@ -1056,7 +1112,9 @@ final class AppModel {
             let url = try await task.value
             cachedIDs.insert(track.id)
             downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
-            cacheBytes = await cache.totalBytes()
+            knownTracks[track.id] = track
+            await refreshCacheUsage()
+            persistLibrary()
             return url
         } catch {
             cacheBytes = await cache.totalBytes()
@@ -1090,7 +1148,7 @@ final class AppModel {
         if activeAccountID == nil {
             activeAccountID = "legacy"
         }
-        allChats = try await telegram.loadChats()
+        allChats = mergedChats(try await telegram.loadChats(), with: playlists)
         await refreshActiveAccountProfile()
         applyMusicChatIndex()
         await refreshPlaylists()
@@ -1112,10 +1170,10 @@ final class AppModel {
             return
         }
         do {
-            allChats = try await telegram.restoreSession()
+            allChats = mergedChats(try await telegram.restoreSession(), with: playlists)
+            await refreshActiveAccountProfile()
             applyMusicChatIndex()
             await refreshPlaylists()
-            await refreshActiveAccountProfile()
             phase = .ready
             beginMusicChatIndexing()
             errorMessage = nil
@@ -1135,6 +1193,7 @@ final class AppModel {
         selectedChat = nil
         playlists = []
         playlistTrack = nil
+        playlistTrackMirrors = [:]
         showPlaylistSheet = false
         showNowPlaying = false
         lyricsState = .idle
@@ -1157,6 +1216,7 @@ final class AppModel {
 
     private func refreshActiveAccountProfile() async {
         guard let profile = try? await telegram.currentAccount() else { return }
+        let previousID = activeAccountID
         activeAccountID = profile.id
         if let index = accounts.firstIndex(where: { $0.id == profile.id }) {
             accounts[index] = profile
@@ -1164,6 +1224,7 @@ final class AppModel {
             accounts.append(profile)
         }
         persistAccounts()
+        if previousID != profile.id { persistLibrary() }
         await loadAvatar(for: profile)
     }
 
@@ -1202,18 +1263,66 @@ final class AppModel {
         persistLibrary()
     }
 
+    private func mergePlaylistTracks(_ values: [Track], in chat: MusicChat, appending: Bool) {
+        guard isPlaylist(chat), !values.isEmpty else { return }
+        let existing = playlistTrackMirrors[chat.id] ?? []
+        let incomingIDs = Set(values.map(\.id))
+        let retained = existing.filter { !incomingIDs.contains($0.id) }
+        playlistTrackMirrors[chat.id] = appending ? retained + values : values + retained
+        persistLibrary()
+    }
+
+    private func mirrorSavedTrack(_ track: Track, in playlist: MusicChat) {
+        var mirrored = track
+        mirrored.chatID = playlist.id
+        mirrored.messageID = 0
+        var values = playlistTrackMirrors[playlist.id] ?? []
+        values.removeAll { $0.id == mirrored.id }
+        values.insert(mirrored, at: 0)
+        playlistTrackMirrors[playlist.id] = values
+        if var order = playlistOrders[playlist.id], !order.isEmpty {
+            order.removeAll { $0 == mirrored.id }
+            order.insert(mirrored.id, at: 0)
+            playlistOrders[playlist.id] = order
+        }
+        persistLibrary()
+    }
+
+    private func mergedChats(
+        _ primary: [MusicChat],
+        with supplemental: [MusicChat],
+        replacingExisting: Bool = false
+    ) -> [MusicChat] {
+        var result = primary
+        var indices = Dictionary(uniqueKeysWithValues: primary.enumerated().map { ($0.element.id, $0.offset) })
+        for chat in supplemental {
+            if let index = indices[chat.id] {
+                if replacingExisting { result[index] = chat }
+            } else {
+                indices[chat.id] = result.count
+                result.append(chat)
+            }
+        }
+        return result
+    }
+
     private func deduplicated(_ values: [Track]) -> [Track] {
         var seen: Set<String> = []
         return values.filter { seen.insert($0.id).inserted }
     }
 
     private func cachedTracks(in chat: MusicChat) -> [Track] {
-        let values = knownTracks.values
-            .filter { $0.chatID == chat.id }
-            .sorted { lhs, rhs in
-                if lhs.date == rhs.date { return lhs.messageID > rhs.messageID }
-                return lhs.date > rhs.date
-            }
+        let values: [Track]
+        if isPlaylist(chat), let mirrored = playlistTrackMirrors[chat.id] {
+            values = mirrored
+        } else {
+            values = knownTracks.values
+                .filter { $0.chatID == chat.id }
+                .sorted { lhs, rhs in
+                    if lhs.date == rhs.date { return lhs.messageID > rhs.messageID }
+                    return lhs.date > rhs.date
+                }
+        }
         return arranged(values, in: chat)
     }
 
@@ -1243,6 +1352,8 @@ final class AppModel {
     private func refreshPlaylists() async {
         if let values = try? await telegram.loadPlaylistChats(from: allChats) {
             playlists = values
+            allChats = mergedChats(allChats, with: values, replacingExisting: true)
+            persistLibrary()
         }
     }
 
@@ -1492,6 +1603,8 @@ final class AppModel {
         queue = []
         musicChatIndex = [:]
         playlistOrders = [:]
+        playlistTrackMirrors = [:]
+        playlists = []
         favorites = Set(defaults.stringArray(forKey: accountStorageKey("library.favorites")) ?? [])
         if let rawMode = defaults.string(forKey: "player.playbackMode"),
            let savedMode = PlaybackMode(rawValue: rawMode) {
@@ -1522,6 +1635,18 @@ final class AppModel {
            let values = try? JSONDecoder().decode([String: [String]].self, from: data) {
             playlistOrders = values
         }
+
+        let mirror = localLibrary.playlistMirror(for: localMirrorAccountID)
+        playlists = mirror.playlists
+        playlistTrackMirrors = mirror.tracksByPlaylist
+        for (playlistID, order) in mirror.trackOrders where playlistOrders[playlistID] == nil {
+            playlistOrders[playlistID] = order
+        }
+        for track in mirror.tracksByPlaylist.values.joined() where knownTracks[track.id] == nil {
+            knownTracks[track.id] = track
+        }
+        allChats = mergedChats(allChats, with: playlists)
+        reconcileSharedDownloads(with: cachedIDs)
     }
 
     private func persistLibrary() {
@@ -1533,6 +1658,34 @@ final class AppModel {
         defaults.set(try? JSONEncoder().encode(Array(knownTracks.values)), forKey: accountStorageKey("library.tracks"))
         defaults.set(try? JSONEncoder().encode(queue), forKey: accountStorageKey("player.queue"))
         defaults.set(try? JSONEncoder().encode(playlistOrders), forKey: accountStorageKey("playlist.trackOrders"))
+        reconcileSharedDownloads(with: cachedIDs)
+        localLibrary.savePlaylistMirror(
+            LocalPlaylistMirror(
+                playlists: playlists,
+                tracksByPlaylist: playlistTrackMirrors,
+                trackOrders: playlistOrders
+            ),
+            for: localMirrorAccountID
+        )
+    }
+
+    private var localMirrorAccountID: String {
+        activeAccountID ?? "local"
+    }
+
+    private func reconcileSharedDownloads(with actualCachedIDs: Set<String>) {
+        for trackID in actualCachedIDs {
+            if let track = knownTracks[trackID] {
+                sharedDownloadedTracks[trackID] = track
+            }
+        }
+        sharedDownloadedTracks = sharedDownloadedTracks.filter {
+            actualCachedIDs.contains($0.key)
+        }
+        for (trackID, track) in sharedDownloadedTracks where knownTracks[trackID] == nil {
+            knownTracks[trackID] = track
+        }
+        localLibrary.saveDownloadedTracks(sharedDownloadedTracks)
     }
 
     private func persistMusicChatIndex() {
