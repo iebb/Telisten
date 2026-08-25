@@ -45,6 +45,11 @@ struct NowPlayingView: View {
             #if os(macOS)
             .overlay(alignment: .topTrailing) {
                 HStack(spacing: 8) {
+                    Button("Listen Together", systemImage: "dot.radiowaves.left.and.right") {
+                        model.showListenTogetherSheet = true
+                    }
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(isListeningTogether ? Color.telistenAccent : .primary)
                     if let track = model.player.track {
                         Button("Save to playlist", systemImage: "text.badge.plus") {
                             model.openPlaylistPicker(for: track)
@@ -74,6 +79,13 @@ struct NowPlayingView: View {
                         .accessibilityHint("Saves this track to a private playlist")
                     }
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Listen Together", systemImage: "dot.radiowaves.left.and.right") {
+                        model.showListenTogetherSheet = true
+                    }
+                    .labelStyle(.iconOnly)
+                    .foregroundStyle(isListeningTogether ? Color.telistenAccent : .primary)
+                }
                 #endif
             }
         }
@@ -87,10 +99,18 @@ struct NowPlayingView: View {
                 PlaylistSheet(model: model, track: track)
             }
         }
+        .sheet(isPresented: $model.showListenTogetherSheet) {
+            ListenTogetherView(model: model)
+        }
         .task(id: model.player.track?.id) {
             guard let track = model.player.track else { return }
             await model.loadLyrics(for: track)
         }
+    }
+
+    private var isListeningTogether: Bool {
+        if case .live = model.listenTogetherState { return true }
+        return false
     }
 
     private var showsDetails: Bool {
@@ -166,11 +186,22 @@ struct NowPlayingView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    if let listenTogetherSubtitle {
+                        Label(listenTogetherSubtitle, systemImage: "dot.radiowaves.left.and.right")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(Color.telistenAccent)
+                            .lineLimit(1)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(.horizontal, 24)
+    }
+
+    private var listenTogetherSubtitle: String? {
+        guard case let .live(session) = model.listenTogetherState else { return nil }
+        return "Live in \(session.chat.title)"
     }
 
     private var timeline: some View {

@@ -40,3 +40,10 @@ messages.updateDialogFilter
 channels.createChannel
 messages.forwardMessages
 messages.sendReaction
+
+# Listen Together group audio calls
+phone.getGroupCallStreamRtmpUrl
+phone.createGroupCall
+phone.getGroupCall
+phone.editGroupCallTitle
+phone.discardGroupCall

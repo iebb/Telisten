@@ -65,6 +65,9 @@ actor TelegramService {
         case playlistTrackDeletionUnavailable
         case playlistRenameUnavailable
         case commentingUnavailable
+        case groupCallUnavailable
+        case groupCallCreationFailed
+        case groupCallRequiresAdmin
         case invalidPhoneNumber
         case invalidEmailAddress
         case emptyLoginCode
@@ -88,6 +91,9 @@ actor TelegramService {
             case .playlistTrackDeletionUnavailable: "This playlist entry cannot be deleted."
             case .playlistRenameUnavailable: "This playlist cannot be renamed."
             case .commentingUnavailable: "This Telegram post does not have a discussion where comments can be added."
+            case .groupCallUnavailable: "There is no active Listen Together session in this music source."
+            case .groupCallCreationFailed: "Telegram did not create a usable group audio call."
+            case .groupCallRequiresAdmin: "Only an administrator can start Listen Together in this group or channel."
             case .invalidPhoneNumber: "Enter a valid phone number in international format, including the country code."
             case .invalidEmailAddress: "Enter a valid email address."
             case .emptyLoginCode: "Enter the login code Telegram sent you."
@@ -394,6 +400,92 @@ actor TelegramService {
             limit: 100
         )
         return TelegramMapping.tracks(from: result)
+    }
+
+    func startListenTogether(
+        in chat: MusicChat,
+        presence: ListenTogetherPresence
+    ) async throws -> GroupCallPublishEndpoint {
+        guard chat.kind != .user else { throw ServiceError.groupCallRequiresAdmin }
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        let peer = TelegramMapping.inputPeer(for: chat)
+        do {
+            // Telegram requires the publishing URL/key to be requested before
+            // creating an RTMP-mode group call.
+            let endpoint = try await connection.client.phone.getGroupCallStreamRtmpUrl(
+                peer: peer,
+                revoke: false
+            )
+            let updates = try await connection.client.phone.createGroupCall(
+                rtmpStream: true,
+                peer: peer,
+                randomId: Int32.random(in: Int32.min...Int32.max),
+                title: presence.telegramTitle
+            )
+            guard let call = groupCallReference(from: updates) else {
+                throw ServiceError.groupCallCreationFailed
+            }
+            return GroupCallPublishEndpoint(url: endpoint.url, key: endpoint.key, call: call)
+        } catch let error as ServiceError {
+            throw error
+        } catch {
+            let message = error.localizedDescription.uppercased()
+            if message.contains("ADMIN") || message.contains("RIGHT_FORBIDDEN") {
+                throw ServiceError.groupCallRequiresAdmin
+            }
+            throw error
+        }
+    }
+
+    func activeListenTogether(in chat: MusicChat) async throws -> GroupCallReference? {
+        guard chat.kind != .user else { return nil }
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        let history = try await connection.client.messages.getHistory(
+            peer: TelegramMapping.inputPeer(for: chat),
+            offsetId: 0,
+            offsetDate: 0,
+            addOffset: 0,
+            limit: 60,
+            maxId: 0,
+            minId: 0,
+            hash: 0
+        )
+
+        for message in TelegramMapping.messages(from: history) {
+            guard case let .messageService(service) = message,
+                  case let .messageActionGroupCall(action) = service.action,
+                  action.duration == nil else { continue }
+            do {
+                let result = try await connection.client.phone.getGroupCall(call: action.call, limit: 1)
+                if let call = groupCallReference(from: result.call), call.title.hasPrefix("♫ ") || call.title.hasPrefix("Ⅱ ") {
+                    return call
+                }
+            } catch {
+                // A stale service message is expected after a call has ended.
+                continue
+            }
+        }
+        return nil
+    }
+
+    func refreshListenTogether(_ call: GroupCallReference) async throws -> GroupCallReference? {
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        let input = inputGroupCall(call)
+        let result = try await connection.client.phone.getGroupCall(call: input, limit: 1)
+        return groupCallReference(from: result.call)
+    }
+
+    func updateListenTogetherTitle(_ call: GroupCallReference, title: String) async throws {
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        _ = try await connection.client.phone.editGroupCallTitle(
+            call: inputGroupCall(call),
+            title: title
+        )
+    }
+
+    func endListenTogether(_ call: GroupCallReference) async throws {
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        _ = try await connection.client.phone.discardGroupCall(call: inputGroupCall(call))
     }
 
     func musicCount(in chat: MusicChat) async throws -> Int {
@@ -1383,6 +1475,36 @@ actor TelegramService {
         case .dialogFilterDefault:
             return filter
         }
+    }
+
+    private func inputGroupCall(_ call: GroupCallReference) -> TL.InputGroupCallType {
+        .inputGroupCall(TL.InputGroupCall(id: call.id, accessHash: call.accessHash))
+    }
+
+    private func groupCallReference(from updates: TL.UpdatesType) -> GroupCallReference? {
+        let values: [TL.UpdateType]
+        switch updates {
+        case let .updateShort(value): values = [value.update]
+        case let .updates(value): values = value.updates
+        case let .updatesCombined(value): values = value.updates
+        default: values = []
+        }
+        for update in values {
+            guard case let .updateGroupCall(value) = update,
+                  let call = groupCallReference(from: value.call) else { continue }
+            return call
+        }
+        return nil
+    }
+
+    private func groupCallReference(from call: TL.GroupCallType) -> GroupCallReference? {
+        guard case let .groupCall(value) = call, value.rtmpStream else { return nil }
+        return GroupCallReference(
+            id: value.id,
+            accessHash: value.accessHash,
+            title: value.title ?? "Listen Together",
+            participantCount: value.participantsCount
+        )
     }
 
     private var deviceModel: String {

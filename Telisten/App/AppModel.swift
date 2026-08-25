@@ -58,6 +58,8 @@ final class AppModel {
     var currentQueueIndex: Int?
     var playbackMode: PlaybackMode = .order
     var showNowPlaying = false
+    var showListenTogetherSheet = false
+    var listenTogetherState: ListenTogetherState = .idle
     var cacheBytes: Int64 = 0
     var cacheLimitBytes: Int64
     var isDeletingPlaylist = false
@@ -81,6 +83,7 @@ final class AppModel {
     @ObservationIgnored private let chatAvatarStore: ChatAvatarStore
     @ObservationIgnored private let telegram: TelegramService
     @ObservationIgnored private let lyrics: LyricsService
+    @ObservationIgnored private let listenTogetherBroadcaster = ListenTogetherBroadcaster()
     @ObservationIgnored private var downloadTasks: [String: Task<URL, Error>] = [:]
     @ObservationIgnored private var activeTransfers: [String: ProgressiveAudioTransfer] = [:]
     @ObservationIgnored private var artworkLoading: Set<String> = []
@@ -101,6 +104,14 @@ final class AppModel {
     @ObservationIgnored private var commentsTrackID: String?
     @ObservationIgnored private var loginPhone = ""
     @ObservationIgnored private var previousAccountID: String?
+    @ObservationIgnored private var listenTogetherTask: Task<Void, Never>?
+    @ObservationIgnored private var broadcastTrackID: String?
+    @ObservationIgnored private var broadcastStartedAt: Date?
+    @ObservationIgnored private var broadcastStartOffset: TimeInterval = 0
+    @ObservationIgnored private var broadcastWasPlaying = false
+    @ObservationIgnored private var lastCallTitleUpdate: Date?
+    @ObservationIgnored private var listenerMetadataTitle: String?
+    @ObservationIgnored private var listenerMetadataObservedAt: Date?
 
     init() {
         let defaults = UserDefaults.standard
@@ -233,6 +244,7 @@ final class AppModel {
 
     func addAccount() async {
         guard !isAddingAccount else { return }
+        await stopListenTogether(endHostedCall: true)
         persistLibrary()
         previousAccountID = activeAccountID
         isAddingAccount = true
@@ -261,6 +273,7 @@ final class AppModel {
 
     func switchAccount(to account: TelegramAccount) async {
         guard account.id != activeAccountID, !isAddingAccount else { return }
+        await stopListenTogether(endHostedCall: true)
         persistLibrary()
         activeAccountID = account.id
         persistAccounts()
@@ -268,6 +281,7 @@ final class AppModel {
     }
 
     func logOut() async {
+        await stopListenTogether(endHostedCall: true)
         musicChatIndexTask?.cancel()
         let removedAccountID = activeAccountID
         persistLibrary()
@@ -481,6 +495,93 @@ final class AppModel {
         resetTrackDetails(ifChangingTo: track)
         player.beginLoading(track)
         Task { await prepareAndPlay(track) }
+    }
+
+    var listenTogetherChats: [MusicChat] {
+        allChats
+            .filter { $0.kind != .user }
+            .sorted {
+                if $0.isPinned != $1.isPinned { return $0.isPinned == true }
+                return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+            }
+    }
+
+    func startListenTogether(in chat: MusicChat) async {
+        guard let track = player.track else {
+            errorMessage = "Play a track before starting Listen Together."
+            return
+        }
+        await stopListenTogether(endHostedCall: true)
+        listenTogetherState = .preparing
+        var createdCall: GroupCallReference?
+        do {
+            let fileURL = try await cachedFile(for: track)
+            let presence = ListenTogetherPresence(
+                track: track,
+                elapsed: player.currentTime,
+                isPlaying: player.isPlaying
+            )
+            let endpoint = try await telegram.startListenTogether(in: chat, presence: presence)
+            createdCall = endpoint.call
+            try await listenTogetherBroadcaster.connect(to: endpoint)
+            if player.isPlaying {
+                await listenTogetherBroadcaster.play(fileURL, from: player.currentTime)
+            }
+            broadcastTrackID = track.id
+            broadcastStartOffset = player.currentTime
+            broadcastStartedAt = .now
+            broadcastWasPlaying = player.isPlaying
+            lastCallTitleUpdate = .now
+            listenTogetherState = .live(
+                ListenTogetherSession(chat: chat, call: endpoint.call, role: .host, presence: presence)
+            )
+            startListenTogetherCoordinator()
+        } catch {
+            if let createdCall { try? await telegram.endListenTogether(createdCall) }
+            await listenTogetherBroadcaster.disconnect()
+            let message = UserFacingError.message(for: error)
+            listenTogetherState = .failed(message)
+            errorMessage = message
+        }
+    }
+
+    func joinListenTogether(in chat: MusicChat) async {
+        await stopListenTogether(endHostedCall: true)
+        listenTogetherState = .preparing
+        do {
+            guard let call = try await telegram.activeListenTogether(in: chat) else {
+                throw TelegramService.ServiceError.groupCallUnavailable
+            }
+            let presence = ListenTogetherPresence(telegramTitle: call.title)
+            let session = ListenTogetherSession(
+                chat: chat,
+                call: call,
+                role: .listener,
+                presence: presence
+            )
+            listenTogetherState = .live(session)
+            listenerMetadataTitle = call.title
+            listenerMetadataObservedAt = .now
+            if let presence { try await synchronizeListener(to: presence) }
+            startListenTogetherCoordinator()
+        } catch {
+            let message = UserFacingError.message(for: error)
+            listenTogetherState = .failed(message)
+            errorMessage = message
+        }
+    }
+
+    func stopListenTogether(endHostedCall: Bool = true) async {
+        listenTogetherTask?.cancel()
+        listenTogetherTask = nil
+        if endHostedCall,
+           case let .live(session) = listenTogetherState,
+           session.role == .host {
+            try? await telegram.endListenTogether(session.call)
+        }
+        await listenTogetherBroadcaster.disconnect()
+        listenTogetherState = .idle
+        resetListenTogetherRuntime()
     }
 
     func voteState(for track: Track) -> VoteState {
@@ -1143,6 +1244,211 @@ final class AppModel {
         return transfer
     }
 
+    private func startListenTogetherCoordinator() {
+        listenTogetherTask?.cancel()
+        listenTogetherTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                switch self.listenTogetherState {
+                case let .live(session) where session.role == .host:
+                    await self.synchronizeHost(session)
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                case let .live(session) where session.role == .listener:
+                    await self.refreshListener(session)
+                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                default:
+                    return
+                }
+            }
+        }
+    }
+
+    private func synchronizeHost(_ existingSession: ListenTogetherSession) async {
+        guard let track = player.track else { return }
+        var session = existingSession
+        var forceTitleUpdate = false
+
+        if let streamError = await listenTogetherBroadcaster.consumeError() {
+            errorMessage = streamError
+        }
+
+        do {
+            if broadcastTrackID != track.id {
+                let fileURL = try await cachedFile(for: track)
+                if player.isPlaying {
+                    await listenTogetherBroadcaster.play(fileURL, from: player.currentTime)
+                } else {
+                    await listenTogetherBroadcaster.pause()
+                }
+                broadcastTrackID = track.id
+                broadcastStartOffset = player.currentTime
+                broadcastStartedAt = .now
+                broadcastWasPlaying = player.isPlaying
+                forceTitleUpdate = true
+            } else if broadcastWasPlaying != player.isPlaying {
+                if player.isPlaying, let fileURL = await cache.localURL(for: track) {
+                    await listenTogetherBroadcaster.play(fileURL, from: player.currentTime)
+                    broadcastStartOffset = player.currentTime
+                    broadcastStartedAt = .now
+                } else {
+                    await listenTogetherBroadcaster.pause()
+                }
+                broadcastWasPlaying = player.isPlaying
+                forceTitleUpdate = true
+            } else if player.isPlaying, let startedAt = broadcastStartedAt {
+                let expected = broadcastStartOffset + Date.now.timeIntervalSince(startedAt)
+                if abs(expected - player.currentTime) > 2.5,
+                   let fileURL = await cache.localURL(for: track) {
+                    await listenTogetherBroadcaster.play(fileURL, from: player.currentTime)
+                    broadcastStartOffset = player.currentTime
+                    broadcastStartedAt = .now
+                    forceTitleUpdate = true
+                }
+            }
+
+            let presence = ListenTogetherPresence(
+                track: track,
+                elapsed: player.currentTime,
+                isPlaying: player.isPlaying
+            )
+            let shouldUpdateTitle = forceTitleUpdate
+                || lastCallTitleUpdate == nil
+                || Date.now.timeIntervalSince(lastCallTitleUpdate ?? .distantPast) >= 12
+            if shouldUpdateTitle {
+                try await telegram.updateListenTogetherTitle(
+                    session.call,
+                    title: presence.telegramTitle
+                )
+                session.call.title = presence.telegramTitle
+                lastCallTitleUpdate = .now
+            }
+            session.presence = presence
+            listenTogetherState = .live(session)
+        } catch {
+            errorMessage = UserFacingError.message(for: error)
+        }
+    }
+
+    private func refreshListener(_ existingSession: ListenTogetherSession) async {
+        do {
+            guard let call = try await telegram.refreshListenTogether(existingSession.call) else {
+                listenTogetherState = .failed("This Listen Together session has ended.")
+                listenTogetherTask?.cancel()
+                return
+            }
+            if listenerMetadataTitle != call.title {
+                listenerMetadataTitle = call.title
+                listenerMetadataObservedAt = .now
+            }
+            guard var presence = ListenTogetherPresence(telegramTitle: call.title) else {
+                throw TelegramService.ServiceError.groupCallUnavailable
+            }
+            if presence.isPlaying, let observedAt = listenerMetadataObservedAt {
+                presence.elapsed = min(
+                    presence.duration,
+                    presence.elapsed + Date.now.timeIntervalSince(observedAt)
+                )
+            }
+            try await synchronizeListener(to: presence)
+            listenTogetherState = .live(
+                ListenTogetherSession(
+                    chat: existingSession.chat,
+                    call: call,
+                    role: .listener,
+                    presence: presence
+                )
+            )
+        } catch {
+            let message = UserFacingError.message(for: error)
+            listenTogetherState = .failed(message)
+            errorMessage = message
+            listenTogetherTask?.cancel()
+        }
+    }
+
+    private func synchronizeListener(to presence: ListenTogetherPresence) async throws {
+        let track: Track
+        if let current = player.track, listenTogetherMatchScore(current, presence: presence) < 20 {
+            track = current
+        } else {
+            var candidates = Array(knownTracks.values) + tracks + queue
+            #if DEBUG
+            if !isDemo {
+                let query = presence.title.replacingOccurrences(of: "_", with: " ")
+                candidates += try await telegram.searchAllMusic(query: query)
+            }
+            #else
+            let query = presence.title.replacingOccurrences(of: "_", with: " ")
+            candidates += try await telegram.searchAllMusic(query: query)
+            #endif
+            let unique = Dictionary(candidates.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            guard let match = unique.values.min(by: {
+                listenTogetherMatchScore($0, presence: presence)
+                    < listenTogetherMatchScore($1, presence: presence)
+            }), listenTogetherMatchScore(match, presence: presence) < 70 else {
+                throw TelegramService.ServiceError.groupCallUnavailable
+            }
+            track = match
+        }
+
+        if player.track?.id != track.id {
+            play(track, from: [track])
+            for _ in 0..<80 {
+                guard player.track?.id == track.id, player.isLoading else { break }
+                try await Task.sleep(nanoseconds: 150_000_000)
+            }
+        }
+        guard player.track?.id == track.id else { return }
+        if abs(player.currentTime - presence.elapsed) > 2.5 {
+            player.seek(to: presence.elapsed)
+        }
+        if presence.isPlaying {
+            if !player.isPlaying, !player.isLoading { player.play() }
+        } else if player.isPlaying || player.isLoading {
+            player.pause()
+        }
+    }
+
+    private func listenTogetherMatchScore(_ track: Track, presence: ListenTogetherPresence) -> Double {
+        let targetTitle = normalizedListenTogetherText(presence.title)
+        let candidateTitle = normalizedListenTogetherText(track.displayTitle)
+        let titlePenalty: Double
+        if targetTitle == candidateTitle {
+            titlePenalty = 0
+        } else if targetTitle.contains(candidateTitle) || candidateTitle.contains(targetTitle) {
+            titlePenalty = 12
+        } else {
+            let targetWords = Set(targetTitle.split(separator: " "))
+            let candidateWords = Set(candidateTitle.split(separator: " "))
+            let overlap = targetWords.intersection(candidateWords).count
+            titlePenalty = overlap > 0 ? 38 : 100
+        }
+        let durationPenalty = min(abs(track.duration - presence.duration), 30)
+        let artistPenalty = normalizedListenTogetherText(track.displayArtist)
+            == normalizedListenTogetherText(presence.artist) ? 0.0 : 3.0
+        return titlePenalty + durationPenalty + artistPenalty
+    }
+
+    private func normalizedListenTogetherText(_ value: String) -> String {
+        let expanded = value.replacingOccurrences(of: "_", with: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+        return expanded.unicodeScalars
+            .map { CharacterSet.alphanumerics.contains($0) ? String($0) : " " }
+            .joined()
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+    }
+
+    private func resetListenTogetherRuntime() {
+        broadcastTrackID = nil
+        broadcastStartedAt = nil
+        broadcastStartOffset = 0
+        broadcastWasPlaying = false
+        lastCallTitleUpdate = nil
+        listenerMetadataTitle = nil
+        listenerMetadataObservedAt = nil
+    }
+
     private func finishLogin() async throws {
         phase = .connecting
         if activeAccountID == nil {
@@ -1185,6 +1491,12 @@ final class AppModel {
 
     private func resetForAccountTransition() {
         musicChatIndexTask?.cancel()
+        listenTogetherTask?.cancel()
+        listenTogetherTask = nil
+        Task { await listenTogetherBroadcaster.disconnect() }
+        listenTogetherState = .idle
+        showListenTogetherSheet = false
+        resetListenTogetherRuntime()
         player.reset()
         allChats = []
         chats = []
@@ -1533,6 +1845,9 @@ final class AppModel {
         }
 
         phase = .ready
+        if arguments.contains("--demo-listen-together") {
+            showListenTogetherSheet = true
+        }
         if arguments.contains("--demo-now-playing") {
             showNowPlaying = true
         }

@@ -168,6 +168,105 @@ enum PlaybackMode: String, CaseIterable, Codable, Sendable {
     }
 }
 
+struct GroupCallReference: Equatable, Sendable {
+    var id: Int64
+    var accessHash: Int64
+    var title: String
+    var participantCount: Int32
+}
+
+struct GroupCallPublishEndpoint: Sendable {
+    var url: String
+    var key: String
+    var call: GroupCallReference
+}
+
+struct ListenTogetherPresence: Equatable, Sendable {
+    var title: String
+    var artist: String
+    var elapsed: TimeInterval
+    var duration: TimeInterval
+    var isPlaying: Bool
+
+    var telegramTitle: String {
+        let prefix = isPlaying ? "♫ " : "Ⅱ "
+        let timing = "\(Self.duration(elapsed))/\(Self.duration(duration))"
+        let suffix = " · \(timing)"
+        let identity = artist.isEmpty ? title : "\(title) — \(artist)"
+        let availableIdentityCharacters = max(1, 64 - prefix.count - suffix.count)
+        return prefix + String(identity.prefix(availableIdentityCharacters)) + suffix
+    }
+
+    init(track: Track, elapsed: TimeInterval, isPlaying: Bool) {
+        title = track.displayTitle
+        artist = track.displayArtist
+        self.elapsed = max(0, elapsed)
+        duration = max(0, track.duration)
+        self.isPlaying = isPlaying
+    }
+
+    init?(telegramTitle: String) {
+        let isPlaying: Bool
+        let body: Substring
+        if telegramTitle.hasPrefix("♫ ") {
+            isPlaying = true
+            body = telegramTitle.dropFirst(2)
+        } else if telegramTitle.hasPrefix("Ⅱ ") {
+            isPlaying = false
+            body = telegramTitle.dropFirst(2)
+        } else {
+            return nil
+        }
+
+        guard let timingSeparator = body.lastIndex(of: "·") else { return nil }
+        let identity = body[..<timingSeparator].trimmingCharacters(in: .whitespaces)
+        let timing = body[body.index(after: timingSeparator)...]
+            .trimmingCharacters(in: .whitespaces)
+            .split(separator: "/", maxSplits: 1)
+        guard timing.count == 2,
+              let elapsed = Self.seconds(String(timing[0])),
+              let duration = Self.seconds(String(timing[1])) else { return nil }
+
+        let pieces = identity.components(separatedBy: " — ")
+        guard let title = pieces.first, !title.isEmpty else { return nil }
+        self.title = title
+        artist = pieces.dropFirst().joined(separator: " — ")
+        self.elapsed = elapsed
+        self.duration = duration
+        self.isPlaying = isPlaying
+    }
+
+    private static func seconds(_ value: String) -> TimeInterval? {
+        let parts = value.split(separator: ":").compactMap { Double($0) }
+        guard parts.count == 2 else { return nil }
+        return parts[0] * 60 + parts[1]
+    }
+
+    private static func duration(_ value: TimeInterval) -> String {
+        let seconds = max(0, Int(value.rounded()))
+        return String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+struct ListenTogetherSession: Equatable, Sendable {
+    enum Role: String, Sendable {
+        case host
+        case listener
+    }
+
+    var chat: MusicChat
+    var call: GroupCallReference
+    var role: Role
+    var presence: ListenTogetherPresence?
+}
+
+enum ListenTogetherState: Equatable, Sendable {
+    case idle
+    case preparing
+    case live(ListenTogetherSession)
+    case failed(String)
+}
+
 enum ConnectionPhase: Equatable, Sendable {
     case signedOut
     case connecting

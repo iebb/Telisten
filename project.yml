@@ -14,6 +14,9 @@ packages:
   SwiftNIOMTProto:
     url: https://github.com/UInt8Co/swift-nio-mtproto.git
     from: 1.0.0
+  HaishinKit:
+    url: https://github.com/HaishinKit/HaishinKit.swift.git
+    exactVersion: 2.2.5
 settings:
   base:
     SWIFT_VERSION: 6.0
@@ -51,6 +54,10 @@ targetTemplates:
         product: MTProtoClientKit
       - package: SwiftNIOMTProto
         product: NIOMTProtoEncryption
+      - package: HaishinKit
+        product: HaishinKit
+      - package: HaishinKit
+        product: RTMPHaishinKit
     settings:
       base:
         PRODUCT_NAME: Telisten

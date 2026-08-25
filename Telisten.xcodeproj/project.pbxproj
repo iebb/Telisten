@@ -72,10 +72,13 @@
 		177B0DDE0A5EBE7B3B976991 /* Game.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA144858A11024F628A236B5 /* Game.swift */; };
 		17A80FD38178138540F30E06 /* LocalLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B077ECC539382C0709F1A6D2 /* LocalLibraryStore.swift */; };
 		180214FADA229451BED5FE09 /* StarsRevenueStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEFDC6C35F7412E5E97A4692 /* StarsRevenueStatus.swift */; };
+		19126DD7010DA962DD921473 /* phone.getGroupCallStreamRtmpUrl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E8BDF05AE04FF5EC67833F8 /* phone.getGroupCallStreamRtmpUrl.swift */; };
 		196F04C92C1D7018C72B81EA /* messages.AffectedMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 436A621D1F40BF5D33FF1E41 /* messages.AffectedMessages.swift */; };
 		1A10B8FB2808B7E089E5A9D2 /* messages.DiscussionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEA687ED0E70C2FE2CEB3307 /* messages.DiscussionMessage.swift */; };
 		1B77C3D34D780E46C6B456F2 /* messages.deleteMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 303CE3812D9491162ECCD377 /* messages.deleteMessages.swift */; };
+		1CC8CF4F35CDDBE1017222BD /* phone.discardGroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BBF8A6AEB196B5094E3AE71 /* phone.discardGroupCall.swift */; };
 		1D928C7D3107DE2643D21F28 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0572FBB1255C72296722042E /* AppModel.swift */; };
+		1E03353431C8D7EE47426E7D /* ListenTogetherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970F5F7259822B09641BC4DA /* ListenTogetherView.swift */; };
 		1E07C1B3CD0D6F8A8EEBD630 /* messages.EmojiGameInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9DE2BC7474640779D2ED92C /* messages.EmojiGameInfo.swift */; };
 		1E48BE3FB6B69AE7596D28EA /* messages.Chats.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3ED7C2F7662527D281CEC83 /* messages.Chats.swift */; };
 		1E65117036AE4C84CC2A5787 /* TelegramMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C6F59243ACDA14748435998 /* TelegramMapping.swift */; };
@@ -112,6 +115,7 @@
 		28F89E42E336CAA7551D6DF3 /* PageCaption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BAB63FC19BD0EBF8C5F9BC0 /* PageCaption.swift */; };
 		296FA7481149CEB0999DA3F6 /* UserStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C6B08C0724CA0F3DFA7EC7 /* UserStatus.swift */; };
 		29A19D23554167AFCBF78DA9 /* MTProtoCrypto in Frameworks */ = {isa = PBXBuildFile; productRef = 6DF646085BF71F9639D806A6 /* MTProtoCrypto */; };
+		29DA4E22AF06ED6362B413FC /* phone.GroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9854AEF9331C7576D5FDF9ED /* phone.GroupCall.swift */; };
 		2A151AA3D27A26F2D9529AC7 /* PostAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BEFD2CDB3DA74E12BAF591 /* PostAddress.swift */; };
 		2AAC18BA10E387E97775BCF7 /* TLClient+Upload.swift in Sources */ = {isa = PBXBuildFile; fileRef = C489C4643B6E977F58C784EB /* TLClient+Upload.swift */; };
 		2B98F3C70BF1720FCA0E5437 /* TLClient+Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 265FDC414E04335E197D01A1 /* TLClient+Messages.swift */; };
@@ -160,6 +164,7 @@
 		3B40EC1F60F10165D34F6052 /* InputClientProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CAC14A86C7F3211ECD1540 /* InputClientProxy.swift */; };
 		3B4634039EF7BCF84FD356D4 /* help.getConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88393522B2F9CB9E7614FE89 /* help.getConfig.swift */; };
 		3B9582A76FDA6A65D999054C /* CdnConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3159C7C383E370AE9744DF /* CdnConfig.swift */; };
+		3B9E1FAE226399530AAA77F8 /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C5AB926194E4A4E9007BCD4C /* RTMPHaishinKit */; };
 		3C7690357F2148DFA0C8955A /* messages.sendReaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD75A74C51E080837F3B338 /* messages.sendReaction.swift */; };
 		3D1FC693C00C9F768FA2B228 /* CodeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512C4968D970A80F5857C892 /* CodeSettings.swift */; };
 		3D3DB23DE252B3F9E4D082EB /* CdnPublicKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = D17EFC2FF1D5D0673CD2F5EB /* CdnPublicKey.swift */; };
@@ -183,6 +188,7 @@
 		4639910C66CA638063E727F9 /* PageListOrderedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBA5D86E7AA4CD35EB670D9D /* PageListOrderedItem.swift */; };
 		46F664CEBD5BDD24073E4537 /* channels.deleteMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618BD13D4B4B03B3D61F09F7 /* channels.deleteMessages.swift */; };
 		47AAD4FC22F8316D3D16C9E2 /* CdnPublicKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = D17EFC2FF1D5D0673CD2F5EB /* CdnPublicKey.swift */; };
+		47C6FB2A8D6B8DD920DFD03B /* phone.createGroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE33645F33EAC27F381E3CD1 /* phone.createGroupCall.swift */; };
 		488DF69976817BEF5F477A35 /* StarGiftAttributeRarity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4E3B8028F229AABB70EF7C5 /* StarGiftAttributeRarity.swift */; };
 		4944BE7215946D8AABC2B60F /* StickerKeyword.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC0AAB39CFB382A5301ED07 /* StickerKeyword.swift */; };
 		49D976BD3728CC6166EC51C2 /* TodoCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 719A3BF0F3708F209C20F79F /* TodoCompletion.swift */; };
@@ -202,6 +208,7 @@
 		4F54148C696E8AD212ED3560 /* BusinessBotRights.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74057A06A7465C681E52A2E /* BusinessBotRights.swift */; };
 		4FCD427EE43731EC80605D6C /* auth.logOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2850045F9932CB84D5A9CAFF /* auth.logOut.swift */; };
 		504BEC37EDB595C723ABE43F /* messages.sendMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347ED5B99F33428B36FC83D6 /* messages.sendMessage.swift */; };
+		50D4A69704D0D53917F353D9 /* ListenTogetherBroadcaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86FA2BBE87DED0C981DCD8AF /* ListenTogetherBroadcaster.swift */; };
 		51C7346F36A796E3304EF5CC /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A4A78E6E3BD5DF2EEBF247 /* KeychainStore.swift */; };
 		51D28D82F2F1A11860B61C66 /* channels.deleteChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D7DD499DF93FE83A9651121 /* channels.deleteChannel.swift */; };
 		51DAB0CE5FA913513C9D8701 /* PaymentRequestedInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1340A9507D0B0B2A492ED0AD /* PaymentRequestedInfo.swift */; };
@@ -259,6 +266,7 @@
 		6450BFCCF737C1CD0F74FB65 /* GroupCallParticipantVideoSourceGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41DF6BCB08A656E9A0F6F09D /* GroupCallParticipantVideoSourceGroup.swift */; };
 		646A623F4E1B03473FD9D74C /* BaseTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAEE480B9A2C6DEB968817CD /* BaseTheme.swift */; };
 		64AF046365A103DF43D6E0CD /* ForumTopic.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4396A581030E9A7B04C9445 /* ForumTopic.swift */; };
+		6573F66D642D435A4C7083A7 /* phone.GroupCallStreamRtmpUrl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D929B8DC3F3177901D83A74 /* phone.GroupCallStreamRtmpUrl.swift */; };
 		65C11D18F5A58680328F626C /* messages.Messages.swift in Sources */ = {isa = PBXBuildFile; fileRef = B98626F4810C1E32A41E65DB /* messages.Messages.swift */; };
 		665ED63474BB82DCA5DBB181 /* AuctionBidLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F3EA5400A7D1115A4478812 /* AuctionBidLevel.swift */; };
 		666833742419D91CF92F5C07 /* ChatAvatarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CBC653D37B65D391F853EFE /* ChatAvatarStore.swift */; };
@@ -294,6 +302,7 @@
 		785AA5F3B450C322754AE531 /* InputWebDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB40BE191B3FCD68A3CC4AB /* InputWebDocument.swift */; };
 		7874F0B90DAF52F2375D135B /* WallPaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4905C0058FF7F6A82E531F24 /* WallPaper.swift */; };
 		7933ABDC08ABABFE356E5F5F /* InputReplyTo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6E346BEEA78707591AF4F0B /* InputReplyTo.swift */; };
+		79B06308F75E2523948A00D2 /* phone.createGroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE33645F33EAC27F381E3CD1 /* phone.createGroupCall.swift */; };
 		7AC5976807EA660BC2E49125 /* SuggestedPost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F913A8208B754C24CF55340 /* SuggestedPost.swift */; };
 		7AF198AF81D734F993283AA0 /* SRPProof.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0C9EC357AB1A5212B207773 /* SRPProof.swift */; };
 		7B8AA17124323C9972541A2F /* messages.getDiscussionMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BB705B54D796C4DE46740CB /* messages.getDiscussionMessage.swift */; };
@@ -303,11 +312,13 @@
 		7C86D5E7C88C0F8503B91812 /* StarsSubscriptionPricing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BD2CD3FA8725D15FEF58225 /* StarsSubscriptionPricing.swift */; };
 		7DE151573A87784E8BD548AC /* DcOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C625FE22E4533F8D45C8896 /* DcOption.swift */; };
 		7E7A9388C75641EDA9E2425C /* EncryptedChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7240A4E70730AB2E279702C6 /* EncryptedChat.swift */; };
+		7F4FBC158B226065275D54FF /* phone.editGroupCallTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACC9715D2DE68175FA23343 /* phone.editGroupCallTitle.swift */; };
 		7F68975A1908BD6D2836178F /* Page.swift in Sources */ = {isa = PBXBuildFile; fileRef = 149E59FBD153065D82757F6D /* Page.swift */; };
 		7F7B60B9555DBCD0FED65844 /* upload.reuploadCdnFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5540D00A6DC3208C956006C /* upload.reuploadCdnFile.swift */; };
 		7F9C1C76B86C7186EFABCDA1 /* invokeWithLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693B45844C5BD63D7C794A93 /* invokeWithLayer.swift */; };
 		7FA798BA05452C770B4B3AA2 /* StickerSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CB949EB459DD006187547F2 /* StickerSet.swift */; };
 		7FAE2F91820DFE79D23E9D6C /* PageListOrderedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBA5D86E7AA4CD35EB670D9D /* PageListOrderedItem.swift */; };
+		800C3B80E6D132E4E45658CD /* phone.getGroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94733E3BE17140676E1FBF23 /* phone.getGroupCall.swift */; };
 		81218AA11905FA3DB43E342B /* messages.sendMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347ED5B99F33428B36FC83D6 /* messages.sendMessage.swift */; };
 		816B9FFD44621DDC5D96CC96 /* GroupCallMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9894B336BFD1F6CC20D3CB3 /* GroupCallMessage.swift */; };
 		81A6B85CADE909E8E842ABCD /* StarGiftAttribute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FC8776754230181A200C5E /* StarGiftAttribute.swift */; };
@@ -334,9 +345,11 @@
 		87520CAE029D5901C89B78DC /* MTProtoCrypto in Frameworks */ = {isa = PBXBuildFile; productRef = C6CA428F5D164E700C801AC2 /* MTProtoCrypto */; };
 		88A02361678991592F25E464 /* ChatAdminRights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1409BE50AAFA0646DCE81134 /* ChatAdminRights.swift */; };
 		88A65946FD42E94372D8D955 /* DataJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33B488AEDCA69D1285D65B8 /* DataJSON.swift */; };
+		88EF987EF0AE313FB76F4C93 /* phone.getGroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94733E3BE17140676E1FBF23 /* phone.getGroupCall.swift */; };
 		89217CB151B90268E16E6783 /* DocumentAttribute.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7DADDE8BCFE083C6B5E3696 /* DocumentAttribute.swift */; };
 		89943A076DF32FF4D0B26463 /* channels.editTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB51451A7C003BBEA860D666 /* channels.editTitle.swift */; };
 		899B29B1029875978DC55108 /* InputUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE249221F0229AB490187F0 /* InputUser.swift */; };
+		899FAE5CF2CE74CFC47EA396 /* phone.discardGroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BBF8A6AEB196B5094E3AE71 /* phone.discardGroupCall.swift */; };
 		8A4C19889BDFB61A109AA8D7 /* account.EmailVerified.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83C40C0A85233E69D41F1B09 /* account.EmailVerified.swift */; };
 		8AA21ECF3E4BF15CD33E262F /* InputMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E3EE911BA2944F7DB6C165 /* InputMedia.swift */; };
 		8AEFF201145440F2A24D437F /* MediaAreaCoordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABBBD99603854F863C6CA3FA /* MediaAreaCoordinates.swift */; };
@@ -345,6 +358,7 @@
 		8B56995AB6594CFD0DC3BD4C /* TLClient+Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91F2FA5C76E61FF8EC9EEBC9 /* TLClient+Auth.swift */; };
 		8BB30E386FD8FB255A2E3D38 /* upload.CdnFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56D74A4FA18447C1B6587088 /* upload.CdnFile.swift */; };
 		8BDC8712CAE3C531AEC76386 /* MessageAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0E541C790D72ECD081CC1C /* MessageAction.swift */; };
+		8BFB0358B8AC4417443815CB /* phone.GroupCallStreamRtmpUrl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D929B8DC3F3177901D83A74 /* phone.GroupCallStreamRtmpUrl.swift */; };
 		8C3A507D28452BD58212D066 /* LangPackString.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D2BEA38B3C275543A3C23E /* LangPackString.swift */; };
 		8CF1BD221947E995C142F66C /* InputStickerSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A620D30FB71B8B2213FDC9 /* InputStickerSet.swift */; };
 		8D03E4D6EBE0CA64FECEAE32 /* Config.swift in Sources */ = {isa = PBXBuildFile; fileRef = A546F4A27EFC0A133B8661C4 /* Config.swift */; };
@@ -352,6 +366,7 @@
 		8E9533024C16B205813622DB /* channels.deleteChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D7DD499DF93FE83A9651121 /* channels.deleteChannel.swift */; };
 		8F82E27F6972F892AF444565 /* auth.Authorization.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF40346C0DE9AAA863C020D8 /* auth.Authorization.swift */; };
 		906465531518508B14645135 /* StoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4F35A98C5EA53860B191ABE /* StoryViews.swift */; };
+		91FA6742D98B883AAA659E17 /* phone.GroupCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9854AEF9331C7576D5FDF9ED /* phone.GroupCall.swift */; };
 		9244C41741F004EBBE023EDD /* InputGame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B2519F68023AA37E1A180C4 /* InputGame.swift */; };
 		95B4AD75632E554605EDBC61 /* PostAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BEFD2CDB3DA74E12BAF591 /* PostAddress.swift */; };
 		95CCBB6AA25B3A426F6E2F5E /* LabeledPrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B21C648A8C97B2E7B18F1C /* LabeledPrice.swift */; };
@@ -368,12 +383,14 @@
 		9C32BF2224CA3C666B45AED8 /* EmojiStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = C76C806F4C1859B26CC38377 /* EmojiStatus.swift */; };
 		9C41F2BA8915CBA661D46C67 /* PageTableRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65FA2B43EFF40936AE86156B /* PageTableRow.swift */; };
 		9C71D27F0681F3A455AF5680 /* users.getUsers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 786E09C70625A4D7C2ABF0AC /* users.getUsers.swift */; };
+		9D2734C361D1E529D1FD9F93 /* phone.editGroupCallTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACC9715D2DE68175FA23343 /* phone.editGroupCallTitle.swift */; };
 		9D4F8EB1019F966D53BCEE9A /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0572FBB1255C72296722042E /* AppModel.swift */; };
 		9D75E35FA8E641870F2A1662 /* StarGiftAttribute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1FC8776754230181A200C5E /* StarGiftAttribute.swift */; };
 		9E334BA29740BB2D5E157CB6 /* ArtworkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7178D6BBA83D68637B2955 /* ArtworkStore.swift */; };
 		9E5BCA6B945933FD77749B77 /* PeerNotifySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8A5A12F06D56F936963322 /* PeerNotifySettings.swift */; };
 		9E620392BC7B52DA2BCFB179 /* JSONObjectValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01201539851E40FE4429DAEE /* JSONObjectValue.swift */; };
 		9E67DB12E5503516E06C5F6C /* channels.createChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39C271AE9F01465582C25950 /* channels.createChannel.swift */; };
+		9EB18A3A33E8F3CF0C8C12C5 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = FFD5F8709BF7326C02AAEDCC /* HaishinKit */; };
 		9EC58CEE1E915778DC125BFC /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E071E6CF12082ED188A099 /* RootView.swift */; };
 		9F3B5186DB9019B0D1C366A9 /* MessageReactor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64623649E3DB635E7C7CBD3 /* MessageReactor.swift */; };
 		9FB7D59B20DD2CBB50460E1A /* InputCheckPasswordSRP.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68A56DBBB7B0D5239B4116F /* InputCheckPasswordSRP.swift */; };
@@ -386,6 +403,7 @@
 		A0FD4461CA8D44D04AE2EB9E /* StreamingAudioResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA615A898392D5704AF86F1 /* StreamingAudioResource.swift */; };
 		A19396D41E30D58BF005D40D /* UserStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C6B08C0724CA0F3DFA7EC7 /* UserStatus.swift */; };
 		A1988E1CBC0F6AB809914F7E /* GeoPointAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45812892B161CD503DD8AF2 /* GeoPointAddress.swift */; };
+		A23066E15557B59A75DCB9B5 /* phone.getGroupCallStreamRtmpUrl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E8BDF05AE04FF5EC67833F8 /* phone.getGroupCallStreamRtmpUrl.swift */; };
 		A2ADB689FED7AF6B003EA9CC /* KeyboardButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE1F721C7A5DA3F47723E0C1 /* KeyboardButtonStyle.swift */; };
 		A4A330F369AF7B7B224A3A0D /* GroupCallParticipantVideo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D1567DD651186CD20493D4C /* GroupCallParticipantVideo.swift */; };
 		A4A598CE0AE2D0A6F01D0106 /* BusinessBotRights.swift in Sources */ = {isa = PBXBuildFile; fileRef = D74057A06A7465C681E52A2E /* BusinessBotRights.swift */; };
@@ -394,15 +412,18 @@
 		A68F4C3EEDB2E0071F9520B8 /* ChatBannedRights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85EEC346211D88B10CE790C1 /* ChatBannedRights.swift */; };
 		A6D0EE4D7214E961E4757FD3 /* SecureFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA3CD2EF10226D92AF96CFF2 /* SecureFile.swift */; };
 		A6D36108060110050AB7E490 /* MTProtoClientKit in Frameworks */ = {isa = PBXBuildFile; productRef = 403BCA3DAC5F383760761682 /* MTProtoClientKit */; };
+		A7311FF0AAB96815C3B7DF61 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 83027545FCE17F5E60F17814 /* HaishinKit */; };
 		A737344CFF1C6940C9312539 /* PaymentRequestedInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1340A9507D0B0B2A492ED0AD /* PaymentRequestedInfo.swift */; };
 		A769A002E7EBF52AA28A5816 /* TLClient+Upload.swift in Sources */ = {isa = PBXBuildFile; fileRef = C489C4643B6E977F58C784EB /* TLClient+Upload.swift */; };
 		A7E60D13DB46BBE034C25844 /* StickerKeyword.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC0AAB39CFB382A5301ED07 /* StickerKeyword.swift */; };
 		A8C296DFB557FE23C3AABEF4 /* TLClient+Help.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EFD05B98196587ABDFD6316 /* TLClient+Help.swift */; };
 		AAAC7BA015F138884A12B006 /* MessagePeerReaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCAE98378E09EDD85DCB706 /* MessagePeerReaction.swift */; };
 		AB1B93751A561BAF2269D341 /* Invoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BDE6A5062665D012577F46 /* Invoice.swift */; };
+		ACB532639FBF7EF445C4FEAE /* TLClient+Phone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F2DFDD1D137B45B7E71B0A2 /* TLClient+Phone.swift */; };
 		ADAF5139F4B809688F673F32 /* DataJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33B488AEDCA69D1285D65B8 /* DataJSON.swift */; };
 		ADE5F30F114D4267B8239321 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A296FC32DFAD74456756D1C /* Components.swift */; };
 		ADEBD9B684DC9F1D1AE837AF /* StarGiftBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 784C3540C541A82B35DA60A3 /* StarGiftBackground.swift */; };
+		AE054C8A7474349C23AE081D /* TLClient+Phone.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F2DFDD1D137B45B7E71B0A2 /* TLClient+Phone.swift */; };
 		AE3FB3C2A31C8A38D7B6E8C5 /* PeerColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599515C43BB7E6BEE61B5E73 /* PeerColor.swift */; };
 		AEB7197EDAACF537A4A159B5 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E7173B5042D701CCD0BB3F /* AppConfiguration.swift */; };
 		AEE7044013861F1AE1EB41DB /* SecureValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0332214D41D0B6AE433223 /* SecureValue.swift */; };
@@ -428,6 +449,7 @@
 		BAC7ABC612E853081AB9400E /* PhoneCallDiscardReason.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18378165946898628AFA8FA9 /* PhoneCallDiscardReason.swift */; };
 		BAF4A186855607C954C2F41A /* NotifyPeer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EFA04CD76A3E03F258726F3 /* NotifyPeer.swift */; };
 		BB2F035A7D77EE10FA5F9872 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C8AADA1409BBBDFFFA0870 /* User.swift */; };
+		BB7AEF346EBDA68721006059 /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = AF242B552954244800D1A45F /* RTMPHaishinKit */; };
 		BBA6ABA876BB4FF99CC47779 /* InputMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E3EE911BA2944F7DB6C165 /* InputMedia.swift */; };
 		BBEE2735B2AE560E2825C332 /* channels.deleteMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618BD13D4B4B03B3D61F09F7 /* channels.deleteMessages.swift */; };
 		BC16861A7D746E13D928D81D /* messages.updateDialogFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF2BBAEDB0421FC6E189F720 /* messages.updateDialogFilter.swift */; };
@@ -500,6 +522,7 @@
 		E0150934540B4BEDC2E2F34C /* upload.File.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCAA1EDB53373E342CE5D1C3 /* upload.File.swift */; };
 		E01CBBDA2DF642EB258273E8 /* InputFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF44DAEFE1B19FD23DBF4C46 /* InputFile.swift */; };
 		E05B6B75058A692F4FB364A3 /* SecurePasswordKdfAlgo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D205508A7E0007F1E42FFB1 /* SecurePasswordKdfAlgo.swift */; };
+		E191FBFB0421486A0555EF32 /* ListenTogetherBroadcaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86FA2BBE87DED0C981DCD8AF /* ListenTogetherBroadcaster.swift */; };
 		E1F37E0844D6A8F332019105 /* initConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C08251326E018FBD15B96C0 /* initConnection.swift */; };
 		E2026C05F4CB0FC0BD637FB2 /* PageRelatedArticle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F76EBCA3315209D8BE81A6 /* PageRelatedArticle.swift */; };
 		E25C099721B192E6A901D1F1 /* StarGiftAuctionRound.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D45E48B90278D55085BBD0 /* StarGiftAuctionRound.swift */; };
@@ -557,6 +580,7 @@
 		FCC53C6EFBDE608831A6E392 /* account.getPassword.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FDF7A44B740E03B5FEB9603 /* account.getPassword.swift */; };
 		FCD135FF16624E09F7E160E5 /* GeoPointAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = C45812892B161CD503DD8AF2 /* GeoPointAddress.swift */; };
 		FD02431C9865D326007D27E6 /* WebDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD232D39038D8253CBB5E5A0 /* WebDocument.swift */; };
+		FE3042380DD2359EC57DF008 /* ListenTogetherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 970F5F7259822B09641BC4DA /* ListenTogetherView.swift */; };
 		FE9D3A3DEE5589E1AEDD3296 /* auth.signIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE1E5D7A2735CAE855C98BA /* auth.signIn.swift */; };
 		FF0A2DE712DC93536E35FA09 /* Appicon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A5F0DB3B7AB59FDC3441568E /* Appicon.icon */; };
 /* End PBXBuildFile section */
@@ -600,6 +624,7 @@
 		18378165946898628AFA8FA9 /* PhoneCallDiscardReason.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCallDiscardReason.swift; sourceTree = "<group>"; };
 		1884804B61A08441FDFF34C3 /* InlineQueryPeerType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlineQueryPeerType.swift; sourceTree = "<group>"; };
 		1AA58F1D07203C6C30C57C78 /* PhoneConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneConnection.swift; sourceTree = "<group>"; };
+		1BBF8A6AEB196B5094E3AE71 /* phone.discardGroupCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = phone.discardGroupCall.swift; sourceTree = "<group>"; };
 		1D9D086F37C43FC4E8619F3A /* BotMenuButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotMenuButton.swift; sourceTree = "<group>"; };
 		1F6F50B7362B0204257729A5 /* MessageReplies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageReplies.swift; sourceTree = "<group>"; };
 		202D606839F8634CE456C0F6 /* MediaArea.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaArea.swift; sourceTree = "<group>"; };
@@ -607,6 +632,7 @@
 		261074C0031D77010F801D6D /* InputPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputPhoto.swift; sourceTree = "<group>"; };
 		265FDC414E04335E197D01A1 /* TLClient+Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TLClient+Messages.swift"; sourceTree = "<group>"; };
 		2850045F9932CB84D5A9CAFF /* auth.logOut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = auth.logOut.swift; sourceTree = "<group>"; };
+		2E8BDF05AE04FF5EC67833F8 /* phone.getGroupCallStreamRtmpUrl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = phone.getGroupCallStreamRtmpUrl.swift; sourceTree = "<group>"; };
 		2EFD05B98196587ABDFD6316 /* TLClient+Help.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TLClient+Help.swift"; sourceTree = "<group>"; };
 		303CE3812D9491162ECCD377 /* messages.deleteMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.deleteMessages.swift; sourceTree = "<group>"; };
 		3090B7F97F74AC5ECDCCEDC9 /* Peer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Peer.swift; sourceTree = "<group>"; };
@@ -695,9 +721,11 @@
 		7C9B063B74458BDB674AB70A /* messages.forwardMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.forwardMessages.swift; sourceTree = "<group>"; };
 		7CBC653D37B65D391F853EFE /* ChatAvatarStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatAvatarStore.swift; sourceTree = "<group>"; };
 		7D0AC45168B4AADEBBE25680 /* upload.getFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = upload.getFile.swift; sourceTree = "<group>"; };
+		7D929B8DC3F3177901D83A74 /* phone.GroupCallStreamRtmpUrl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = phone.GroupCallStreamRtmpUrl.swift; sourceTree = "<group>"; };
 		7E3159C7C383E370AE9744DF /* CdnConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CdnConfig.swift; sourceTree = "<group>"; };
 		7EB233A95659B5B77BD90B2A /* TLClient+Methods.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TLClient+Methods.swift"; sourceTree = "<group>"; };
 		7EFA04CD76A3E03F258726F3 /* NotifyPeer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotifyPeer.swift; sourceTree = "<group>"; };
+		7F2DFDD1D137B45B7E71B0A2 /* TLClient+Phone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TLClient+Phone.swift"; sourceTree = "<group>"; };
 		7FDFDB1CA1BE53DDCF44A228 /* Update.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Update.swift; sourceTree = "<group>"; };
 		82F883575CBDBABCEA052E25 /* PlaylistSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistSheet.swift; sourceTree = "<group>"; };
 		83C40C0A85233E69D41F1B09 /* account.EmailVerified.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = account.EmailVerified.swift; sourceTree = "<group>"; };
@@ -706,6 +734,7 @@
 		85D15CB9B3FC234A672A4481 /* QuickReply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickReply.swift; sourceTree = "<group>"; };
 		85EEC346211D88B10CE790C1 /* ChatBannedRights.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatBannedRights.swift; sourceTree = "<group>"; };
 		865CD00C4B2A6BB5461E1469 /* CacheStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheStore.swift; sourceTree = "<group>"; };
+		86FA2BBE87DED0C981DCD8AF /* ListenTogetherBroadcaster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListenTogetherBroadcaster.swift; sourceTree = "<group>"; };
 		88393522B2F9CB9E7614FE89 /* help.getConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = help.getConfig.swift; sourceTree = "<group>"; };
 		89A4A78E6E3BD5DF2EEBF247 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		8A0E541C790D72ECD081CC1C /* MessageAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageAction.swift; sourceTree = "<group>"; };
@@ -718,8 +747,11 @@
 		92940C097F5739F4F7F3EB63 /* WallPaperSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallPaperSettings.swift; sourceTree = "<group>"; };
 		940E0D81289FC3D414A0715F /* BotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotApp.swift; sourceTree = "<group>"; };
 		944308AF80E86FA989D422D6 /* PeerSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerSettings.swift; sourceTree = "<group>"; };
+		94733E3BE17140676E1FBF23 /* phone.getGroupCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = phone.getGroupCall.swift; sourceTree = "<group>"; };
 		96322EEFF0D550EFB1990F14 /* messages.StickerSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.StickerSet.swift; sourceTree = "<group>"; };
 		9638B9B504499A85606288A6 /* PaymentCharge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentCharge.swift; sourceTree = "<group>"; };
+		970F5F7259822B09641BC4DA /* ListenTogetherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListenTogetherView.swift; sourceTree = "<group>"; };
+		9854AEF9331C7576D5FDF9ED /* phone.GroupCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = phone.GroupCall.swift; sourceTree = "<group>"; };
 		9AA615A898392D5704AF86F1 /* StreamingAudioResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingAudioResource.swift; sourceTree = "<group>"; };
 		9B71E55ECED6711210A8830D /* InputGeoPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputGeoPoint.swift; sourceTree = "<group>"; };
 		9C08251326E018FBD15B96C0 /* initConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = initConnection.swift; sourceTree = "<group>"; };
@@ -740,6 +772,7 @@
 		ABBBD99603854F863C6CA3FA /* MediaAreaCoordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaAreaCoordinates.swift; sourceTree = "<group>"; };
 		AD232D39038D8253CBB5E5A0 /* WebDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDocument.swift; sourceTree = "<group>"; };
 		ADC82A20EA0861C64C9B71A7 /* DialogPeer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogPeer.swift; sourceTree = "<group>"; };
+		AE33645F33EAC27F381E3CD1 /* phone.createGroupCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = phone.createGroupCall.swift; sourceTree = "<group>"; };
 		AEB36B1D23ED77EE03C7DCED /* PasswordKdfAlgo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordKdfAlgo.swift; sourceTree = "<group>"; };
 		AF40346C0DE9AAA863C020D8 /* auth.Authorization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = auth.Authorization.swift; sourceTree = "<group>"; };
 		AF74DADA8E169E8407942C29 /* account.verifyEmail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = account.verifyEmail.swift; sourceTree = "<group>"; };
@@ -754,6 +787,7 @@
 		B7A8D1372A5C9377806F55C2 /* MessageFwdHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageFwdHeader.swift; sourceTree = "<group>"; };
 		B98626F4810C1E32A41E65DB /* messages.Messages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = messages.Messages.swift; sourceTree = "<group>"; };
 		B9894B336BFD1F6CC20D3CB3 /* GroupCallMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupCallMessage.swift; sourceTree = "<group>"; };
+		BACC9715D2DE68175FA23343 /* phone.editGroupCallTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = phone.editGroupCallTitle.swift; sourceTree = "<group>"; };
 		BB51451A7C003BBEA860D666 /* channels.editTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = channels.editTitle.swift; sourceTree = "<group>"; };
 		BBC2A6B592793654DAAE2931 /* auth.checkPassword.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = auth.checkPassword.swift; sourceTree = "<group>"; };
 		BBC6349ACC94C36A059F80A6 /* StickerPack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerPack.swift; sourceTree = "<group>"; };
@@ -849,6 +883,8 @@
 				87520CAE029D5901C89B78DC /* MTProtoCrypto in Frameworks */,
 				08D873B8AF9A20FAD623BE6B /* MTProtoClientKit in Frameworks */,
 				01B25B33DF73F6589218F4E4 /* NIOMTProtoEncryption in Frameworks */,
+				A7311FF0AAB96815C3B7DF61 /* HaishinKit in Frameworks */,
+				BB7AEF346EBDA68721006059 /* RTMPHaishinKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -861,6 +897,8 @@
 				29A19D23554167AFCBF78DA9 /* MTProtoCrypto in Frameworks */,
 				A6D36108060110050AB7E490 /* MTProtoClientKit in Frameworks */,
 				44ACF3FA977A6054EBB68AC3 /* NIOMTProtoEncryption in Frameworks */,
+				9EB18A3A33E8F3CF0C8C12C5 /* HaishinKit in Frameworks */,
+				3B9E1FAE226399530AAA77F8 /* RTMPHaishinKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -877,6 +915,7 @@
 				2EFD05B98196587ABDFD6316 /* TLClient+Help.swift */,
 				265FDC414E04335E197D01A1 /* TLClient+Messages.swift */,
 				7EB233A95659B5B77BD90B2A /* TLClient+Methods.swift */,
+				7F2DFDD1D137B45B7E71B0A2 /* TLClient+Phone.swift */,
 				C489C4643B6E977F58C784EB /* TLClient+Upload.swift */,
 				A55A4ECAE682983A77291696 /* TLClient+Users.swift */,
 			);
@@ -915,6 +954,7 @@
 			children = (
 				3A296FC32DFAD74456756D1C /* Components.swift */,
 				EE9FEA5BDC3AA9F3698C9E3B /* LibraryView.swift */,
+				970F5F7259822B09641BC4DA /* ListenTogetherView.swift */,
 				5153C34F74190947B66B659F /* LoginView.swift */,
 				D30E8365362E333D85AE36F6 /* NowPlayingView.swift */,
 				DF809D17F97794FEC1860425 /* PlayerBar.swift */,
@@ -1058,6 +1098,8 @@
 				04D37F3966658FB1C40795D0 /* PeerLocated.swift */,
 				5A8A5A12F06D56F936963322 /* PeerNotifySettings.swift */,
 				944308AF80E86FA989D422D6 /* PeerSettings.swift */,
+				9854AEF9331C7576D5FDF9ED /* phone.GroupCall.swift */,
+				7D929B8DC3F3177901D83A74 /* phone.GroupCallStreamRtmpUrl.swift */,
 				14C1006B58F2E25FAA999E66 /* PhoneCall.swift */,
 				18378165946898628AFA8FA9 /* PhoneCallDiscardReason.swift */,
 				A278C05BF35893B937B74EB0 /* PhoneCallProtocol.swift */,
@@ -1200,6 +1242,11 @@
 				347ED5B99F33428B36FC83D6 /* messages.sendMessage.swift */,
 				EAD75A74C51E080837F3B338 /* messages.sendReaction.swift */,
 				BF2BBAEDB0421FC6E189F720 /* messages.updateDialogFilter.swift */,
+				AE33645F33EAC27F381E3CD1 /* phone.createGroupCall.swift */,
+				1BBF8A6AEB196B5094E3AE71 /* phone.discardGroupCall.swift */,
+				BACC9715D2DE68175FA23343 /* phone.editGroupCallTitle.swift */,
+				94733E3BE17140676E1FBF23 /* phone.getGroupCall.swift */,
+				2E8BDF05AE04FF5EC67833F8 /* phone.getGroupCallStreamRtmpUrl.swift */,
 				526F6E40F70D6D4635063300 /* upload.getCdnFile.swift */,
 				7D0AC45168B4AADEBBE25680 /* upload.getFile.swift */,
 				D5540D00A6DC3208C956006C /* upload.reuploadCdnFile.swift */,
@@ -1212,6 +1259,7 @@
 			isa = PBXGroup;
 			children = (
 				0C5CF5DAB218AEAEA7D8B04E /* AudioPlayer.swift */,
+				86FA2BBE87DED0C981DCD8AF /* ListenTogetherBroadcaster.swift */,
 				9AA615A898392D5704AF86F1 /* StreamingAudioResource.swift */,
 			);
 			path = Player;
@@ -1291,6 +1339,8 @@
 				6DF646085BF71F9639D806A6 /* MTProtoCrypto */,
 				403BCA3DAC5F383760761682 /* MTProtoClientKit */,
 				DB5D1A848687313B69DE379B /* NIOMTProtoEncryption */,
+				FFD5F8709BF7326C02AAEDCC /* HaishinKit */,
+				C5AB926194E4A4E9007BCD4C /* RTMPHaishinKit */,
 			);
 			productName = "Telisten-macOS";
 			productReference = 50601B52E7778D8B4C6D8FB0 /* Telisten-macOS.app */;
@@ -1315,6 +1365,8 @@
 				C6CA428F5D164E700C801AC2 /* MTProtoCrypto */,
 				05EE5DC648384749D625447F /* MTProtoClientKit */,
 				5A43909A796BBA252C4A156E /* NIOMTProtoEncryption */,
+				83027545FCE17F5E60F17814 /* HaishinKit */,
+				AF242B552954244800D1A45F /* RTMPHaishinKit */,
 			);
 			productName = "Telisten-iOS";
 			productReference = FA45AFCDAD9D81F449E8F27C /* Telisten-iOS.app */;
@@ -1349,6 +1401,7 @@
 			mainGroup = B8C393017F3ECCE98CE1B324;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */,
 				3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */,
 				90B5AA772AEF0FDF2F9E6BAB /* XCRemoteSwiftPackageReference "swift-nio-mtproto" */,
 			);
@@ -1474,6 +1527,8 @@
 				DC3093E4DBAEC12DE9E70D15 /* LangPackDifference.swift in Sources */,
 				8C3A507D28452BD58212D066 /* LangPackString.swift in Sources */,
 				E4697251FA843DE5358075AC /* LibraryView.swift in Sources */,
+				50D4A69704D0D53917F353D9 /* ListenTogetherBroadcaster.swift in Sources */,
+				1E03353431C8D7EE47426E7D /* ListenTogetherView.swift in Sources */,
 				17A80FD38178138540F30E06 /* LocalLibraryStore.swift in Sources */,
 				E52A532A15FB89FF6339EC9F /* LoginView.swift in Sources */,
 				0454A092D39A0C796E147CDF /* LyricsService.swift in Sources */,
@@ -1575,6 +1630,7 @@
 				A8C296DFB557FE23C3AABEF4 /* TLClient+Help.swift in Sources */,
 				2B98F3C70BF1720FCA0E5437 /* TLClient+Messages.swift in Sources */,
 				02FC2D2ABDE3797B7CAA04CE /* TLClient+Methods.swift in Sources */,
+				AE054C8A7474349C23AE081D /* TLClient+Phone.swift in Sources */,
 				2AAC18BA10E387E97775BCF7 /* TLClient+Upload.swift in Sources */,
 				3F7892B32E5594A6B21F6352 /* TLClient+Users.swift in Sources */,
 				310CCE0129B89B597F407DBF /* TLClient.swift in Sources */,
@@ -1650,6 +1706,13 @@
 				504BEC37EDB595C723ABE43F /* messages.sendMessage.swift in Sources */,
 				3C7690357F2148DFA0C8955A /* messages.sendReaction.swift in Sources */,
 				BC16861A7D746E13D928D81D /* messages.updateDialogFilter.swift in Sources */,
+				29DA4E22AF06ED6362B413FC /* phone.GroupCall.swift in Sources */,
+				8BFB0358B8AC4417443815CB /* phone.GroupCallStreamRtmpUrl.swift in Sources */,
+				79B06308F75E2523948A00D2 /* phone.createGroupCall.swift in Sources */,
+				1CC8CF4F35CDDBE1017222BD /* phone.discardGroupCall.swift in Sources */,
+				9D2734C361D1E529D1FD9F93 /* phone.editGroupCallTitle.swift in Sources */,
+				88EF987EF0AE313FB76F4C93 /* phone.getGroupCall.swift in Sources */,
+				A23066E15557B59A75DCB9B5 /* phone.getGroupCallStreamRtmpUrl.swift in Sources */,
 				6FD526614289AF65D52E69BE /* storage.FileType.swift in Sources */,
 				8BB30E386FD8FB255A2E3D38 /* upload.CdnFile.swift in Sources */,
 				E0150934540B4BEDC2E2F34C /* upload.File.swift in Sources */,
@@ -1751,6 +1814,8 @@
 				589DAC71EC9EFB7AAC07380F /* LangPackDifference.swift in Sources */,
 				2F6BEDD0B5F0A91C20A0B7F5 /* LangPackString.swift in Sources */,
 				7BD767DCEB1CF2AA88C5ACB0 /* LibraryView.swift in Sources */,
+				E191FBFB0421486A0555EF32 /* ListenTogetherBroadcaster.swift in Sources */,
+				FE3042380DD2359EC57DF008 /* ListenTogetherView.swift in Sources */,
 				5D39DB3997982E6690D756E9 /* LocalLibraryStore.swift in Sources */,
 				390AFF216D76065DE5928271 /* LoginView.swift in Sources */,
 				33FBFEB23C223FAA41A29551 /* LyricsService.swift in Sources */,
@@ -1852,6 +1917,7 @@
 				619339D4EE2B0BB9185E270C /* TLClient+Help.swift in Sources */,
 				624E24A0800C53261564AFB4 /* TLClient+Messages.swift in Sources */,
 				623A4DD1D56E4C3BC033AB5F /* TLClient+Methods.swift in Sources */,
+				ACB532639FBF7EF445C4FEAE /* TLClient+Phone.swift in Sources */,
 				A769A002E7EBF52AA28A5816 /* TLClient+Upload.swift in Sources */,
 				C2F65CDBCD886A5CF98D7C81 /* TLClient+Users.swift in Sources */,
 				287F2E6E28DDABD9E854C99A /* TLClient.swift in Sources */,
@@ -1927,6 +1993,13 @@
 				81218AA11905FA3DB43E342B /* messages.sendMessage.swift in Sources */,
 				4BD08D64F011DDD1127F243F /* messages.sendReaction.swift in Sources */,
 				01A4974351E1B0E764B9D915 /* messages.updateDialogFilter.swift in Sources */,
+				91FA6742D98B883AAA659E17 /* phone.GroupCall.swift in Sources */,
+				6573F66D642D435A4C7083A7 /* phone.GroupCallStreamRtmpUrl.swift in Sources */,
+				47C6FB2A8D6B8DD920DFD03B /* phone.createGroupCall.swift in Sources */,
+				899FAE5CF2CE74CFC47EA396 /* phone.discardGroupCall.swift in Sources */,
+				7F4FBC158B226065275D54FF /* phone.editGroupCallTitle.swift in Sources */,
+				800C3B80E6D132E4E45658CD /* phone.getGroupCall.swift in Sources */,
+				19126DD7010DA962DD921473 /* phone.getGroupCallStreamRtmpUrl.swift in Sources */,
 				07790A34292F497256F1F1C8 /* storage.FileType.swift in Sources */,
 				2682DFFE23064BA2140C600B /* upload.CdnFile.swift in Sources */,
 				6E900A0AC62347815B4CEC78 /* upload.File.swift in Sources */,
@@ -2222,6 +2295,14 @@
 				minimumVersion = 1.0.0;
 			};
 		};
+		4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/HaishinKit/HaishinKit.swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.2.5;
+			};
+		};
 		90B5AA772AEF0FDF2F9E6BAB /* XCRemoteSwiftPackageReference "swift-nio-mtproto" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/UInt8Co/swift-nio-mtproto.git";
@@ -2263,15 +2344,30 @@
 			package = 3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */;
 			productName = MTProtoCrypto;
 		};
+		83027545FCE17F5E60F17814 /* HaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
+			productName = HaishinKit;
+		};
 		97F30961A8960D673778DD2E /* MTProtoBaseSchema */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */;
 			productName = MTProtoBaseSchema;
 		};
+		AF242B552954244800D1A45F /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
+			productName = RTMPHaishinKit;
+		};
 		BBCA96220A4B649EC4657B27 /* MTProtoBaseSchema */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */;
 			productName = MTProtoBaseSchema;
+		};
+		C5AB926194E4A4E9007BCD4C /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
+			productName = RTMPHaishinKit;
 		};
 		C6CA428F5D164E700C801AC2 /* MTProtoCrypto */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -2282,6 +2378,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 90B5AA772AEF0FDF2F9E6BAB /* XCRemoteSwiftPackageReference "swift-nio-mtproto" */;
 			productName = NIOMTProtoEncryption;
+		};
+		FFD5F8709BF7326C02AAEDCC /* HaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
+			productName = HaishinKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

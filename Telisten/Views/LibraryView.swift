@@ -63,6 +63,9 @@ struct LibraryView: View {
                     PlaylistSheet(model: model, track: track)
                 }
             }
+            .sheet(isPresented: $model.showListenTogetherSheet) {
+                ListenTogetherView(model: model)
+            }
             .alert(
                 "Delete playlist?",
                 isPresented: $showDeletePlaylistConfirmation,
@@ -180,7 +183,12 @@ struct LibraryView: View {
             ToolbarItem(placement: .navigation) { accountMenu }
             #endif
             ToolbarItem(placement: .primaryAction) {
-                Button("Settings", systemImage: "gearshape", action: openSettings)
+                HStack {
+                    Button("Listen Together", systemImage: "dot.radiowaves.left.and.right") {
+                        model.showListenTogetherSheet = true
+                    }
+                    Button("Settings", systemImage: "gearshape", action: openSettings)
+                }
             }
         }
         .onChange(of: model.selected) { _, value in

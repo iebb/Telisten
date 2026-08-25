@@ -27,6 +27,9 @@ extension TL {
   /// The TL namespace `messages.*`.
   public enum Messages {
   }
+  /// The TL namespace `phone.*`.
+  public enum Phone {
+  }
   /// The TL namespace `storage.*`.
   public enum Storage {
   }

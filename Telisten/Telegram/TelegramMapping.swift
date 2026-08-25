@@ -31,14 +31,16 @@ enum TelegramMapping {
     }
 
     static func tracks(from result: TL.Messages.MessagesType) -> [Track] {
-        let messages: [TL.MessageType]
+        messages(from: result).compactMap(map(message:))
+    }
+
+    static func messages(from result: TL.Messages.MessagesType) -> [TL.MessageType] {
         switch result {
-        case let .messages(value): messages = value.messages
-        case let .messagesSlice(value): messages = value.messages
-        case let .channelMessages(value): messages = value.messages
-        case .messagesNotModified: messages = []
+        case let .messages(value): value.messages
+        case let .messagesSlice(value): value.messages
+        case let .channelMessages(value): value.messages
+        case .messagesNotModified: []
         }
-        return messages.compactMap(map(message:))
     }
 
     static func messageCount(from result: TL.Messages.MessagesType) -> Int {
