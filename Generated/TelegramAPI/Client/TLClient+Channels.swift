@@ -34,6 +34,10 @@ extension TLClient {
     public func editTitle(channel: TL.InputChannelType, title: String) async throws -> TL.UpdatesType {
       try await client.invoke(TL.Channels.EditTitle(channel: channel, title: title))
     }
+    /// TL: `channels.inviteToChannel#c9e33d54 channel:InputChannel users:Vector<InputUser> = messages.InvitedUsers`
+    public func inviteToChannel(channel: TL.InputChannelType, users: [TL.InputUserType]) async throws -> TL.Messages.InvitedUsers {
+      try await client.invoke(TL.Channels.InviteToChannel(channel: channel, users: users))
+    }
     /// TL: `channels.deleteChannel#c0111fe3 channel:InputChannel = Updates`
     public func deleteChannel(channel: TL.InputChannelType) async throws -> TL.UpdatesType {
       try await client.invoke(TL.Channels.DeleteChannel(channel: channel))

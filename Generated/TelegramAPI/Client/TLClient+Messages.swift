@@ -46,6 +46,14 @@ extension TLClient {
     public func editChatTitle(chatId: Int64, title: String) async throws -> TL.UpdatesType {
       try await client.invoke(TL.Messages.EditChatTitle(chatId: chatId, title: title))
     }
+    /// TL: `messages.addChatUser#cbc6d107 chat_id:long user_id:InputUser fwd_limit:int = messages.InvitedUsers`
+    public func addChatUser(chatId: Int64, userId: TL.InputUserType, fwdLimit: Int32) async throws -> TL.Messages.InvitedUsers {
+      try await client.invoke(TL.Messages.AddChatUser(chatId: chatId, userId: userId, fwdLimit: fwdLimit))
+    }
+    /// TL: `messages.exportChatInvite#a455de90 flags:# legacy_revoke_permanent:flags.2?true request_needed:flags.3?true peer:InputPeer expire_date:flags.0?int usage_limit:flags.1?int title:flags.4?string subscription_pricing:flags.5?StarsSubscriptionPricing = ExportedChatInvite`
+    public func exportChatInvite(legacyRevokePermanent: Bool = false, requestNeeded: Bool = false, peer: TL.InputPeerType, expireDate: Int32? = nil, usageLimit: Int32? = nil, title: String? = nil, subscriptionPricing: TL.StarsSubscriptionPricing? = nil) async throws -> TL.ExportedChatInviteType {
+      try await client.invoke(TL.Messages.ExportChatInvite(legacyRevokePermanent: legacyRevokePermanent, requestNeeded: requestNeeded, peer: peer, expireDate: expireDate, usageLimit: usageLimit, title: title, subscriptionPricing: subscriptionPricing))
+    }
     /// TL: `messages.searchGlobal#4bc6589a flags:# broadcasts_only:flags.1?true groups_only:flags.2?true users_only:flags.3?true folder_id:flags.0?int q:string filter:MessagesFilter min_date:int max_date:int offset_rate:int offset_peer:InputPeer offset_id:int limit:int = messages.Messages`
     public func searchGlobal(broadcastsOnly: Bool = false, groupsOnly: Bool = false, usersOnly: Bool = false, folderId: Int32? = nil, q: String, filter: TL.MessagesFilterType, minDate: Int32, maxDate: Int32, offsetRate: Int32, offsetPeer: TL.InputPeerType, offsetId: Int32, limit: Int32) async throws -> TL.Messages.MessagesType {
       try await client.invoke(TL.Messages.SearchGlobal(broadcastsOnly: broadcastsOnly, groupsOnly: groupsOnly, usersOnly: usersOnly, folderId: folderId, q: q, filter: filter, minDate: minDate, maxDate: maxDate, offsetRate: offsetRate, offsetPeer: offsetPeer, offsetId: offsetId, limit: limit))

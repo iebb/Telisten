@@ -111,6 +111,15 @@ enum TelegramMapping {
         return values.compactMap(map(chat:))
     }
 
+    static func contacts(from result: TL.Contacts.ContactsType) -> [MusicChat] {
+        guard case let .contacts(value) = result else { return [] }
+        let contactIDs = Set(value.contacts.map(\.userId))
+        return value.users
+            .compactMap(map(user:))
+            .filter { contactIDs.contains($0.peerID) && $0.accessHash != nil }
+            .sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
     static func chatID(for peer: TL.InputPeerType) -> String? {
         switch peer {
         case let .inputPeerUser(value): "u:\(value.userId)"
@@ -161,7 +170,8 @@ enum TelegramMapping {
         case let .chat(value):
             makeChat(
                 id: "g:\(value.id)", peerID: value.id, accessHash: nil,
-                kind: .group, title: value.title, username: nil, photo: value.photo
+                kind: .group, title: value.title, username: nil, photo: value.photo,
+                creator: value.creator, adminRights: value.adminRights
             )
         case let .chatForbidden(value):
             MusicChat(id: "g:\(value.id)", peerID: value.id, accessHash: nil, kind: .group, title: value.title, username: nil)
@@ -169,7 +179,8 @@ enum TelegramMapping {
             makeChat(
                 id: "c:\(value.id)", peerID: value.id, accessHash: value.accessHash,
                 kind: .channel, title: value.title, username: value.username, photo: value.photo,
-                isBroadcast: value.broadcast
+                isBroadcast: value.broadcast, creator: value.creator,
+                adminRights: value.adminRights
             )
         case let .channelForbidden(value):
             MusicChat(
@@ -219,7 +230,9 @@ enum TelegramMapping {
         title: String,
         username: String?,
         photo: TL.ChatPhotoType,
-        isBroadcast: Bool? = nil
+        isBroadcast: Bool? = nil,
+        creator: Bool = false,
+        adminRights: TL.ChatAdminRights? = nil
     ) -> MusicChat {
         let avatar: (photoID: Int64, dcID: Int32)? = switch photo {
         case let .chatPhoto(value): (value.photoId, value.dcId)
@@ -234,7 +247,10 @@ enum TelegramMapping {
             username: username,
             avatarPhotoID: avatar?.photoID,
             avatarDCID: avatar?.dcID,
-            isBroadcast: isBroadcast
+            isBroadcast: isBroadcast,
+            isAdmin: creator || adminRights != nil,
+            canInviteUsers: creator || adminRights?.inviteUsers == true,
+            canManageCalls: creator || adminRights?.manageCall == true
         )
     }
 

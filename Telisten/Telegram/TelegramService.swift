@@ -68,6 +68,8 @@ actor TelegramService {
         case groupCallUnavailable
         case groupCallCreationFailed
         case groupCallRequiresAdmin
+        case inviteLinkUnavailable
+        case contactInviteUnavailable
         case invalidPhoneNumber
         case invalidEmailAddress
         case emptyLoginCode
@@ -94,6 +96,8 @@ actor TelegramService {
             case .groupCallUnavailable: "There is no active Listen Together session in this music source."
             case .groupCallCreationFailed: "Telegram did not create a usable group audio call."
             case .groupCallRequiresAdmin: "Only an administrator can start Listen Together in this group or channel."
+            case .inviteLinkUnavailable: "Telegram could not create an invite link for this group or channel."
+            case .contactInviteUnavailable: "Telegram could not invite the selected contacts to this room."
             case .invalidPhoneNumber: "Enter a valid phone number in international format, including the country code."
             case .invalidEmailAddress: "Enter a valid email address."
             case .emptyLoginCode: "Enter the login code Telegram sent you."
@@ -406,7 +410,11 @@ actor TelegramService {
         in chat: MusicChat,
         presence: ListenTogetherPresence
     ) async throws -> GroupCallPublishEndpoint {
-        guard chat.kind != .user else { throw ServiceError.groupCallRequiresAdmin }
+        guard chat.kind != .user,
+              chat.isAdmin == true,
+              chat.canManageCalls == true else {
+            throw ServiceError.groupCallRequiresAdmin
+        }
         let connection = try await authorizedConnection(dcID: primaryDC, media: false)
         let peer = TelegramMapping.inputPeer(for: chat)
         do {
@@ -486,6 +494,90 @@ actor TelegramService {
     func endListenTogether(_ call: GroupCallReference) async throws {
         let connection = try await authorizedConnection(dcID: primaryDC, media: false)
         _ = try await connection.client.phone.discardGroupCall(call: inputGroupCall(call))
+    }
+
+    func listenTogetherInviteLink(for chat: MusicChat) async throws -> URL {
+        guard chat.kind != .user, chat.isAdmin == true else {
+            throw ServiceError.groupCallRequiresAdmin
+        }
+        if let username = chat.username?.trimmingCharacters(in: CharacterSet(charactersIn: "@")),
+           !username.isEmpty,
+           let url = URL(string: "https://t.me/\(username)") {
+            return url
+        }
+        guard chat.canInviteUsers == true else {
+            throw ServiceError.inviteLinkUnavailable
+        }
+
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        let invite = try await connection.client.messages.exportChatInvite(
+            peer: TelegramMapping.inputPeer(for: chat),
+            title: "Telisten Listen Together"
+        )
+        guard case let .chatInviteExported(value) = invite,
+              let url = URL(string: value.link) else {
+            throw ServiceError.inviteLinkUnavailable
+        }
+        return url
+    }
+
+    func telegramContacts() async throws -> [MusicChat] {
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        let result = try await connection.client.contacts.getContacts(hash: 0)
+        return TelegramMapping.contacts(from: result)
+    }
+
+    func inviteContacts(
+        _ contacts: [MusicChat],
+        to chat: MusicChat,
+        call: GroupCallReference
+    ) async throws -> Int {
+        guard chat.kind != .user,
+              chat.isAdmin == true,
+              chat.canInviteUsers == true else {
+            throw ServiceError.contactInviteUnavailable
+        }
+        let users = contacts.compactMap(Self.inputUser(for:))
+        guard !users.isEmpty, users.count == contacts.count else {
+            throw ServiceError.contactInviteUnavailable
+        }
+
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        var invitedCount = 0
+        switch chat.kind {
+        case .group:
+            for user in users {
+                do {
+                    let result = try await connection.client.messages.addChatUser(
+                        chatId: chat.peerID,
+                        userId: user,
+                        fwdLimit: 0
+                    )
+                    if result.missingInvitees.isEmpty { invitedCount += 1 }
+                } catch let error as MTProtoRPCError where error.message == "USER_ALREADY_PARTICIPANT" {
+                    invitedCount += 1
+                }
+            }
+        case .channel:
+            guard let accessHash = chat.accessHash else {
+                throw ServiceError.contactInviteUnavailable
+            }
+            let result = try await connection.client.channels.inviteToChannel(
+                channel: .inputChannel(TL.InputChannel(channelId: chat.peerID, accessHash: accessHash)),
+                users: users
+            )
+            invitedCount = max(0, users.count - result.missingInvitees.count)
+        case .user:
+            throw ServiceError.contactInviteUnavailable
+        }
+
+        // Membership is the durable operation. Telegram may reject the optional
+        // live-call notification when an invite was already sent.
+        _ = try? await connection.client.phone.inviteToGroupCall(
+            call: inputGroupCall(call),
+            users: users
+        )
+        return invitedCount
     }
 
     func musicCount(in chat: MusicChat) async throws -> Int {
@@ -1479,6 +1571,11 @@ actor TelegramService {
 
     private func inputGroupCall(_ call: GroupCallReference) -> TL.InputGroupCallType {
         .inputGroupCall(TL.InputGroupCall(id: call.id, accessHash: call.accessHash))
+    }
+
+    private static func inputUser(for contact: MusicChat) -> TL.InputUserType? {
+        guard contact.kind == .user, let accessHash = contact.accessHash else { return nil }
+        return .inputUser(TL.InputUser(userId: contact.peerID, accessHash: accessHash))
     }
 
     private func groupCallReference(from updates: TL.UpdatesType) -> GroupCallReference? {

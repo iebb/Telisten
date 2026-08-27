@@ -36,6 +36,9 @@ struct MusicChat: Identifiable, Codable, Hashable, Sendable {
     var avatarDCID: Int32? = nil
     var isBroadcast: Bool? = nil
     var isPinned: Bool? = nil
+    var isAdmin: Bool? = nil
+    var canInviteUsers: Bool? = nil
+    var canManageCalls: Bool? = nil
 
     var symbolName: String {
         switch kind {

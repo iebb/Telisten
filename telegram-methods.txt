@@ -33,6 +33,10 @@ channels.deleteMessages
 channels.editTitle
 messages.deleteMessages
 messages.editChatTitle
+messages.exportChatInvite
+messages.addChatUser
+channels.inviteToChannel
+contacts.getContacts
 
 # Telegram-backed playlists and votes
 messages.getDialogFilters
@@ -47,3 +51,4 @@ phone.createGroupCall
 phone.getGroupCall
 phone.editGroupCallTitle
 phone.discardGroupCall
+phone.inviteToGroupCall

@@ -4,6 +4,11 @@ struct ListenTogetherView: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
+    @State private var inviteLink: URL?
+    @State private var inviteLinkChatID: String?
+    @State private var inviteLinkError: String?
+    @State private var isLoadingInviteLink = false
+    @State private var showContactPicker = false
 
     var body: some View {
         NavigationStack {
@@ -26,9 +31,17 @@ struct ListenTogetherView: View {
                 }
 
                 if !isLive {
-                    Section("Groups and channels") {
-                        ForEach(filteredChats) { chat in
-                            chatRow(chat)
+                    Section("Admin groups and channels") {
+                        if filteredChats.isEmpty {
+                            Label(
+                                query.isEmpty ? "No rooms you administer" : "No matching admin rooms",
+                                systemImage: "person.badge.key"
+                            )
+                            .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(filteredChats) { chat in
+                                chatRow(chat)
+                            }
                         }
                     }
                 }
@@ -48,12 +61,33 @@ struct ListenTogetherView: View {
         #if os(macOS)
         .frame(minWidth: 460, minHeight: 560)
         #endif
+        .sheet(isPresented: $showContactPicker) {
+            if let session = liveSessionValue {
+                ListenTogetherContactPicker(model: model, session: session)
+            }
+        }
+        .task(id: liveSessionValue?.call.id) {
+            guard let session = liveSessionValue else {
+                inviteLink = nil
+                inviteLinkChatID = nil
+                inviteLinkError = nil
+                return
+            }
+            await loadInviteLink(for: session.chat)
+        }
+        #if DEBUG
+        .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("--demo-listen-together-contacts") {
+                showContactPicker = true
+            }
+        }
+        #endif
     }
 
     private var introduction: some View {
         Section {
             Label {
-                Text("Start from the current track, or join an existing Telisten session. People using Telegram can listen in the group audio chat without Telisten.")
+                Text("Choose a group or channel you administer. People using Telegram can listen in the group audio chat without Telisten.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } icon: {
@@ -93,6 +127,39 @@ struct ListenTogetherView: View {
                 }
             }
 
+            if let inviteLink, inviteLinkChatID == session.chat.id {
+                ShareLink(
+                    item: inviteLink,
+                    subject: Text(session.chat.title),
+                    message: Text("Join \(session.chat.title) to listen together.")
+                ) {
+                    Label("Share invite link", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            } else if isLoadingInviteLink {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Preparing invite link…")
+                        .foregroundStyle(.secondary)
+                }
+            } else if let inviteLinkError {
+                Button {
+                    Task { await loadInviteLink(for: session.chat, reload: true) }
+                } label: {
+                    Label(inviteLinkError, systemImage: "arrow.clockwise")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if session.chat.canInviteUsers == true {
+                Button {
+                    showContactPicker = true
+                } label: {
+                    Label("Invite Telegram contacts", systemImage: "person.badge.plus")
+                }
+            }
+
             Button(session.role == .host ? "End for everyone" : "Leave session", role: .destructive) {
                 Task {
                     await model.stopListenTogether(endHostedCall: true)
@@ -117,7 +184,12 @@ struct ListenTogetherView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
-            .disabled(model.player.track == nil)
+            .disabled(model.player.track == nil || chat.canManageCalls != true)
+            .accessibilityHint(
+                chat.canManageCalls == true
+                    ? "Starts a Telegram group audio stream"
+                    : "This admin role cannot manage group calls"
+            )
         }
         .task { await model.loadAvatar(for: chat) }
     }
@@ -133,5 +205,24 @@ struct ListenTogetherView: View {
     private var isLive: Bool {
         if case .live = model.listenTogetherState { return true }
         return false
+    }
+
+    private var liveSessionValue: ListenTogetherSession? {
+        guard case let .live(session) = model.listenTogetherState else { return nil }
+        return session
+    }
+
+    private func loadInviteLink(for chat: MusicChat, reload: Bool = false) async {
+        if !reload, inviteLinkChatID == chat.id, inviteLink != nil { return }
+        inviteLink = nil
+        inviteLinkChatID = chat.id
+        inviteLinkError = nil
+        isLoadingInviteLink = true
+        defer { isLoadingInviteLink = false }
+        do {
+            inviteLink = try await model.listenTogetherInviteLink(for: chat)
+        } catch {
+            inviteLinkError = UserFacingError.message(for: error)
+        }
     }
 }

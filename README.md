@@ -79,7 +79,7 @@ The handwritten application is split into four narrow layers:
 - `AudioPlayer`: AVPlayer, media keys, and now-playing metadata
 - `AppModel` and `Views`: queue/library state and adaptive SwiftUI screens
 
-The full Telegram schema is intentionally not checked in. `Generated/TelegramAPI` contains only the 35 RPC methods the player uses and their transitively required types.
+The full Telegram schema is intentionally not checked in. `Generated/TelegramAPI` contains only the 45 RPC methods the player uses and their transitively required types.
 
 Dependencies are pinned through Swift Package Manager:
 
@@ -113,4 +113,4 @@ The script downloads Telegram's official live schema and schema index, checks th
 
 ## Reference
 
-The implementation follows Telegram's official documentation for [API credentials](https://core.telegram.org/api/obtaining_api_id), [user authorization](https://core.telegram.org/api/auth), [message search](https://core.telegram.org/api/search), [file downloads](https://core.telegram.org/api/files), [dialog folders](https://core.telegram.org/api/folders), [message reactions](https://core.telegram.org/method/messages.sendReaction), [discussion threads](https://core.telegram.org/api/discussion), [replying](https://core.telegram.org/method/messages.sendMessage), and [forwarding](https://core.telegram.org/method/messages.forwardMessages).
+The implementation follows Telegram's official documentation for [API credentials](https://core.telegram.org/api/obtaining_api_id), [user authorization](https://core.telegram.org/api/auth), [message search](https://core.telegram.org/api/search), [file downloads](https://core.telegram.org/api/files), [dialog folders](https://core.telegram.org/api/folders), [message reactions](https://core.telegram.org/method/messages.sendReaction), [discussion threads](https://core.telegram.org/api/discussion), [replying](https://core.telegram.org/method/messages.sendMessage), [forwarding](https://core.telegram.org/method/messages.forwardMessages), [invite links](https://core.telegram.org/api/invites), and [group-call invitations](https://core.telegram.org/api/group-calls).

@@ -27,6 +27,12 @@ enum UserFacingError {
                 return "Telegram invalidated this duplicated session. Sign in again to create a fresh one."
             case "FILE_REFERENCE_EXPIRED", "FILE_REFERENCE_INVALID":
                 return "This track reference expired. Refresh the music list and try again."
+            case "CHAT_ADMIN_REQUIRED", "RIGHT_FORBIDDEN":
+                return "Your Telegram admin role does not allow this action."
+            case "USER_PRIVACY_RESTRICTED":
+                return "A selected contact’s privacy settings do not allow a direct invitation. Share the room link instead."
+            case "USER_CHANNELS_TOO_MUCH":
+                return "A selected contact has joined Telegram’s maximum number of groups or channels."
             default:
                 return "Telegram error: \(rpc.message)"
             }

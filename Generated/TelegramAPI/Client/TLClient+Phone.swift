@@ -22,6 +22,10 @@ extension TLClient {
     public func createGroupCall(rtmpStream: Bool = false, peer: TL.InputPeerType, randomId: Int32, title: String? = nil, scheduleDate: Int32? = nil) async throws -> TL.UpdatesType {
       try await client.invoke(TL.Phone.CreateGroupCall(rtmpStream: rtmpStream, peer: peer, randomId: randomId, title: title, scheduleDate: scheduleDate))
     }
+    /// TL: `phone.inviteToGroupCall#7b393160 call:InputGroupCall users:Vector<InputUser> = Updates`
+    public func inviteToGroupCall(call: TL.InputGroupCallType, users: [TL.InputUserType]) async throws -> TL.UpdatesType {
+      try await client.invoke(TL.Phone.InviteToGroupCall(call: call, users: users))
+    }
     /// TL: `phone.discardGroupCall#7a777135 call:InputGroupCall = Updates`
     public func discardGroupCall(call: TL.InputGroupCallType) async throws -> TL.UpdatesType {
       try await client.invoke(TL.Phone.DiscardGroupCall(call: call))

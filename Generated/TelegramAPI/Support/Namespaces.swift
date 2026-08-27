@@ -21,6 +21,9 @@ extension TL {
   /// The TL namespace `channels.*`.
   public enum Channels {
   }
+  /// The TL namespace `contacts.*`.
+  public enum Contacts {
+  }
   /// The TL namespace `help.*`.
   public enum Help {
   }

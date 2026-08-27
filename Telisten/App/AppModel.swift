@@ -112,6 +112,7 @@ final class AppModel {
     @ObservationIgnored private var lastCallTitleUpdate: Date?
     @ObservationIgnored private var listenerMetadataTitle: String?
     @ObservationIgnored private var listenerMetadataObservedAt: Date?
+    @ObservationIgnored private var listenTogetherInviteLinks: [String: URL] = [:]
 
     init() {
         let defaults = UserDefaults.standard
@@ -499,11 +500,48 @@ final class AppModel {
 
     var listenTogetherChats: [MusicChat] {
         allChats
-            .filter { $0.kind != .user }
+            .filter { $0.kind != .user && $0.isAdmin == true }
             .sorted {
                 if $0.isPinned != $1.isPinned { return $0.isPinned == true }
                 return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
             }
+    }
+
+    func listenTogetherInviteLink(for chat: MusicChat) async throws -> URL {
+        let key = "\(activeAccountID ?? "local"):\(chat.id)"
+        if let cached = listenTogetherInviteLinks[key] { return cached }
+        let link = try await telegram.listenTogetherInviteLink(for: chat)
+        listenTogetherInviteLinks[key] = link
+        return link
+    }
+
+    func listenTogetherContacts() async throws -> [MusicChat] {
+        #if DEBUG
+        if isDemo {
+            return [
+                MusicChat(
+                    id: "u:3101", peerID: 3101, accessHash: 1, kind: .user,
+                    title: "Aiko", username: "aiko"
+                ),
+                MusicChat(
+                    id: "u:3102", peerID: 3102, accessHash: 1, kind: .user,
+                    title: "Mika", username: "mika_music"
+                ),
+                MusicChat(
+                    id: "u:3103", peerID: 3103, accessHash: 1, kind: .user,
+                    title: "Ren", username: nil
+                )
+            ]
+        }
+        #endif
+        return try await telegram.telegramContacts()
+    }
+
+    func inviteContacts(_ contacts: [MusicChat], to session: ListenTogetherSession) async throws -> Int {
+        #if DEBUG
+        if isDemo { return contacts.count }
+        #endif
+        return try await telegram.inviteContacts(contacts, to: session.chat, call: session.call)
     }
 
     func startListenTogether(in chat: MusicChat) async {
@@ -1523,6 +1561,7 @@ final class AppModel {
         accountAvatarLoading = []
         accountAvatarResolved = []
         chatMusicCounts = [:]
+        listenTogetherInviteLinks = [:]
         currentQueueIndex = nil
     }
 
@@ -1772,7 +1811,10 @@ final class AppModel {
             kind: .channel,
             title: "Late Night Records",
             username: "latenightrecords",
-            isPinned: true
+            isPinned: true,
+            isAdmin: true,
+            canInviteUsers: true,
+            canManageCalls: true
         )
         let discoveries = MusicChat(
             id: "g:1002",
@@ -1780,7 +1822,10 @@ final class AppModel {
             accessHash: nil,
             kind: .group,
             title: "Music Discoveries",
-            username: nil
+            username: nil,
+            isAdmin: true,
+            canInviteUsers: true,
+            canManageCalls: true
         )
         let playlist = MusicChat(
             id: "c:2001",
@@ -1788,7 +1833,10 @@ final class AppModel {
             accessHash: 1,
             kind: .channel,
             title: "Sunday Drive",
-            username: nil
+            username: nil,
+            isAdmin: true,
+            canInviteUsers: true,
+            canManageCalls: true
         )
         chats = [source, discoveries, playlist]
         allChats = chats
@@ -1845,7 +1893,26 @@ final class AppModel {
         }
 
         phase = .ready
-        if arguments.contains("--demo-listen-together") {
+        if arguments.contains("--demo-listen-together-live") {
+            listenTogetherState = .live(
+                ListenTogetherSession(
+                    chat: source,
+                    call: GroupCallReference(
+                        id: 5001,
+                        accessHash: 1,
+                        title: "♫ The Chain — Fleetwood Mac · 0:48/4:31",
+                        participantCount: 4
+                    ),
+                    role: .host,
+                    presence: ListenTogetherPresence(
+                        track: sampleTracks[0],
+                        elapsed: 48,
+                        isPlaying: true
+                    )
+                )
+            )
+            showListenTogetherSheet = true
+        } else if arguments.contains("--demo-listen-together") {
             showListenTogetherSheet = true
         }
         if arguments.contains("--demo-now-playing") {
