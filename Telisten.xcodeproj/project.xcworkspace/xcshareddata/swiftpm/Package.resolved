@@ -1,22 +1,13 @@
 {
-  "originHash" : "7af62bd04ed2e8ff6fef43b2e59ec673828a18b2448c1e2cb0a5aac7f5a2ef8f",
+  "originHash" : "1c98f03e47200208af12a9de7f914a3ab35698dd4dd0d06111286933e830bdc1",
   "pins" : [
     {
-      "identity" : "haishinkit.swift",
+      "identity" : "hprtmp",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/HaishinKit/HaishinKit.swift.git",
+      "location" : "https://github.com/huiping192/HPRTMP.git",
       "state" : {
-        "revision" : "dc880cb540b8feeb98f64e8b7dcfaaf320b6b2bd",
-        "version" : "2.2.5"
-      }
-    },
-    {
-      "identity" : "logboard",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/shogo4405/Logboard.git",
-      "state" : {
-        "revision" : "8f41c63afb903040b77049ee2efa8c257b8c0d50",
-        "version" : "2.6.0"
+        "revision" : "9c24841c6b2f6fdaf3290d5086f9a85fd404e8ac",
+        "version" : "0.0.3"
       }
     },
     {
@@ -89,6 +80,15 @@
       "state" : {
         "revision" : "debf9240f424d688b3a52c68e088577d9ced526e",
         "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swift-nio-ssl",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-nio-ssl",
+      "state" : {
+        "revision" : "d930168b86f46ca51a4bc09c5ca45c1833db8067",
+        "version" : "2.37.2"
       }
     },
     {

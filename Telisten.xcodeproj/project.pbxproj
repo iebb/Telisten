@@ -164,7 +164,6 @@
 		3B40EC1F60F10165D34F6052 /* InputClientProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52CAC14A86C7F3211ECD1540 /* InputClientProxy.swift */; };
 		3B4634039EF7BCF84FD356D4 /* help.getConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88393522B2F9CB9E7614FE89 /* help.getConfig.swift */; };
 		3B9582A76FDA6A65D999054C /* CdnConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3159C7C383E370AE9744DF /* CdnConfig.swift */; };
-		3B9E1FAE226399530AAA77F8 /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = C5AB926194E4A4E9007BCD4C /* RTMPHaishinKit */; };
 		3C7690357F2148DFA0C8955A /* messages.sendReaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD75A74C51E080837F3B338 /* messages.sendReaction.swift */; };
 		3D1FC693C00C9F768FA2B228 /* CodeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512C4968D970A80F5857C892 /* CodeSettings.swift */; };
 		3D3DB23DE252B3F9E4D082EB /* CdnPublicKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = D17EFC2FF1D5D0673CD2F5EB /* CdnPublicKey.swift */; };
@@ -390,7 +389,7 @@
 		9E5BCA6B945933FD77749B77 /* PeerNotifySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8A5A12F06D56F936963322 /* PeerNotifySettings.swift */; };
 		9E620392BC7B52DA2BCFB179 /* JSONObjectValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01201539851E40FE4429DAEE /* JSONObjectValue.swift */; };
 		9E67DB12E5503516E06C5F6C /* channels.createChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39C271AE9F01465582C25950 /* channels.createChannel.swift */; };
-		9EB18A3A33E8F3CF0C8C12C5 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = FFD5F8709BF7326C02AAEDCC /* HaishinKit */; };
+		9EB18A3A33E8F3CF0C8C12C5 /* HPRTMP in Frameworks */ = {isa = PBXBuildFile; productRef = EFB8585592FA9759FA21DA85 /* HPRTMP */; };
 		9EC58CEE1E915778DC125BFC /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E071E6CF12082ED188A099 /* RootView.swift */; };
 		9F3B5186DB9019B0D1C366A9 /* MessageReactor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64623649E3DB635E7C7CBD3 /* MessageReactor.swift */; };
 		9FB7D59B20DD2CBB50460E1A /* InputCheckPasswordSRP.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68A56DBBB7B0D5239B4116F /* InputCheckPasswordSRP.swift */; };
@@ -412,7 +411,7 @@
 		A68F4C3EEDB2E0071F9520B8 /* ChatBannedRights.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85EEC346211D88B10CE790C1 /* ChatBannedRights.swift */; };
 		A6D0EE4D7214E961E4757FD3 /* SecureFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA3CD2EF10226D92AF96CFF2 /* SecureFile.swift */; };
 		A6D36108060110050AB7E490 /* MTProtoClientKit in Frameworks */ = {isa = PBXBuildFile; productRef = 403BCA3DAC5F383760761682 /* MTProtoClientKit */; };
-		A7311FF0AAB96815C3B7DF61 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 83027545FCE17F5E60F17814 /* HaishinKit */; };
+		A7311FF0AAB96815C3B7DF61 /* HPRTMP in Frameworks */ = {isa = PBXBuildFile; productRef = CF748E860183A7D78A52C1A8 /* HPRTMP */; };
 		A737344CFF1C6940C9312539 /* PaymentRequestedInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1340A9507D0B0B2A492ED0AD /* PaymentRequestedInfo.swift */; };
 		A769A002E7EBF52AA28A5816 /* TLClient+Upload.swift in Sources */ = {isa = PBXBuildFile; fileRef = C489C4643B6E977F58C784EB /* TLClient+Upload.swift */; };
 		A7E60D13DB46BBE034C25844 /* StickerKeyword.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC0AAB39CFB382A5301ED07 /* StickerKeyword.swift */; };
@@ -449,7 +448,6 @@
 		BAC7ABC612E853081AB9400E /* PhoneCallDiscardReason.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18378165946898628AFA8FA9 /* PhoneCallDiscardReason.swift */; };
 		BAF4A186855607C954C2F41A /* NotifyPeer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EFA04CD76A3E03F258726F3 /* NotifyPeer.swift */; };
 		BB2F035A7D77EE10FA5F9872 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C8AADA1409BBBDFFFA0870 /* User.swift */; };
-		BB7AEF346EBDA68721006059 /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = AF242B552954244800D1A45F /* RTMPHaishinKit */; };
 		BBA6ABA876BB4FF99CC47779 /* InputMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E3EE911BA2944F7DB6C165 /* InputMedia.swift */; };
 		BBEE2735B2AE560E2825C332 /* channels.deleteMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 618BD13D4B4B03B3D61F09F7 /* channels.deleteMessages.swift */; };
 		BC16861A7D746E13D928D81D /* messages.updateDialogFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF2BBAEDB0421FC6E189F720 /* messages.updateDialogFilter.swift */; };
@@ -883,8 +881,7 @@
 				87520CAE029D5901C89B78DC /* MTProtoCrypto in Frameworks */,
 				08D873B8AF9A20FAD623BE6B /* MTProtoClientKit in Frameworks */,
 				01B25B33DF73F6589218F4E4 /* NIOMTProtoEncryption in Frameworks */,
-				A7311FF0AAB96815C3B7DF61 /* HaishinKit in Frameworks */,
-				BB7AEF346EBDA68721006059 /* RTMPHaishinKit in Frameworks */,
+				A7311FF0AAB96815C3B7DF61 /* HPRTMP in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -897,8 +894,7 @@
 				29A19D23554167AFCBF78DA9 /* MTProtoCrypto in Frameworks */,
 				A6D36108060110050AB7E490 /* MTProtoClientKit in Frameworks */,
 				44ACF3FA977A6054EBB68AC3 /* NIOMTProtoEncryption in Frameworks */,
-				9EB18A3A33E8F3CF0C8C12C5 /* HaishinKit in Frameworks */,
-				3B9E1FAE226399530AAA77F8 /* RTMPHaishinKit in Frameworks */,
+				9EB18A3A33E8F3CF0C8C12C5 /* HPRTMP in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1339,8 +1335,7 @@
 				6DF646085BF71F9639D806A6 /* MTProtoCrypto */,
 				403BCA3DAC5F383760761682 /* MTProtoClientKit */,
 				DB5D1A848687313B69DE379B /* NIOMTProtoEncryption */,
-				FFD5F8709BF7326C02AAEDCC /* HaishinKit */,
-				C5AB926194E4A4E9007BCD4C /* RTMPHaishinKit */,
+				EFB8585592FA9759FA21DA85 /* HPRTMP */,
 			);
 			productName = "Telisten-macOS";
 			productReference = 50601B52E7778D8B4C6D8FB0 /* Telisten-macOS.app */;
@@ -1365,8 +1360,7 @@
 				C6CA428F5D164E700C801AC2 /* MTProtoCrypto */,
 				05EE5DC648384749D625447F /* MTProtoClientKit */,
 				5A43909A796BBA252C4A156E /* NIOMTProtoEncryption */,
-				83027545FCE17F5E60F17814 /* HaishinKit */,
-				AF242B552954244800D1A45F /* RTMPHaishinKit */,
+				CF748E860183A7D78A52C1A8 /* HPRTMP */,
 			);
 			productName = "Telisten-iOS";
 			productReference = FA45AFCDAD9D81F449E8F27C /* Telisten-iOS.app */;
@@ -1401,7 +1395,7 @@
 			mainGroup = B8C393017F3ECCE98CE1B324;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */,
+				40D58D11717BC18D1EC03093 /* XCRemoteSwiftPackageReference "HPRTMP" */,
 				3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */,
 				90B5AA772AEF0FDF2F9E6BAB /* XCRemoteSwiftPackageReference "swift-nio-mtproto" */,
 			);
@@ -2295,12 +2289,12 @@
 				minimumVersion = 1.0.0;
 			};
 		};
-		4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */ = {
+		40D58D11717BC18D1EC03093 /* XCRemoteSwiftPackageReference "HPRTMP" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/HaishinKit/HaishinKit.swift.git";
+			repositoryURL = "https://github.com/huiping192/HPRTMP.git";
 			requirement = {
 				kind = exactVersion;
-				version = 2.2.5;
+				version = 0.0.3;
 			};
 		};
 		90B5AA772AEF0FDF2F9E6BAB /* XCRemoteSwiftPackageReference "swift-nio-mtproto" */ = {
@@ -2344,45 +2338,35 @@
 			package = 3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */;
 			productName = MTProtoCrypto;
 		};
-		83027545FCE17F5E60F17814 /* HaishinKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
-			productName = HaishinKit;
-		};
 		97F30961A8960D673778DD2E /* MTProtoBaseSchema */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */;
 			productName = MTProtoBaseSchema;
-		};
-		AF242B552954244800D1A45F /* RTMPHaishinKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
-			productName = RTMPHaishinKit;
 		};
 		BBCA96220A4B649EC4657B27 /* MTProtoBaseSchema */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */;
 			productName = MTProtoBaseSchema;
 		};
-		C5AB926194E4A4E9007BCD4C /* RTMPHaishinKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
-			productName = RTMPHaishinKit;
-		};
 		C6CA428F5D164E700C801AC2 /* MTProtoCrypto */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3799F89021BD5CABCA3A692B /* XCRemoteSwiftPackageReference "swift-mtproto" */;
 			productName = MTProtoCrypto;
+		};
+		CF748E860183A7D78A52C1A8 /* HPRTMP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 40D58D11717BC18D1EC03093 /* XCRemoteSwiftPackageReference "HPRTMP" */;
+			productName = HPRTMP;
 		};
 		DB5D1A848687313B69DE379B /* NIOMTProtoEncryption */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 90B5AA772AEF0FDF2F9E6BAB /* XCRemoteSwiftPackageReference "swift-nio-mtproto" */;
 			productName = NIOMTProtoEncryption;
 		};
-		FFD5F8709BF7326C02AAEDCC /* HaishinKit */ = {
+		EFB8585592FA9759FA21DA85 /* HPRTMP */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4C6EBB7CF660C1EED3F07DE8 /* XCRemoteSwiftPackageReference "HaishinKit.swift" */;
-			productName = HaishinKit;
+			package = 40D58D11717BC18D1EC03093 /* XCRemoteSwiftPackageReference "HPRTMP" */;
+			productName = HPRTMP;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

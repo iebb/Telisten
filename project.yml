@@ -14,9 +14,9 @@ packages:
   SwiftNIOMTProto:
     url: https://github.com/UInt8Co/swift-nio-mtproto.git
     from: 1.0.0
-  HaishinKit:
-    url: https://github.com/HaishinKit/HaishinKit.swift.git
-    exactVersion: 2.2.5
+  HPRTMP:
+    url: https://github.com/huiping192/HPRTMP.git
+    exactVersion: 0.0.3
 settings:
   base:
     SWIFT_VERSION: 6.0
@@ -54,10 +54,8 @@ targetTemplates:
         product: MTProtoClientKit
       - package: SwiftNIOMTProto
         product: NIOMTProtoEncryption
-      - package: HaishinKit
-        product: HaishinKit
-      - package: HaishinKit
-        product: RTMPHaishinKit
+      - package: HPRTMP
+        product: HPRTMP
     settings:
       base:
         PRODUCT_NAME: Telisten
@@ -76,7 +74,6 @@ targets:
       path: Telisten/Info-iOS.plist
       properties:
         ITSAppUsesNonExemptEncryption: false
-        NSCameraUsageDescription: Telisten does not access the camera. This description is included because the audio streaming framework contains optional camera support.
         TelegramAPIID: $(TELEGRAM_API_ID)
         TelegramAPIHash: $(TELEGRAM_API_HASH)
         UIBackgroundModes:
