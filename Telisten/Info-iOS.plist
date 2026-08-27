@@ -20,6 +20,8 @@
 	<string>1</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Telisten does not access the camera. This description is included because the audio streaming framework contains optional camera support.</string>
 	<key>TelegramAPIHash</key>
 	<string>$(TELEGRAM_API_HASH)</string>
 	<key>TelegramAPIID</key>
