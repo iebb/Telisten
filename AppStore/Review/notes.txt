@@ -16,3 +16,16 @@ External services:
 • lrclib.net: lyrics matching using track title, artist, and duration.
 
 The Debug-only --demo launch argument is not available in the submitted Release build.
+
+Guideline 4.3 clarification:
+We respectfully disagree that Telisten is spam or a duplicate/template app. Telisten is one independently designed native music product, not a reskin, generic Telegram wrapper, or collection of similar apps. Its product and implementation are specific to turning audio already accessible in a user's Telegram account into a focused music library.
+
+Build 23 demonstrates the app's distinctive functionality:
+• A custom direct MTProto client, without TDLib, a bot, a proxy, or a developer-operated media backend.
+• Global, deduplicated music search and lazy music-only indexing that does not mark chats as read.
+• Progressive playback before a download completes, plus a shared offline cache that reuses full and partial downloads across Telegram accounts.
+• Telegram-backed playlists that preserve the original audio by forwarding it to dedicated private storage, with a local mirror for ordering and offline launch.
+• Synchronized LRCLIB lyrics, multiple-match selection, album artwork, background audio, and native iOS and macOS interfaces.
+• Listen Together through a Telegram group audio chat. Only groups or channels administered by the signed-in user can host a session. The host can share an invite link or invite Telegram contacts; participants can hear the live audio chat with Telegram, while Telisten clients also follow the current track and position.
+
+These are substantive, integrated music-player workflows rather than duplicated content or minimal variations on another app. Please reconsider the Guideline 4.3 classification. If App Review believes Telisten duplicates a specific app or submission, please identify it so we can address that concern directly.

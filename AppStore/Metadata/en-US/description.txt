@@ -18,6 +18,12 @@ BUILD PLAYLISTS
 • Save the original audio without making another copy
 • Rename playlists and reorder or remove tracks locally
 
+LISTEN TOGETHER
+• Start a live music session in a Telegram group or channel you administer
+• Broadcast the track into the group audio chat so every participant can listen
+• Keep other Telisten listeners synchronized with the current track and position
+• Share an invite link or invite Telegram contacts from the app
+
 FOLLOW THE LYRICS
 • Match lyrics through LRCLIB using title and duration
 • Prefer synchronized lyrics when several matches are available
