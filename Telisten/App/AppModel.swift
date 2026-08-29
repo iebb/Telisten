@@ -879,6 +879,13 @@ final class AppModel {
     }
 
     func loadLyrics(for track: Track) async {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--demo-no-lyrics") {
+            lyricsCandidates = []
+            lyricsState = .unavailable
+            return
+        }
+        #endif
         if case let .loaded(value) = lyricsState, value.trackID == track.id { return }
         lyricsState = .loading
         do {

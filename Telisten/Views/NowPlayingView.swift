@@ -36,7 +36,7 @@ struct NowPlayingView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    mediumLyrics
+                    mediumLyricRegion
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
             }
@@ -122,7 +122,7 @@ struct NowPlayingView: View {
     }
 
     @ViewBuilder
-    private var mediumLyrics: some View {
+    private var mediumLyricRegion: some View {
         if let lyricWindow {
             VStack(spacing: 2) {
                 ForEach(Array(lyricWindow.enumerated()), id: \.offset) { index, line in
@@ -142,6 +142,30 @@ struct NowPlayingView: View {
             .animation(.easeInOut(duration: 0.2), value: lyricWindow)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Current lyrics")
+        } else {
+            mediumLyricStatus
+        }
+    }
+
+    @ViewBuilder
+    private var mediumLyricStatus: some View {
+        switch model.lyricsState {
+        case .idle, .loading:
+            VStack(spacing: 8) {
+                ProgressView()
+                Text("Finding lyrics…")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+        case .unavailable, .loaded:
+            Label("No lyrics found", systemImage: "quote.bubble")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.secondary)
+        case .failed:
+            Label("Lyrics unavailable", systemImage: "wifi.exclamationmark")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.secondary)
         }
     }
 
