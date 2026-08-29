@@ -7,7 +7,7 @@ Telisten is a compact, native Telegram music player for iPhone, iPad, and Mac. I
 - Phone-number sign-in, Telegram or email login codes, login-email setup, and two-step verification
 - Browse every accessible cloud chat, search music in one chat or across Telegram, and lazily load long music histories
 - Queue playback in shuffle, order, reverse-order, or repeat-one mode; seek, previous/next, favorites, and a full now-playing view
-- Synchronized or plain lyrics from LRCLIB, cached locally with source attribution
+- Synchronized or plain lyrics from LRCLIB or a configured LRCLIB-compatible server, cached locally with source attribution
 - Telegram-backed 👍 votes, including shared counts and optimistic UI updates
 - “Save to playlist” using private Telegram channels collected in a `_Playlist` folder
 - Lock-screen/Control Center media controls and background audio on iOS
@@ -103,7 +103,7 @@ The script downloads Telegram's official live schema and schema index, checks th
 ## Operational notes
 
 - Audio is streamed in byte ranges directly from Telegram data centers. The Download action stores the complete track for offline playback; there is no Telisten server.
-- Lyrics queries send the track title, artist, and duration to [LRCLIB](https://lrclib.net); successful matches are cached on-device. For a commercial release that requires publisher-cleared coverage or service guarantees, replace `LRCLIBProvider` with a licensed provider such as Musixmatch.
+- Lyrics queries send the track title, artist, and duration to the LRCLIB-compatible server selected in Settings (the default is [LRCLIB](https://lrclib.net)); successful matches are cached on-device. For a commercial release that requires publisher-cleared coverage or service guarantees, replace `LRCLIBProvider` with a licensed provider such as Musixmatch.
 - A vote is a real 👍 Telegram message reaction. Comments are Telegram replies; channel-post comments are sent through the linked discussion. Saving forwards the original audio message, so Telegram's forwarding permissions still apply.
 - New playlists are private broadcast channels. Telisten creates or updates the `_Playlist` dialog folder without changing unrelated folders or their settings.
 - The app asks Telegram not to redirect file transfers to its CDN, keeping the transfer code compact. A download reports a clear error if Telegram still returns a CDN redirect.

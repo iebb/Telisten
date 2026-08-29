@@ -545,7 +545,7 @@ struct LyricsPanel: View {
                                 if let time = line.time { model.player.seek(to: time) }
                             }
                     }
-                    Link("Lyrics by \(lyrics.source)", destination: URL(string: "https://lrclib.net")!)
+                    Link("Lyrics by \(lyrics.source)", destination: model.lyricsServerURL)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Color.telistenAccent)
                         .padding(.top, 12)

@@ -4,6 +4,36 @@ protocol LyricsProviding: Sendable {
     func lyricsCandidates(for track: Track) async throws -> [TrackLyrics]
 }
 
+enum LyricsServerConfiguration {
+    static let defaultAddress = "https://lrclib.net"
+    static let defaultURL = URL(string: defaultAddress)!
+
+    static func normalizedURL(from address: String) -> URL? {
+        var value = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return nil }
+        if !value.contains("://") { value = "https://\(value)" }
+
+        guard var components = URLComponents(string: value),
+              let scheme = components.scheme?.lowercased(),
+              scheme == "https",
+              components.host?.isEmpty == false else { return nil }
+        components.scheme = scheme
+        components.query = nil
+        components.fragment = nil
+        while components.path.count > 1, components.path.hasSuffix("/") {
+            components.path.removeLast()
+        }
+        return components.url
+    }
+
+    static func endpoint(_ name: String, at serverURL: URL) -> URL {
+        let apiURL = serverURL.lastPathComponent.lowercased() == "api"
+            ? serverURL
+            : serverURL.appending(path: "api", directoryHint: .isDirectory)
+        return apiURL.appending(path: name)
+    }
+}
+
 struct LRCLIBProvider: LyricsProviding {
     private struct Response: Decodable, Sendable {
         var id: Int64?
@@ -14,6 +44,12 @@ struct LRCLIBProvider: LyricsProviding {
         var instrumental: Bool
         var plainLyrics: String?
         var syncedLyrics: String?
+    }
+
+    private let serverURL: URL
+
+    init(serverURL: URL = LyricsServerConfiguration.defaultURL) {
+        self.serverURL = serverURL
     }
 
     func lyricsCandidates(for track: Track) async throws -> [TrackLyrics] {
@@ -105,7 +141,10 @@ struct LRCLIBProvider: LyricsProviding {
     }
 
     private func exactMatch(title: String, artist: String, duration: TimeInterval) async throws -> Response? {
-        var components = URLComponents(string: "https://lrclib.net/api/get")
+        var components = URLComponents(
+            url: LyricsServerConfiguration.endpoint("get", at: serverURL),
+            resolvingAgainstBaseURL: false
+        )
         var queryItems = [
             URLQueryItem(name: "track_name", value: title),
             URLQueryItem(name: "artist_name", value: artist)
@@ -119,7 +158,10 @@ struct LRCLIBProvider: LyricsProviding {
     }
 
     private func search(title: String, artist: String) async throws -> [Response] {
-        var components = URLComponents(string: "https://lrclib.net/api/search")
+        var components = URLComponents(
+            url: LyricsServerConfiguration.endpoint("search", at: serverURL),
+            resolvingAgainstBaseURL: false
+        )
         var queryItems = [URLQueryItem(name: "track_name", value: title)]
         if !artist.isEmpty {
             queryItems.append(URLQueryItem(name: "artist_name", value: artist))
@@ -130,7 +172,10 @@ struct LRCLIBProvider: LyricsProviding {
     }
 
     private func keywordSearch(_ title: String) async throws -> [Response] {
-        var components = URLComponents(string: "https://lrclib.net/api/search")
+        var components = URLComponents(
+            url: LyricsServerConfiguration.endpoint("search", at: serverURL),
+            resolvingAgainstBaseURL: false
+        )
         components?.queryItems = [URLQueryItem(name: "q", value: title)]
         guard let url = components?.url else { return [] }
         return try await request(url, as: [Response].self, permitsNotFound: false) ?? []
@@ -284,7 +329,7 @@ struct LRCLIBProvider: LyricsProviding {
 }
 
 actor LyricsService {
-    private let provider: any LyricsProviding
+    private var provider: any LyricsProviding
     private let cacheURL: URL
     private let selectionsURL: URL
     private var cached: [String: TrackLyrics] = [:]
@@ -343,6 +388,11 @@ actor LyricsService {
         selectedMatchKeys[value.trackID] = value.matchKey
         persist()
         persistSelections()
+    }
+
+    func setServerURL(_ serverURL: URL) {
+        provider = LRCLIBProvider(serverURL: serverURL)
+        fetchedMatches.removeAll()
     }
 
     private func result(for trackID: String, matches: [TrackLyrics]) -> LyricsResult? {

@@ -3,6 +3,9 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
+    @State private var lyricsServerDraft = ""
+    @State private var lyricsServerError: String?
+    @State private var isApplyingLyricsServer = false
 
     var body: some View {
         NavigationStack {
@@ -25,6 +28,35 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
                 Section {
+                    TextField("https://lrclib.net", text: $lyricsServerDraft)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textContentType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        #endif
+                        .onSubmit { applyLyricsServer() }
+
+                    Button("Apply server") { applyLyricsServer() }
+                        .disabled(isApplyingLyricsServer || lyricsServerDraft.isEmpty)
+
+                    Button("Use LRCLIB default") {
+                        lyricsServerDraft = LyricsServerConfiguration.defaultAddress
+                        applyLyricsServer()
+                    }
+                    .disabled(isApplyingLyricsServer || model.lyricsServerURL == LyricsServerConfiguration.defaultURL)
+
+                    if let lyricsServerError {
+                        Label(lyricsServerError, systemImage: "exclamationmark.circle")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                } header: {
+                    Text("Lyrics server")
+                } footer: {
+                    Text("Use the base URL of an LRCLIB-compatible server. Telisten requests /api/get and /api/search; cached lyrics stay available offline.")
+                }
+                Section {
                     Button("Sign out of this account", role: .destructive) {
                         Task {
                             await model.logOut()
@@ -42,7 +74,10 @@ struct SettingsView: View {
             }
         }
         .frame(minWidth: 360, minHeight: 360)
-        .task { await model.refreshCacheUsage() }
+        .task {
+            lyricsServerDraft = model.lyricsServerURL.absoluteString
+            await model.refreshCacheUsage()
+        }
     }
 
     private var cacheLimit: Binding<Int64> {
@@ -50,5 +85,19 @@ struct SettingsView: View {
             get: { model.cacheLimitBytes },
             set: { model.setCacheLimit($0) }
         )
+    }
+
+    private func applyLyricsServer() {
+        guard let serverURL = LyricsServerConfiguration.normalizedURL(from: lyricsServerDraft) else {
+            lyricsServerError = "Enter a valid HTTPS server URL."
+            return
+        }
+        lyricsServerError = nil
+        isApplyingLyricsServer = true
+        Task {
+            await model.setLyricsServerURL(serverURL)
+            lyricsServerDraft = serverURL.absoluteString
+            isApplyingLyricsServer = false
+        }
     }
 }

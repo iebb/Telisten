@@ -3,7 +3,11 @@ import SwiftUI
 struct LibraryView: View {
     @Bindable var model: AppModel
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    #if DEBUG
+    @State private var showSettings = ProcessInfo.processInfo.arguments.contains("--demo-settings")
+    #else
     @State private var showSettings = false
+    #endif
     @State private var showSettingsAfterPlayerDismissal = false
     @State private var showDeletePlaylistConfirmation = false
     @State private var isEditingPlaylist = false

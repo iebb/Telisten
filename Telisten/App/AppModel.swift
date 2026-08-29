@@ -19,6 +19,7 @@ private struct MusicChatIndexEntry: Codable {
 final class AppModel {
     private static let chatMusicPageSize: Int32 = 30
     private static let cacheLimitDefaultsKey = "offlineCache.limitBytes"
+    private static let lyricsServerDefaultsKey = "lyrics.serverURL"
 
     var phase: ConnectionPhase = .signedOut
     var hasCredentials = false
@@ -62,6 +63,7 @@ final class AppModel {
     var listenTogetherState: ListenTogetherState = .idle
     var cacheBytes: Int64 = 0
     var cacheLimitBytes: Int64
+    var lyricsServerURL: URL
     var isDeletingPlaylist = false
     var deletingPlaylistTrackIDs: Set<String> = []
     var renamingPlaylistIDs: Set<String> = []
@@ -120,17 +122,21 @@ final class AppModel {
             ? CacheLimits.defaultValue
             : Int64(defaults.integer(forKey: Self.cacheLimitDefaultsKey))
         let cacheLimit = min(max(storedCacheLimit, CacheLimits.minimum), CacheLimits.maximum)
+        let lyricsServerURL = defaults.string(forKey: Self.lyricsServerDefaultsKey)
+            .flatMap(LyricsServerConfiguration.normalizedURL(from:))
+            ?? LyricsServerConfiguration.defaultURL
         let keychain = KeychainStore()
         let cache = CacheStore(limit: cacheLimit)
         let localLibrary = LocalLibraryStore()
         cacheLimitBytes = cacheLimit
+        self.lyricsServerURL = lyricsServerURL
         self.keychain = keychain
         self.cache = cache
         self.localLibrary = localLibrary
         artworkStore = ArtworkStore()
         chatAvatarStore = ChatAvatarStore()
         telegram = TelegramService(keychain: keychain)
-        lyrics = LyricsService()
+        lyrics = LyricsService(provider: LRCLIBProvider(serverURL: lyricsServerURL))
         hasCredentials = (try? TelegramCredentials.appCredentials()) != nil
         cachedIDs = cache.initialCachedTrackIDs
         cacheBytes = cache.initialByteCount
@@ -1081,6 +1087,17 @@ final class AppModel {
         Task {
             await cache.setLimit(value, preserving: activeTrackIDs)
             await refreshCacheUsage()
+        }
+    }
+
+    func setLyricsServerURL(_ serverURL: URL) async {
+        lyricsServerURL = serverURL
+        UserDefaults.standard.set(serverURL.absoluteString, forKey: Self.lyricsServerDefaultsKey)
+        await lyrics.setServerURL(serverURL)
+        lyricsState = .idle
+        lyricsCandidates = []
+        if let track = player.track {
+            Task { await loadLyrics(for: track) }
         }
     }
 
