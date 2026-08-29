@@ -49,19 +49,28 @@ struct LibraryView: View {
                     #endif
                 }
             }
-            .sheet(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {
-                #if os(iOS)
+            #if os(iOS)
+            .sheet(isPresented: compactNowPlayingPresentation, onDismiss: presentPendingSettings) {
                 NowPlayingView(model: model, presentationDetent: $nowPlayingDetent)
                     .presentationDetents([.medium, .large], selection: $nowPlayingDetent)
                     .presentationDragIndicator(.visible)
                     .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-                #else
+            }
+            .sheet(isPresented: compactSettingsPresentation) {
+                SettingsView(model: model)
+            }
+            .inspector(isPresented: regularInspectorPresentation) {
+                regularWidthInspector
+                    .inspectorColumnWidth(min: 380, ideal: 440, max: 520)
+            }
+            #else
+            .sheet(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {
                 NowPlayingView(model: model)
-                #endif
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(model: model)
             }
+            #endif
             .sheet(isPresented: $model.showPlaylistSheet) {
                 if let track = model.playlistTrack {
                     PlaylistSheet(model: model, track: track)
@@ -88,7 +97,12 @@ struct LibraryView: View {
             }
             #if os(iOS)
             .onChange(of: model.showNowPlaying) { _, isPresented in
-                if isPresented { nowPlayingDetent = .medium }
+                guard isPresented else { return }
+                if horizontalSizeClass == .regular {
+                    showSettings = false
+                } else {
+                    nowPlayingDetent = .medium
+                }
             }
             #endif
         }
@@ -100,6 +114,14 @@ struct LibraryView: View {
             return
         }
 
+        #if os(iOS)
+        if horizontalSizeClass == .regular {
+            model.showNowPlaying = false
+            showSettings = true
+            return
+        }
+        #endif
+
         showSettingsAfterPlayerDismissal = true
         model.showNowPlaying = false
     }
@@ -109,6 +131,54 @@ struct LibraryView: View {
         showSettingsAfterPlayerDismissal = false
         showSettings = true
     }
+
+    #if os(iOS)
+    private var compactNowPlayingPresentation: Binding<Bool> {
+        Binding(
+            get: { horizontalSizeClass != .regular && model.showNowPlaying },
+            set: { isPresented in
+                guard !isPresented, horizontalSizeClass != .regular else { return }
+                model.showNowPlaying = false
+            }
+        )
+    }
+
+    private var compactSettingsPresentation: Binding<Bool> {
+        Binding(
+            get: { horizontalSizeClass != .regular && showSettings },
+            set: { isPresented in
+                guard !isPresented, horizontalSizeClass != .regular else { return }
+                showSettings = false
+            }
+        )
+    }
+
+    private var regularInspectorPresentation: Binding<Bool> {
+        Binding(
+            get: {
+                horizontalSizeClass == .regular && (showSettings || model.showNowPlaying)
+            },
+            set: { isPresented in
+                guard !isPresented, horizontalSizeClass == .regular else { return }
+                showSettings = false
+                model.showNowPlaying = false
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var regularWidthInspector: some View {
+        if showSettings {
+            SettingsView(model: model)
+        } else {
+            NowPlayingView(
+                model: model,
+                presentationDetent: .constant(.large),
+                showsCloseButton: true
+            )
+        }
+    }
+    #endif
 
     private var sidebar: some View {
         List(selection: $model.selected) {
@@ -229,12 +299,23 @@ struct LibraryView: View {
                         .frame(width: 28, height: 28)
                         .foregroundStyle(.secondary)
                 }
+                #if os(iOS)
+                if horizontalSizeClass != .regular {
+                    Text(model.activeAccount?.displayName ?? "Account")
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                }
+                #else
                 Text(model.activeAccount?.displayName ?? "Account")
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
+                #endif
             }
         }
         .accessibilityLabel("Telegram account")

@@ -12,6 +12,7 @@ struct NowPlayingView: View {
     @State private var section: Section = .lyrics
     #if os(iOS)
     @Binding var presentationDetent: PresentationDetent
+    var showsCloseButton = false
     #endif
 
     var body: some View {
@@ -70,13 +71,17 @@ struct NowPlayingView: View {
             #endif
             .toolbar {
                 #if os(iOS)
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItemGroup(placement: .primaryAction) {
                     if let track = model.player.track {
                         Button("Save to playlist", systemImage: "text.badge.plus") {
                             model.openPlaylistPicker(for: track)
                         }
                         .labelStyle(.iconOnly)
                         .accessibilityHint("Saves this track to a private playlist")
+                    }
+                    if showsCloseButton {
+                        Button("Close", systemImage: "xmark") { dismiss() }
+                            .labelStyle(.iconOnly)
                     }
                 }
                 ToolbarItem(placement: .topBarLeading) {
