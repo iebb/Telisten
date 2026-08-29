@@ -395,10 +395,18 @@ struct LibraryView: View {
         .navigationBarBackButtonHidden(usesCompactBackButton)
         .simultaneousGesture(chatDetailBackGesture)
         #endif
+        #if os(iOS)
+        .searchable(
+            text: $model.searchText,
+            placement: .navigationBarDrawer(displayMode: model.isGlobalSearch ? .always : .automatic),
+            prompt: model.isGlobalSearch ? "Song, artist, or album" : "Search music here"
+        )
+        #else
         .searchable(
             text: $model.searchText,
             prompt: model.isGlobalSearch ? "Song, artist, or album" : "Search music here"
         )
+        #endif
         .onSubmit(of: .search) { Task { await model.search() } }
         .onChange(of: model.selectedChat?.id) { _, _ in
             isEditingPlaylist = false
@@ -471,11 +479,10 @@ struct LibraryView: View {
                         }
                         .disabled(model.isDeletingPlaylist)
                     }
-                } else {
-                    Button(model.isGlobalSearch ? "Search" : "Refresh", systemImage: model.isGlobalSearch ? "magnifyingglass" : "arrow.clockwise") {
+                } else if !model.isGlobalSearch {
+                    Button("Refresh", systemImage: "arrow.clockwise") {
                         Task { await model.search() }
                     }
-                    .disabled(model.isGlobalSearch && model.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
