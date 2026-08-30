@@ -393,12 +393,13 @@ struct LibraryView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(usesCompactBackButton)
-        .simultaneousGesture(chatDetailBackGesture)
+        .toolbarVisibility(.visible, for: .navigationBar)
+        .simultaneousGesture(detailBackGesture)
         #endif
         #if os(iOS)
         .searchable(
             text: $model.searchText,
-            placement: .navigationBarDrawer(displayMode: model.isGlobalSearch ? .always : .automatic),
+            placement: .navigationBarDrawer(displayMode: .always),
             prompt: model.isGlobalSearch ? "Song, artist, or album" : "Search music here"
         )
         #else
@@ -512,16 +513,14 @@ struct LibraryView: View {
         horizontalSizeClass == .compact && model.selected != nil
     }
 
-    private var canSwipeBackFromChat: Bool {
-        guard horizontalSizeClass == .compact else { return false }
-        if case .chat = model.selected { return true }
-        return false
+    private var canSwipeBackFromDetail: Bool {
+        horizontalSizeClass == .compact && model.selected != nil
     }
 
-    private var chatDetailBackGesture: some Gesture {
+    private var detailBackGesture: some Gesture {
         DragGesture(minimumDistance: 16, coordinateSpace: .local)
             .onEnded { value in
-                guard canSwipeBackFromChat,
+                guard canSwipeBackFromDetail,
                       value.startLocation.x <= 28,
                       value.translation.width > 64,
                       value.translation.width > abs(value.translation.height) * 1.25 else { return }
