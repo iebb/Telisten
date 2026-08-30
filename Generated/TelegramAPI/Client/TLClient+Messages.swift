@@ -58,6 +58,10 @@ extension TLClient {
     public func searchGlobal(broadcastsOnly: Bool = false, groupsOnly: Bool = false, usersOnly: Bool = false, folderId: Int32? = nil, q: String, filter: TL.MessagesFilterType, minDate: Int32, maxDate: Int32, offsetRate: Int32, offsetPeer: TL.InputPeerType, offsetId: Int32, limit: Int32) async throws -> TL.Messages.MessagesType {
       try await client.invoke(TL.Messages.SearchGlobal(broadcastsOnly: broadcastsOnly, groupsOnly: groupsOnly, usersOnly: usersOnly, folderId: folderId, q: q, filter: filter, minDate: minDate, maxDate: maxDate, offsetRate: offsetRate, offsetPeer: offsetPeer, offsetId: offsetId, limit: limit))
     }
+    /// TL: `messages.getBotCallbackAnswer#9342ca07 flags:# game:flags.1?true peer:InputPeer msg_id:int data:flags.0?bytes password:flags.2?InputCheckPasswordSRP = messages.BotCallbackAnswer`
+    public func getBotCallbackAnswer(game: Bool = false, peer: TL.InputPeerType, msgId: Int32, data: Data? = nil, password: TL.InputCheckPasswordSRPType? = nil) async throws -> TL.Messages.BotCallbackAnswer {
+      try await client.invoke(TL.Messages.GetBotCallbackAnswer(game: game, peer: peer, msgId: msgId, data: data, password: password))
+    }
     /// TL: `messages.getDialogFilters#efd48c89 = messages.DialogFilters`
     public func getDialogFilters() async throws -> TL.Messages.DialogFilters {
       try await client.invoke(TL.Messages.GetDialogFilters())

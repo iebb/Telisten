@@ -37,6 +37,10 @@ messages.exportChatInvite
 messages.addChatUser
 channels.inviteToChannel
 contacts.getContacts
+contacts.resolveUsername
+
+# Bot search conversations and interactive result keyboards
+messages.getBotCallbackAnswer
 
 # Telegram-backed playlists and votes
 messages.getDialogFilters

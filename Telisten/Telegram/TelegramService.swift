@@ -73,6 +73,9 @@ actor TelegramService {
         case invalidPhoneNumber
         case invalidEmailAddress
         case emptyLoginCode
+        case invalidSearchBot(String)
+        case emptyBotMessage
+        case unsupportedBotButton
         case sessionPersistenceFailed
         case telegram(String)
 
@@ -101,6 +104,9 @@ actor TelegramService {
             case .invalidPhoneNumber: "Enter a valid phone number in international format, including the country code."
             case .invalidEmailAddress: "Enter a valid email address."
             case .emptyLoginCode: "Enter the login code Telegram sent you."
+            case let .invalidSearchBot(name): "\(name) is not an available Telegram bot. Check its username and try again."
+            case .emptyBotMessage: "Enter something to send to the search bot."
+            case .unsupportedBotButton: "This bot button needs a Telegram feature that Telisten does not support yet."
             case .sessionPersistenceFailed: "Telisten could not save the Telegram session in Keychain. Check the app signature and try again."
             case let .telegram(message): message
             }
@@ -154,6 +160,7 @@ actor TelegramService {
     private var connections: [ConnectionKey: Connection] = [:]
     private var authorizedConnections: Set<ConnectionKey> = []
     private var refreshedTracks: [String: Track] = [:]
+    private var searchBotPeers: [String: MusicChat] = [:]
     private var phoneNumber = ""
     private var phoneCodeHash = ""
     private var pendingCodeIsEmail = false
@@ -164,7 +171,9 @@ actor TelegramService {
         let storedAccountID = defaults.string(forKey: "telegram.activeAccountID") ?? "legacy"
         accountID = storedAccountID
         let primaryKey = "telegram.primaryDC.\(storedAccountID)"
-        if defaults.object(forKey: primaryKey) != nil {
+        if let syncedDC = keychain.loadPrimaryDC(accountID: storedAccountID) {
+            primaryDC = syncedDC
+        } else if defaults.object(forKey: primaryKey) != nil {
             primaryDC = Int32(defaults.integer(forKey: primaryKey))
         } else if storedAccountID == "legacy" {
             primaryDC = Int32(defaults.integer(forKey: "telegram.primaryDC"))
@@ -172,6 +181,7 @@ actor TelegramService {
             primaryDC = 2
         }
         if primaryDC == 0 { primaryDC = 2 }
+        _ = keychain.savePrimaryDC(primaryDC, accountID: storedAccountID)
     }
 
     func configure(_ value: TelegramCredentials) throws {
@@ -180,13 +190,16 @@ actor TelegramService {
     }
 
     func hasAuthorizedSession() -> Bool {
-        guard isAuthorizationSaved, credentials != nil else {
-            return false
-        }
+        guard credentials != nil else { return false }
         guard keychain.loadSession(dcID: primaryDC, accountID: accountID) != nil else {
             setAuthorizationSaved(false)
             return false
         }
+        // The authorization marker is intentionally local, while MTProto keys
+        // can arrive through iCloud Keychain. Discovering a synced key promotes
+        // it to the active local session; restoreSession will still validate it
+        // with Telegram before the account is shown as connected.
+        if !isAuthorizationSaved { setAuthorizationSaved(true) }
         return true
     }
 
@@ -197,6 +210,7 @@ actor TelegramService {
         connections.removeAll()
         authorizedConnections.removeAll()
         refreshedTracks.removeAll()
+        searchBotPeers.removeAll()
         accountID = id
         if clearExisting {
             keychain.clearSessions(accountID: id)
@@ -204,7 +218,9 @@ actor TelegramService {
         }
         let defaults = UserDefaults.standard
         let key = primaryDCDefaultsKey
-        if defaults.object(forKey: key) != nil {
+        if let syncedDC = keychain.loadPrimaryDC(accountID: id) {
+            primaryDC = syncedDC
+        } else if defaults.object(forKey: key) != nil {
             primaryDC = Int32(defaults.integer(forKey: key))
         } else if id == "legacy" {
             primaryDC = Int32(defaults.integer(forKey: "telegram.primaryDC"))
@@ -212,6 +228,7 @@ actor TelegramService {
             primaryDC = 2
         }
         if primaryDC == 0 { primaryDC = 2 }
+        _ = keychain.savePrimaryDC(primaryDC, accountID: id)
         phoneNumber = ""
         phoneCodeHash = ""
         pendingCodeIsEmail = false
@@ -404,6 +421,97 @@ actor TelegramService {
             limit: 100
         )
         return TelegramMapping.tracks(from: result)
+    }
+
+    func sendBotSearchCommand(
+        config: SearchBotConfig,
+        query: String
+    ) async throws -> [BotSearchMessage] {
+        try await sendBotMessage(config.command(for: query), to: config)
+    }
+
+    func sendBotMessage(
+        _ text: String,
+        to config: SearchBotConfig
+    ) async throws -> [BotSearchMessage] {
+        try await sendBotMessage(text, to: config, settleForAudio: false)
+    }
+
+    private func sendBotMessage(
+        _ text: String,
+        to config: SearchBotConfig,
+        settleForAudio: Bool
+    ) async throws -> [BotSearchMessage] {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw ServiceError.emptyBotMessage
+        }
+        let bot = try await resolveSearchBot(config)
+        let baseline = try await botSearchHistory(for: bot, limit: 60)
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        do {
+            _ = try await connection.client.messages.sendMessage(
+                peer: TelegramMapping.inputPeer(for: bot),
+                message: text,
+                randomId: Int64.random(in: Int64.min...Int64.max)
+            )
+        } catch {
+            throw readableBotError(error, botName: config.displayBotName)
+        }
+        return try await waitForBotResponse(
+            from: bot,
+            comparedWith: baseline,
+            limit: 60,
+            settleForAudio: settleForAudio
+        )
+    }
+
+    func pressBotButton(
+        _ button: BotSearchButton,
+        for config: SearchBotConfig
+    ) async throws -> [BotSearchMessage] {
+        switch button.action {
+        case let .sendText(text):
+            return try await sendBotMessage(text, to: config, settleForAudio: true)
+        case let .callback(messageID, data):
+            let bot = try await resolveSearchBot(config)
+            let baseline = try await botSearchHistory(for: bot, limit: 60)
+            let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+            do {
+                _ = try await connection.client.messages.getBotCallbackAnswer(
+                    peer: TelegramMapping.inputPeer(for: bot),
+                    msgId: messageID,
+                    data: data
+                )
+            } catch {
+                // Telegram may report BOT_RESPONSE_TIMEOUT even though the bot
+                // received the callback and is already editing/posting a result.
+                // In that one case, history remains the source of truth.
+                let detail = "\(String(describing: error)) \(error.localizedDescription)".uppercased()
+                guard detail.contains("BOT_RESPONSE_TIMEOUT") else {
+                    throw readableBotError(error, botName: config.displayBotName)
+                }
+            }
+            return try await waitForBotResponse(
+                from: bot,
+                comparedWith: baseline,
+                limit: 60,
+                settleForAudio: true
+            )
+        case .openURL:
+            // URL buttons are deliberately opened by the UI so the system can
+            // show the destination and apply its normal universal-link policy.
+            return try await botSearchHistory(config: config)
+        case .unsupported:
+            throw ServiceError.unsupportedBotButton
+        }
+    }
+
+    func botSearchHistory(
+        config: SearchBotConfig,
+        limit: Int32 = 60
+    ) async throws -> [BotSearchMessage] {
+        let bot = try await resolveSearchBot(config)
+        return try await botSearchHistory(for: bot, limit: limit)
     }
 
     func startListenTogether(
@@ -1085,6 +1193,134 @@ actor TelegramService {
         endpoints[dcID]?.contains(where: { $0.mediaOnly }) == true
     }
 
+    private func resolveSearchBot(_ config: SearchBotConfig) async throws -> MusicChat {
+        let username = config.normalizedBotName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard username.range(
+            of: #"^[A-Za-z0-9_]{5,32}$"#,
+            options: .regularExpression
+        ) != nil else {
+            throw ServiceError.invalidSearchBot(config.displayBotName)
+        }
+
+        let key = username.lowercased()
+        if let cached = searchBotPeers[key] { return cached }
+
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        do {
+            let result = try await connection.client.contacts.resolveUsername(username: username)
+            guard let bot = TelegramMapping.botChat(from: result) else {
+                throw ServiceError.invalidSearchBot(config.displayBotName)
+            }
+            searchBotPeers[key] = bot
+            return bot
+        } catch let error as ServiceError {
+            throw error
+        } catch {
+            throw readableBotError(error, botName: config.displayBotName)
+        }
+    }
+
+    private func botSearchHistory(
+        for bot: MusicChat,
+        limit: Int32
+    ) async throws -> [BotSearchMessage] {
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        let page = try await connection.client.messages.getHistory(
+            peer: TelegramMapping.inputPeer(for: bot),
+            offsetId: 0,
+            offsetDate: 0,
+            addOffset: 0,
+            limit: min(max(limit, 1), 100),
+            maxId: 0,
+            minId: 0,
+            hash: 0
+        )
+        return TelegramMapping.botSearchMessages(from: page)
+    }
+
+    private func waitForBotResponse(
+        from bot: MusicChat,
+        comparedWith baseline: [BotSearchMessage],
+        limit: Int32,
+        settleForAudio: Bool
+    ) async throws -> [BotSearchMessage] {
+        let previous = Dictionary(
+            baseline.lazy.filter { !$0.isOutgoing }.map { ($0.id, $0) },
+            uniquingKeysWith: { _, latest in latest }
+        )
+        var latest = baseline
+        // Most bots edit their result message or answer in under a second. The
+        // tapered tail also covers bots that need a few seconds to prepare audio
+        // without forcing every interaction to wait for the full timeout.
+        for delay in [150, 250, 400, 650, 1_000, 1_600, 2_500] {
+            try Task.checkCancellation()
+            try await Task.sleep(for: .milliseconds(delay))
+            latest = try await botSearchHistory(for: bot, limit: limit)
+            let current = Dictionary(
+                latest.lazy.filter { !$0.isOutgoing }.map { ($0.id, $0) },
+                uniquingKeysWith: { _, value in value }
+            )
+            guard current != previous else { continue }
+            guard settleForAudio, !containsNewBotTrack(current, comparedWith: previous) else {
+                return latest
+            }
+
+            // Download bots often edit a result into a short "preparing" state
+            // before posting the document. Give callback/text-button actions two
+            // bounded settling reads so the caller usually receives the audio row,
+            // while ordinary search commands still return on their first reply.
+            try await Task.sleep(for: .milliseconds(700))
+            var settled = try await botSearchHistory(for: bot, limit: limit)
+            let settledIncoming = Dictionary(
+                settled.lazy.filter { !$0.isOutgoing }.map { ($0.id, $0) },
+                uniquingKeysWith: { _, value in value }
+            )
+            if containsNewBotTrack(settledIncoming, comparedWith: previous) { return settled }
+
+            // A stable "preparing" edit does not guarantee that a download bot
+            // has finished. Spend one final bounded poll for interactive actions
+            // so a shortly-following audio document is not missed.
+            try await Task.sleep(for: .milliseconds(1_300))
+            let final = try await botSearchHistory(for: bot, limit: limit)
+            let finalIncoming = Dictionary(
+                final.lazy.filter { !$0.isOutgoing }.map { ($0.id, $0) },
+                uniquingKeysWith: { _, value in value }
+            )
+            if finalIncoming != settledIncoming { settled = final }
+            return settled
+        }
+        return latest
+    }
+
+    private func containsNewBotTrack(
+        _ messages: [Int32: BotSearchMessage],
+        comparedWith baseline: [Int32: BotSearchMessage]
+    ) -> Bool {
+        messages.contains { id, message in
+            guard let track = message.track else { return false }
+            return baseline[id]?.track != track
+        }
+    }
+
+    private func readableBotError(_ error: Error, botName: String) -> Error {
+        if error is ServiceError || error is CancellationError { return error }
+        guard let rpc = error as? MTProtoRPCError else { return error }
+        switch rpc.message {
+        case "USERNAME_INVALID", "USERNAME_NOT_OCCUPIED", "PEER_ID_INVALID":
+            return ServiceError.invalidSearchBot(botName)
+        case "MESSAGE_ID_INVALID", "BUTTON_DATA_INVALID":
+            return ServiceError.telegram("That bot result expired. Run the search again and choose a fresh result.")
+        case "BOT_RESPONSE_TIMEOUT":
+            return ServiceError.telegram("\(botName) did not answer in time. Try again.")
+        default:
+            if rpc.message.hasPrefix("FLOOD_WAIT_"),
+               let seconds = Int(rpc.message.dropFirst("FLOOD_WAIT_".count)) {
+                return ServiceError.telegram("Telegram asked this search to wait \(seconds) seconds before trying again.")
+            }
+            return ServiceError.telegram("Telegram could not contact \(botName) (\(rpc.message)).")
+        }
+    }
+
     func logOut() async {
         if let connection = connections[ConnectionKey(dcID: primaryDC, media: false)] {
             _ = try? await connection.client.auth.logOut()
@@ -1099,6 +1335,7 @@ actor TelegramService {
         connections.removeAll()
         authorizedConnections.removeAll()
         refreshedTracks.removeAll()
+        searchBotPeers.removeAll()
         keychain.clearSessions(accountID: accountID)
         setAuthorizationSaved(false)
         phoneNumber = ""
@@ -1385,6 +1622,7 @@ actor TelegramService {
     private func persistPrimaryDC() {
         let defaults = UserDefaults.standard
         defaults.set(Int(primaryDC), forKey: primaryDCDefaultsKey)
+        _ = keychain.savePrimaryDC(primaryDC, accountID: accountID)
         if accountID == "legacy" {
             defaults.set(Int(primaryDC), forKey: "telegram.primaryDC")
         }

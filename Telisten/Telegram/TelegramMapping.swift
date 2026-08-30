@@ -43,6 +43,39 @@ enum TelegramMapping {
         }
     }
 
+    static func botSearchMessages(from result: TL.Messages.MessagesType) -> [BotSearchMessage] {
+        messages(from: result)
+            .compactMap { item -> BotSearchMessage? in
+                guard case let .message(message) = item else { return nil }
+                let text = message.message.trimmingCharacters(in: .whitespacesAndNewlines)
+                let track = map(message: item)
+                let rows = botButtonRows(from: message.replyMarkup, messageID: message.id)
+                guard !text.isEmpty || track != nil || !rows.isEmpty else { return nil }
+                return BotSearchMessage(
+                    id: message.id,
+                    isOutgoing: message.out,
+                    text: text,
+                    date: Date(timeIntervalSince1970: TimeInterval(message.date)),
+                    buttonRows: rows,
+                    track: track
+                )
+            }
+            .sorted { lhs, rhs in
+                lhs.date == rhs.date ? lhs.id < rhs.id : lhs.date < rhs.date
+            }
+    }
+
+    static func botChat(from result: TL.Contacts.ResolvedPeer) -> MusicChat? {
+        guard case let .peerUser(peer) = result.peer,
+              case let .user(user)? = result.users.first(where: { value in
+                  guard case let .user(value) = value else { return false }
+                  return value.id == peer.userId
+              }),
+              user.bot,
+              user.accessHash != nil else { return nil }
+        return map(user: .user(user))
+    }
+
     static func messageCount(from result: TL.Messages.MessagesType) -> Int {
         switch result {
         case let .messages(value): Int(value.messages.count)
@@ -333,5 +366,77 @@ enum TelegramMapping {
             return value.emoticon == "👍"
         }) else { return (0, false) }
         return (reaction.count, reaction.chosenOrder != nil)
+    }
+
+    private static func botButtonRows(
+        from markup: TL.ReplyMarkupType?,
+        messageID: Int32
+    ) -> [[BotSearchButton]] {
+        let rows: [TL.KeyboardButtonRow]
+        switch markup {
+        case let .replyInlineMarkup(value): rows = value.rows
+        case let .replyKeyboardMarkup(value): rows = value.rows
+        case .replyKeyboardHide, .replyKeyboardForceReply, nil: return []
+        }
+
+        return rows.enumerated().map { rowIndex, row in
+            row.buttons.enumerated().map { buttonIndex, button in
+                let value = botButton(button, messageID: messageID)
+                return BotSearchButton(
+                    id: "\(messageID):\(rowIndex):\(buttonIndex):\(value.title)",
+                    title: value.title,
+                    action: value.action
+                )
+            }
+        }
+    }
+
+    private static func botButton(
+        _ button: TL.KeyboardButtonType,
+        messageID: Int32
+    ) -> (title: String, action: BotSearchButtonAction) {
+        switch button {
+        case let .keyboardButton(value):
+            return (value.text, .sendText(value.text))
+        case let .keyboardButtonCallback(value):
+            return (
+                value.text,
+                value.requiresPassword
+                    ? .unsupported
+                    : .callback(messageID: messageID, data: value.data)
+            )
+        case let .keyboardButtonUrl(value):
+            return (value.text, URL(string: value.url).map(BotSearchButtonAction.openURL) ?? .unsupported)
+        case let .keyboardButtonUrlAuth(value):
+            return (value.text, URL(string: value.url).map(BotSearchButtonAction.openURL) ?? .unsupported)
+        case let .inputKeyboardButtonUrlAuth(value):
+            return (value.text, URL(string: value.url).map(BotSearchButtonAction.openURL) ?? .unsupported)
+        case let .keyboardButtonWebView(value):
+            return (value.text, URL(string: value.url).map(BotSearchButtonAction.openURL) ?? .unsupported)
+        case let .keyboardButtonSimpleWebView(value):
+            return (value.text, URL(string: value.url).map(BotSearchButtonAction.openURL) ?? .unsupported)
+        case let .keyboardButtonSwitchInline(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonGame(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonBuy(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonRequestPhone(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonRequestGeoLocation(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonRequestPoll(value):
+            return (value.text, .unsupported)
+        case let .inputKeyboardButtonUserProfile(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonUserProfile(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonRequestPeer(value):
+            return (value.text, .unsupported)
+        case let .inputKeyboardButtonRequestPeer(value):
+            return (value.text, .unsupported)
+        case let .keyboardButtonCopy(value):
+            return (value.text, .unsupported)
+        }
     }
 }

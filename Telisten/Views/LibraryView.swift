@@ -79,6 +79,12 @@ struct LibraryView: View {
             .sheet(isPresented: $model.showListenTogetherSheet) {
                 ListenTogetherView(model: model)
             }
+            .sheet(isPresented: $model.showBotSearch) {
+                BotSearchConversationView(model: model)
+                    #if os(macOS)
+                    .frame(minWidth: 360, minHeight: 520)
+                    #endif
+            }
             .alert(
                 "Delete playlist?",
                 isPresented: $showDeletePlaylistConfirmation,
@@ -332,7 +338,9 @@ struct LibraryView: View {
 
     private var trackBrowser: some View {
         VStack(spacing: 0) {
-            Group {
+            if model.isGlobalSearch {
+                trackList(includeSearchBots: true)
+            } else {
                 if model.isLoading && model.tracks.isEmpty {
                     ProgressView("Finding music…")
                 } else if model.tracks.isEmpty {
@@ -342,50 +350,7 @@ struct LibraryView: View {
                         description: Text(emptyDescription)
                     )
                 } else {
-                    List {
-                        ForEach(model.tracks) { track in
-                            TrackRow(model: model, track: track)
-                                .moveDisabled(selectedPlaylist == nil)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    if let playlist = selectedPlaylist {
-                                        Button("Delete", systemImage: "trash", role: .destructive) {
-                                            Task { await model.delete(track, from: playlist) }
-                                        }
-                                        .disabled(model.deletingPlaylistTrackIDs.contains(track.id))
-                                    }
-                                }
-                        }
-                        .onMove { source, destination in
-                            model.moveTracks(from: source, to: destination)
-                        }
-                        if model.hasMoreTracks {
-                            HStack {
-                                Spacer()
-                                if model.isLoadingMore {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                }
-                                Spacer()
-                            }
-                            .frame(height: 28)
-                            .contentShape(Rectangle())
-                            .onAppear {
-                                Task { await model.loadMoreTracks() }
-                            }
-                            .listRowSeparator(.hidden)
-                        }
-                    }
-                    .listStyle(.plain)
-                    .environment(\.defaultMinListRowHeight, 54)
-                    #if os(iOS)
-                    .environment(
-                        \.editMode,
-                        Binding(
-                            get: { isEditingPlaylist ? .active : .inactive },
-                            set: { isEditingPlaylist = $0.isEditing }
-                        )
-                    )
-                    #endif
+                    trackList(includeSearchBots: false)
                 }
             }
         }
@@ -487,6 +452,81 @@ struct LibraryView: View {
                 }
             }
         }
+    }
+
+    private func trackList(includeSearchBots: Bool) -> some View {
+        List {
+            if includeSearchBots {
+                SearchBotProvidersView(model: model, query: model.searchText)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
+            if model.isLoading && model.tracks.isEmpty {
+                HStack {
+                    Spacer()
+                    ProgressView("Finding music…")
+                    Spacer()
+                }
+                .frame(minHeight: 160)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            } else if model.tracks.isEmpty {
+                ContentUnavailableView(
+                    emptyTitle,
+                    systemImage: emptySymbol,
+                    description: Text(emptyDescription)
+                )
+                .frame(maxWidth: .infinity, minHeight: 240)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            } else {
+                ForEach(model.tracks) { track in
+                    TrackRow(model: model, track: track)
+                        .moveDisabled(selectedPlaylist == nil)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            if let playlist = selectedPlaylist {
+                                Button("Delete", systemImage: "trash", role: .destructive) {
+                                    Task { await model.delete(track, from: playlist) }
+                                }
+                                .disabled(model.deletingPlaylistTrackIDs.contains(track.id))
+                            }
+                        }
+                }
+                .onMove { source, destination in
+                    model.moveTracks(from: source, to: destination)
+                }
+            }
+
+            if model.hasMoreTracks {
+                HStack {
+                    Spacer()
+                    if model.isLoadingMore {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                    Spacer()
+                }
+                .frame(height: 28)
+                .contentShape(Rectangle())
+                .onAppear {
+                    Task { await model.loadMoreTracks() }
+                }
+                .listRowSeparator(.hidden)
+            }
+        }
+        .listStyle(.plain)
+        .environment(\.defaultMinListRowHeight, 54)
+        #if os(iOS)
+        .environment(
+            \.editMode,
+            Binding(
+                get: { isEditingPlaylist ? .active : .inactive },
+                set: { isEditingPlaylist = $0.isEditing }
+            )
+        )
+        #endif
     }
 
     private var selectedPlaylist: MusicChat? {

@@ -19,6 +19,64 @@ struct TelegramAccount: Identifiable, Codable, Hashable, Sendable {
     }
 }
 
+struct SearchBotConfig: Identifiable, Codable, Hashable, Sendable {
+    var id: UUID
+    var botName: String
+    var searchPrefix: String
+    var searchSuffix: String
+
+    init(
+        id: UUID = UUID(),
+        botName: String,
+        searchPrefix: String = "",
+        searchSuffix: String = ""
+    ) {
+        self.id = id
+        self.botName = botName
+        self.searchPrefix = searchPrefix
+        self.searchSuffix = searchSuffix
+    }
+
+    var normalizedBotName: String {
+        let value = botName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.hasPrefix("@") ? String(value.dropFirst()) : value
+    }
+
+    var displayBotName: String {
+        "@\(normalizedBotName)"
+    }
+
+    func command(for query: String) -> String {
+        searchPrefix + query.trimmingCharacters(in: .whitespacesAndNewlines) + searchSuffix
+    }
+
+    var commandPreview: String {
+        "Send \(searchPrefix)query\(searchSuffix) to bot"
+    }
+}
+
+enum BotSearchButtonAction: Hashable, Sendable {
+    case sendText(String)
+    case callback(messageID: Int32, data: Data)
+    case openURL(URL)
+    case unsupported
+}
+
+struct BotSearchButton: Identifiable, Hashable, Sendable {
+    var id: String
+    var title: String
+    var action: BotSearchButtonAction
+}
+
+struct BotSearchMessage: Identifiable, Hashable, Sendable {
+    var id: Int32
+    var isOutgoing: Bool
+    var text: String
+    var date: Date
+    var buttonRows: [[BotSearchButton]]
+    var track: Track?
+}
+
 enum PeerKind: String, Codable, Sendable {
     case user
     case group

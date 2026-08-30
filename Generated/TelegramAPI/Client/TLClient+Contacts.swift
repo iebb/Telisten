@@ -22,5 +22,9 @@ extension TLClient {
     public func getContacts(hash: Int64) async throws -> TL.Contacts.ContactsType {
       try await client.invoke(TL.Contacts.GetContacts(hash: hash))
     }
+    /// TL: `contacts.resolveUsername#725afbbc flags:# username:string referer:flags.0?string = contacts.ResolvedPeer`
+    public func resolveUsername(username: String, referer: String? = nil) async throws -> TL.Contacts.ResolvedPeer {
+      try await client.invoke(TL.Contacts.ResolveUsername(username: username, referer: referer))
+    }
   }
 }

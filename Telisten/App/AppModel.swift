@@ -64,6 +64,12 @@ final class AppModel {
     var cacheBytes: Int64 = 0
     var cacheLimitBytes: Int64
     var lyricsServerURL: URL
+    var searchBots: [SearchBotConfig] = []
+    var activeBotSearchConfig: SearchBotConfig?
+    var botSearchMessages: [BotSearchMessage] = []
+    var isBotSearching = false
+    var botSearchError: String?
+    var showBotSearch = false
     var isDeletingPlaylist = false
     var deletingPlaylistTrackIDs: Set<String> = []
     var renamingPlaylistIDs: Set<String> = []
@@ -115,6 +121,8 @@ final class AppModel {
     @ObservationIgnored private var listenerMetadataTitle: String?
     @ObservationIgnored private var listenerMetadataObservedAt: Date?
     @ObservationIgnored private var listenTogetherInviteLinks: [String: URL] = [:]
+    @ObservationIgnored private var botSearchOperationID: UUID?
+    @ObservationIgnored private var botSearchConversationStartID: Int32?
 
     init() {
         let defaults = UserDefaults.standard
@@ -141,6 +149,7 @@ final class AppModel {
         cachedIDs = cache.initialCachedTrackIDs
         cacheBytes = cache.initialByteCount
         sharedDownloadedTracks = localLibrary.downloadedTracks
+        restoreSearchBots()
         restoreAccounts()
         restoreLibrary()
         player.onFinished = { [weak self] in self?.trackFinished() }
@@ -420,6 +429,71 @@ final class AppModel {
         } else {
             await loadTracks()
         }
+    }
+
+    func beginBotSearch(using config: SearchBotConfig) async {
+        guard !isBotSearching else { return }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            botSearchError = "Enter a song, artist, or album first."
+            return
+        }
+
+        activeBotSearchConfig = config
+        botSearchMessages = []
+        botSearchConversationStartID = nil
+        botSearchError = nil
+        showBotSearch = true
+        let command = config.command(for: query)
+        #if DEBUG
+        if isDemo {
+            await loadDemoBotSearch(config: config, query: query, command: command)
+            return
+        }
+        #endif
+        await performBotSearch(startingWith: command) {
+            try await telegram.sendBotSearchCommand(config: config, query: query)
+        }
+    }
+
+    func sendBotSearchMessage(_ text: String) async {
+        guard !isBotSearching else { return }
+        guard let config = activeBotSearchConfig else { return }
+        let message = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !message.isEmpty else { return }
+        #if DEBUG
+        if isDemo {
+            await sendDemoBotSearchMessage(message)
+            return
+        }
+        #endif
+        await performBotSearch {
+            try await telegram.sendBotMessage(message, to: config)
+        }
+    }
+
+    func activateBotSearchButton(_ button: BotSearchButton) async {
+        guard !isBotSearching else { return }
+        guard let config = activeBotSearchConfig else { return }
+        guard button.action != .unsupported else {
+            botSearchError = "This Telegram button is not supported in Telisten."
+            return
+        }
+        #if DEBUG
+        if isDemo {
+            await activateDemoBotSearchButton(button)
+            return
+        }
+        #endif
+        await performBotSearch {
+            try await telegram.pressBotButton(button, for: config)
+        }
+    }
+
+    func playBotSearchTrack(_ track: Track) {
+        let botTracks = botSearchMessages.compactMap(\.track)
+        install(botTracks)
+        play(track, from: botTracks.isEmpty ? [track] : botTracks)
     }
 
     func loadMoreTracks() async {
@@ -1101,6 +1175,67 @@ final class AppModel {
         }
     }
 
+    /// Adds a new bot configuration or replaces the configuration with the same ID.
+    /// Returns a user-facing validation/persistence error, or `nil` on success.
+    @discardableResult
+    func upsertSearchBot(_ config: SearchBotConfig) -> String? {
+        guard let normalized = normalizedSearchBot(config) else {
+            return "Enter a valid Telegram bot username ending in “bot”."
+        }
+        guard !normalized.searchPrefix.contains(where: \.isNewline),
+              !normalized.searchSuffix.contains(where: \.isNewline) else {
+            return "Search prefix and suffix must each be a single line."
+        }
+        guard normalized.searchPrefix.count <= 256, normalized.searchSuffix.count <= 256 else {
+            return "Search prefix and suffix must each be 256 characters or fewer."
+        }
+        let duplicate = searchBots.contains {
+            $0.id != normalized.id
+                && $0.normalizedBotName.caseInsensitiveCompare(normalized.normalizedBotName) == .orderedSame
+                && $0.searchPrefix == normalized.searchPrefix
+                && $0.searchSuffix == normalized.searchSuffix
+        }
+        guard !duplicate else { return "This bot search is already configured." }
+
+        let previous = searchBots
+        if let index = searchBots.firstIndex(where: { $0.id == normalized.id }) {
+            searchBots[index] = normalized
+        } else {
+            searchBots.append(normalized)
+        }
+        guard keychain.saveSearchBotConfigs(searchBots) else {
+            searchBots = previous
+            return "Telisten couldn’t save this bot search to Keychain."
+        }
+        return nil
+    }
+
+    func deleteSearchBot(id: UUID) {
+        let previous = searchBots
+        searchBots.removeAll { $0.id == id }
+        guard keychain.saveSearchBotConfigs(searchBots) else {
+            searchBots = previous
+            errorMessage = "Telisten couldn’t update bot searches in Keychain."
+            return
+        }
+    }
+
+    func moveSearchBots(fromOffsets offsets: IndexSet, toOffset destination: Int) {
+        let source = offsets.sorted()
+        guard !source.isEmpty, source.allSatisfy(searchBots.indices.contains) else { return }
+        let previous = searchBots
+        let moving = source.map { searchBots[$0] }
+        for index in source.reversed() { searchBots.remove(at: index) }
+        let removedBeforeDestination = source.lazy.filter { $0 < destination }.count
+        let insertionIndex = max(0, min(searchBots.count, destination - removedBeforeDestination))
+        searchBots.insert(contentsOf: moving, at: insertionIndex)
+        guard keychain.saveSearchBotConfigs(searchBots) else {
+            searchBots = previous
+            errorMessage = "Telisten couldn’t update bot searches in Keychain."
+            return
+        }
+    }
+
     func removeDownload(_ track: Track) {
         Task {
             do {
@@ -1586,7 +1721,55 @@ final class AppModel {
         accountAvatarResolved = []
         chatMusicCounts = [:]
         listenTogetherInviteLinks = [:]
+        botSearchOperationID = nil
+        botSearchConversationStartID = nil
+        activeBotSearchConfig = nil
+        botSearchMessages = []
+        botSearchError = nil
+        isBotSearching = false
+        showBotSearch = false
         currentQueueIndex = nil
+    }
+
+    private func performBotSearch(
+        startingWith initialCommand: String? = nil,
+        operation: () async throws -> [BotSearchMessage]
+    ) async {
+        let operationID = UUID()
+        botSearchOperationID = operationID
+        isBotSearching = true
+        botSearchError = nil
+        defer {
+            if botSearchOperationID == operationID {
+                isBotSearching = false
+            }
+        }
+
+        do {
+            let values = try await operation()
+            guard botSearchOperationID == operationID else { return }
+            if let initialCommand,
+               let sent = values.last(where: {
+                   $0.isOutgoing
+                       && $0.text.trimmingCharacters(in: .whitespacesAndNewlines) == initialCommand
+               }) {
+                botSearchConversationStartID = sent.id
+            }
+
+            let scoped: [BotSearchMessage]
+            if let startID = botSearchConversationStartID {
+                scoped = values.filter { $0.id >= startID }
+            } else {
+                scoped = Array(values.suffix(40))
+            }
+            botSearchMessages = scoped
+            install(scoped.compactMap(\.track))
+        } catch is CancellationError {
+            // A newer bot action or account switch superseded this request.
+        } catch {
+            guard botSearchOperationID == operationID else { return }
+            botSearchError = UserFacingError.message(for: error)
+        }
     }
 
     private func refreshActiveAccountProfile() async {
@@ -1817,6 +2000,167 @@ final class AppModel {
     }
 
     #if DEBUG
+    private func loadDemoBotSearch(
+        config: SearchBotConfig,
+        query: String,
+        command: String
+    ) async {
+        isBotSearching = true
+        botSearchError = nil
+        try? await Task.sleep(nanoseconds: 220_000_000)
+
+        let sentAt = Date.now.addingTimeInterval(-0.4)
+        let resultButtons = (1...8).map { number in
+            BotSearchButton(
+                id: "demo-result-\(number)",
+                title: String(number),
+                action: .sendText(String(number))
+            )
+        }
+        func textButton(_ title: String) -> BotSearchButton {
+            BotSearchButton(
+                id: "demo-action-\(title)",
+                title: title,
+                action: .sendText(title)
+            )
+        }
+
+        botSearchConversationStartID = 70_001
+        botSearchMessages = [
+            BotSearchMessage(
+                id: 70_001,
+                isOutgoing: true,
+                text: command,
+                date: sentAt,
+                buttonRows: [],
+                track: nil
+            ),
+            BotSearchMessage(
+                id: 70_002,
+                isOutgoing: false,
+                text: """
+                🎵 NetEase Cloud Music search results
+                Tap a number below to pick a track
+
+                Keyword: \(query)
+                Page 1/6
+
+                1. 花鳥風月 — SEKAI NO OWARI
+                2. Stella — SEKAI NO OWARI
+                3. Never Ending World — SEKAI NO OWARI
+                4. スターライトパレード — SEKAI NO OWARI
+                5. 深海魚 — SEKAI NO OWARI
+                6. Dragon Night — SEKAI NO OWARI
+                7. 夜桜 — SEKAI NO OWARI
+                8. Stella — SEKAI NO OWARI
+                """,
+                date: .now,
+                buttonRows: [
+                    resultButtons,
+                    [textButton("Close"), textButton("Next")],
+                    [textButton("Apple"), textButton("Bilibili"), textButton("KuGou")],
+                    [textButton("KuWo"), textButton("NetEase"), textButton("QQ Music")],
+                    [textButton("Soda"), textButton("Spotify"), textButton("YouTube")]
+                ],
+                track: nil
+            )
+        ]
+        isBotSearching = false
+    }
+
+    private func sendDemoBotSearchMessage(_ text: String) async {
+        isBotSearching = true
+        botSearchError = nil
+        let nextID = (botSearchMessages.map(\.id).max() ?? 70_000) + 1
+        botSearchMessages.append(
+            BotSearchMessage(
+                id: nextID,
+                isOutgoing: true,
+                text: text,
+                date: .now,
+                buttonRows: [],
+                track: nil
+            )
+        )
+        try? await Task.sleep(nanoseconds: 180_000_000)
+        botSearchMessages.append(
+            BotSearchMessage(
+                id: nextID + 1,
+                isOutgoing: false,
+                text: "Choose one of the search-result buttons above.",
+                date: .now,
+                buttonRows: [],
+                track: nil
+            )
+        )
+        isBotSearching = false
+    }
+
+    private func activateDemoBotSearchButton(_ button: BotSearchButton) async {
+        let text: String
+        switch button.action {
+        case let .sendText(value): text = value
+        case .callback: text = button.title
+        case .openURL, .unsupported: return
+        }
+
+        isBotSearching = true
+        botSearchError = nil
+        let nextID = (botSearchMessages.map(\.id).max() ?? 70_000) + 1
+        botSearchMessages.append(
+            BotSearchMessage(
+                id: nextID,
+                isOutgoing: true,
+                text: text,
+                date: .now,
+                buttonRows: [],
+                track: nil
+            )
+        )
+        try? await Task.sleep(nanoseconds: 220_000_000)
+
+        if Int(text) != nil {
+            let result = Track(
+                documentID: 88_001,
+                accessHash: 1,
+                fileReference: Data(),
+                dcID: 2,
+                messageID: nextID + 1,
+                chatID: "u:Music163DownBot",
+                title: "花鳥風月",
+                artist: "SEKAI NO OWARI",
+                fileName: "花鳥風月 - SEKAI NO OWARI.flac",
+                mimeType: "audio/flac",
+                duration: 277,
+                size: 31_190_000,
+                date: .now
+            )
+            botSearchMessages.append(
+                BotSearchMessage(
+                    id: nextID + 1,
+                    isOutgoing: false,
+                    text: "31.19 MB  ·  Lossless FLAC\nvia @Music163DownBot",
+                    date: .now,
+                    buttonRows: [],
+                    track: result
+                )
+            )
+            install([result])
+        } else {
+            botSearchMessages.append(
+                BotSearchMessage(
+                    id: nextID + 1,
+                    isOutgoing: false,
+                    text: text == "Next" ? "Page 2/6" : "Search source: \(text)",
+                    date: .now,
+                    buttonRows: [],
+                    track: nil
+                )
+            )
+        }
+        isBotSearching = false
+    }
+
     private func loadDemo() async {
         isDemo = true
         hasCredentials = true
@@ -1963,12 +2307,75 @@ final class AppModel {
         next()
     }
 
+    private func restoreSearchBots() {
+        if let stored = keychain.loadSearchBotConfigs() {
+            var seen: Set<String> = []
+            searchBots = stored.compactMap { config in
+                guard let normalized = normalizedSearchBot(config),
+                      !normalized.searchPrefix.contains(where: \.isNewline),
+                      !normalized.searchSuffix.contains(where: \.isNewline) else { return nil }
+                let identity = [
+                    normalized.normalizedBotName.lowercased(),
+                    normalized.searchPrefix,
+                    normalized.searchSuffix
+                ].joined(separator: "\u{1F}")
+                return seen.insert(identity).inserted ? normalized : nil
+            }
+            if searchBots != stored {
+                _ = keychain.saveSearchBotConfigs(searchBots)
+            }
+            return
+        }
+
+        searchBots = [SearchBotConfig(botName: "Music163DownBot")]
+        _ = keychain.saveSearchBotConfigs(searchBots)
+    }
+
+    private func normalizedSearchBot(_ config: SearchBotConfig) -> SearchBotConfig? {
+        var username = config.botName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let range = username.range(of: "https://t.me/", options: [.anchored, .caseInsensitive]) {
+            username.removeSubrange(range)
+        } else if let range = username.range(of: "t.me/", options: [.anchored, .caseInsensitive]) {
+            username.removeSubrange(range)
+        }
+        while username.hasPrefix("@") { username.removeFirst() }
+        username = String(username.prefix { $0 != "/" && !$0.isWhitespace })
+
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_")
+        guard (5...32).contains(username.count),
+              username.lowercased().hasSuffix("bot"),
+              username.unicodeScalars.allSatisfy(allowed.contains) else { return nil }
+
+        return SearchBotConfig(
+            id: config.id,
+            botName: username,
+            searchPrefix: config.searchPrefix,
+            searchSuffix: config.searchSuffix
+        )
+    }
+
     private func restoreAccounts() {
         let defaults = UserDefaults.standard
-        if let data = defaults.data(forKey: "telegram.accounts"),
-           let values = try? JSONDecoder().decode([TelegramAccount].self, from: data) {
-            accounts = values
+        let localAccounts = defaults.data(forKey: "telegram.accounts")
+            .flatMap { try? JSONDecoder().decode([TelegramAccount].self, from: $0) }
+            ?? []
+        let localActiveID = defaults.string(forKey: "telegram.activeAccountID")
+        let registry = keychain.loadAccountRegistry()
+        let hasMigratedRegistry = defaults.bool(forKey: "telegram.accounts.keychainMigrated")
+
+        if let registry, hasMigratedRegistry {
+            accounts = registry.accounts
+        } else if let registry {
+            var merged = localAccounts
+            var knownIDs = Set(merged.map(\.id))
+            for account in registry.accounts where knownIDs.insert(account.id).inserted {
+                merged.append(account)
+            }
+            accounts = merged
+        } else {
+            accounts = localAccounts
         }
+
         if accounts.isEmpty,
            defaults.bool(forKey: "telegram.authorized") {
             accounts = [TelegramAccount(
@@ -1978,12 +2385,13 @@ final class AppModel {
                 username: nil
             )]
         }
-        let savedID = defaults.string(forKey: "telegram.activeAccountID")
-        if let savedID, accounts.contains(where: { $0.id == savedID }) {
-            activeAccountID = savedID
-        } else {
-            activeAccountID = accounts.first?.id
-        }
+        let preferredIDs = hasMigratedRegistry
+            ? [registry?.activeAccountID, localActiveID]
+            : [localActiveID, registry?.activeAccountID]
+        activeAccountID = preferredIDs
+            .compactMap { $0 }
+            .first { candidate in accounts.contains { $0.id == candidate } }
+            ?? accounts.first?.id
         persistAccounts()
     }
 
@@ -1994,6 +2402,9 @@ final class AppModel {
             defaults.set(activeAccountID, forKey: "telegram.activeAccountID")
         } else {
             defaults.removeObject(forKey: "telegram.activeAccountID")
+        }
+        if keychain.saveAccountRegistry(accounts: accounts, activeAccountID: activeAccountID) {
+            defaults.set(true, forKey: "telegram.accounts.keychainMigrated")
         }
     }
 
