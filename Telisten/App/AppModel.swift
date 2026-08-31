@@ -14,6 +14,11 @@ private struct MusicChatIndexEntry: Codable {
     var musicCount: Int? = nil
 }
 
+private enum QRLoginWakeReason: Sendable {
+    case update
+    case expired
+}
+
 @MainActor
 @Observable
 final class AppModel {
@@ -22,10 +27,12 @@ final class AppModel {
     private static let lyricsServerDefaultsKey = "lyrics.serverURL"
 
     var phase: ConnectionPhase = .signedOut
+    var qrCodeLoginState: QRCodeLoginState = .idle
     var hasCredentials = false
     var accounts: [TelegramAccount] = []
     var activeAccountID: String?
     var isAddingAccount = false
+    var isCancellingAccount = false
     var chats: [MusicChat] = []
     var selected: SidebarSelection?
     var selectedChat: MusicChat?
@@ -82,6 +89,10 @@ final class AppModel {
         return !accounts.isEmpty || !cachedIDs.isEmpty || !playlists.isEmpty
     }
 
+    private var canOpenOfflineLibrary: Bool {
+        !cachedIDs.isEmpty || !sharedDownloadedTracks.isEmpty || !playlists.isEmpty
+    }
+
     let player = AudioPlayer()
 
     @ObservationIgnored private let keychain: KeychainStore
@@ -112,6 +123,10 @@ final class AppModel {
     @ObservationIgnored private var commentsTrackID: String?
     @ObservationIgnored private var loginPhone = ""
     @ObservationIgnored private var previousAccountID: String?
+    @ObservationIgnored private var qrCodeLoginTask: Task<Void, Never>?
+    @ObservationIgnored private var qrCodeLoginOperationID: UUID?
+    @ObservationIgnored private var passwordRequestedByQRCode = false
+    @ObservationIgnored private var postLoginRefreshTask: Task<Void, Never>?
     @ObservationIgnored private var listenTogetherTask: Task<Void, Never>?
     @ObservationIgnored private var broadcastTrackID: String?
     @ObservationIgnored private var broadcastStartedAt: Date?
@@ -182,37 +197,227 @@ final class AppModel {
             }
             return
         }
-        if let activeAccountID {
-            await telegram.useAccount(activeAccountID)
-        }
-        guard await telegram.hasAuthorizedSession() else {
-            phase = .signedOut
-            return
-        }
-        do {
-            phase = .connecting
-            allChats = mergedChats(try await telegram.restoreSession(), with: playlists)
-            await refreshActiveAccountProfile()
-            applyMusicChatIndex()
-            await refreshPlaylists()
-            phase = .ready
-            beginMusicChatIndexing()
-        } catch {
-            phase = canOpenLibrary ? .ready : .signedOut
-            if UserFacingError.isExpiredTelegramSession(error) {
-                await telegram.discardSession()
+        let initiallySelectedAccountID = activeAccountID
+        for candidateID in sessionRestoreCandidateIDs() {
+            await telegram.useAccount(candidateID)
+            guard await telegram.hasAuthorizedSession() else { continue }
+
+            if activeAccountID != candidateID {
+                activeAccountID = candidateID
+                restoreLibrary()
             }
-            if !canOpenLibrary {
-                errorMessage = UserFacingError.message(for: error)
+
+            do {
+                phase = .connecting
+                allChats = mergedChats(try await telegram.restoreSession(), with: playlists)
+                await refreshActiveAccountProfile()
+                applyMusicChatIndex()
+                await refreshPlaylists()
+                phase = .ready
+                beginMusicChatIndexing()
+                errorMessage = nil
+                return
+            } catch {
+                if UserFacingError.isExpiredTelegramSession(error) {
+                    // A stale registry entry must not hide another account with
+                    // a valid synchronized session. Remove only the explicitly
+                    // rejected session, then continue through the registry.
+                    await telegram.discardSession()
+                    continue
+                }
+
+                // Connectivity failures are common during launch and do not
+                // invalidate this or any other stored account. Keep the chosen
+                // account and its offline library available for a later retry.
+                phase = canOpenLibrary ? .ready : .signedOut
+                if !canOpenLibrary {
+                    errorMessage = UserFacingError.message(for: error)
+                }
+                return
             }
         }
+
+        // Keep login scoped to the user's preferred registry entry even though
+        // TelegramService tried additional candidates while looking for a saved
+        // session. This prevents a failed default-account probe from deciding
+        // where the next authorization is stored.
+        activeAccountID = initiallySelectedAccountID
+        await telegram.useAccount(initiallySelectedAccountID ?? "legacy")
+        restoreLibrary()
+        phase = canOpenOfflineLibrary ? .ready : .signedOut
     }
 
     func requestCode(phone: String) async {
+        stopQRCodeLogin()
+        passwordRequestedByQRCode = false
         loginPhone = phone
         await performLoginWork {
             let result = try await telegram.sendCode(to: phone)
             try await apply(result)
+        }
+    }
+
+    func startQRCodeLogin() async {
+        guard qrCodeLoginState == .idle else { return }
+        await prepareQRCodeLogin()
+    }
+
+    func refreshQRCodeLogin() async {
+        stopQRCodeLogin()
+        await telegram.restartPendingQRCodeLoginTransport()
+        await prepareQRCodeLogin()
+    }
+
+    private func prepareQRCodeLogin() async {
+        let operationID = UUID()
+        qrCodeLoginOperationID = operationID
+        qrCodeLoginState = .loading
+        errorMessage = nil
+
+        if !isAddingAccount {
+            previousAccountID = activeAccountID
+            isAddingAccount = true
+            activeAccountID = "account-\(UUID().uuidString.lowercased())"
+            resetForAccountTransition()
+            restoreLibrary()
+            if let activeAccountID {
+                await telegram.useAccount(activeAccountID, clearExisting: true)
+            }
+        }
+
+        guard qrCodeLoginOperationID == operationID, !Task.isCancelled else { return }
+        phase = .signedOut
+        let locallyAuthorizedIDs = Set(keychain.availableSessionAccountIDs())
+        let exceptUserIDs = accounts.compactMap { account -> Int64? in
+            guard locallyAuthorizedIDs.contains(account.id), account.userID > 0 else { return nil }
+            return account.userID
+        }
+        qrCodeLoginTask = Task { [weak self] in
+            await self?.runQRCodeLogin(exceptUserIDs: exceptUserIDs, operationID: operationID)
+        }
+    }
+
+    func usePhoneNumberLogin() async {
+        stopQRCodeLogin()
+        await telegram.restartPendingQRCodeLoginTransport()
+        passwordRequestedByQRCode = false
+        phase = .signedOut
+        errorMessage = nil
+    }
+
+    private func stopQRCodeLogin() {
+        qrCodeLoginOperationID = nil
+        qrCodeLoginTask?.cancel()
+        qrCodeLoginTask = nil
+        qrCodeLoginState = .idle
+    }
+
+    private func runQRCodeLogin(exceptUserIDs: [Int64], operationID: UUID) async {
+        var currentCode: TelegramService.QRLoginCode?
+        var consecutiveFailures = 0
+
+        while !Task.isCancelled {
+            do {
+                let updateRevision = await telegram.currentLoginTokenUpdateRevision()
+                let result = try await telegram.exportQRCodeLogin(exceptUserIDs: exceptUserIDs)
+                guard !Task.isCancelled, qrCodeLoginOperationID == operationID else { return }
+                consecutiveFailures = 0
+                switch result {
+                case let .code(code):
+                    currentCode = code
+                    qrCodeLoginState = .waiting(url: code.url, expiresAt: code.expiresAt)
+                    let wake = await waitForQRCodeLoginWake(
+                        after: updateRevision,
+                        expiresAt: code.expiresAt
+                    )
+                    guard !Task.isCancelled, qrCodeLoginOperationID == operationID else { return }
+                    if case .expired = wake {
+                        // Keep the last code visible while Telegram issues its
+                        // replacement. The auth key is deliberately retained: an
+                        // approval can race this local refresh boundary.
+                        qrCodeLoginState = .waiting(
+                            url: code.url,
+                            expiresAt: code.expiresAt,
+                            status: "Refreshing code…"
+                        )
+                    } else {
+                        qrCodeLoginState = .loading
+                    }
+
+                case let .password(hint):
+                    passwordRequestedByQRCode = true
+                    qrCodeLoginState = .idle
+                    phase = .password(hint: hint)
+                    qrCodeLoginTask = nil
+                    qrCodeLoginOperationID = nil
+                    return
+
+                case let .ready(profile):
+                    qrCodeLoginState = .idle
+                    qrCodeLoginTask = nil
+                    qrCodeLoginOperationID = nil
+                    isLoading = true
+                    do {
+                        try await completeLogin(profile: profile)
+                    } catch {}
+                    isLoading = false
+                    return
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled, qrCodeLoginOperationID == operationID else { return }
+                consecutiveFailures += 1
+                let message = UserFacingError.message(for: error)
+                if consecutiveFailures >= 4 {
+                    qrCodeLoginState = .failed(message)
+                    qrCodeLoginTask = nil
+                    qrCodeLoginOperationID = nil
+                    return
+                }
+                if let currentCode {
+                    qrCodeLoginState = .waiting(
+                        url: currentCode.url,
+                        expiresAt: currentCode.expiresAt,
+                        status: "Connection interrupted — retrying"
+                    )
+                } else {
+                    qrCodeLoginState = .loading
+                }
+                try? await Task.sleep(for: .seconds(Double(consecutiveFailures * 2)))
+            }
+        }
+    }
+
+    private func waitForQRCodeLoginWake(
+        after revision: UInt64,
+        expiresAt: Date
+    ) async -> QRLoginWakeReason {
+        let telegram = telegram
+        return await withTaskGroup(of: QRLoginWakeReason.self) { group in
+            group.addTask {
+                while !Task.isCancelled {
+                    if await telegram.currentLoginTokenUpdateRevision() != revision {
+                        return .update
+                    }
+                    do {
+                        try await Task.sleep(for: .milliseconds(150))
+                    } catch {
+                        return .expired
+                    }
+                }
+                return .expired
+            }
+            group.addTask {
+                // Refresh just before the token boundary so the current code
+                // remains on screen while the next request begins.
+                let remaining = max(0.25, expiresAt.timeIntervalSinceNow - 2)
+                try? await Task.sleep(for: .seconds(remaining))
+                return .expired
+            }
+            let first = await group.next() ?? .expired
+            group.cancelAll()
+            return first
         }
     }
 
@@ -233,9 +438,10 @@ final class AppModel {
     func submitCode(_ code: String) async {
         await performLoginWork {
             switch try await telegram.signIn(code: code) {
-            case .ready:
-                try await finishLogin()
+            case let .ready(profile):
+                try await completeLogin(profile: profile)
             case let .password(hint):
+                passwordRequestedByQRCode = false
                 phase = .password(hint: hint)
             }
         }
@@ -243,12 +449,21 @@ final class AppModel {
 
     func submitPassword(_ password: String) async {
         await performLoginWork {
-            try await telegram.checkPassword(password)
-            try await finishLogin()
+            let profile = try await telegram.checkPassword(password)
+            try await completeLogin(profile: profile)
+            passwordRequestedByQRCode = false
         }
     }
 
-    func restartLogin() {
+    func restartLogin() async {
+        let shouldDiscardPendingQRCodeSession = passwordRequestedByQRCode
+        stopQRCodeLogin()
+        passwordRequestedByQRCode = false
+        if shouldDiscardPendingQRCodeSession {
+            isLoading = true
+            await telegram.discardPendingQRCodeLoginSession()
+            isLoading = false
+        }
         phase = .signedOut
         errorMessage = nil
     }
@@ -260,6 +475,7 @@ final class AppModel {
 
     func addAccount() async {
         guard !isAddingAccount else { return }
+        stopQRCodeLogin()
         await stopListenTogether(endHostedCall: true)
         persistLibrary()
         previousAccountID = activeAccountID
@@ -274,11 +490,15 @@ final class AppModel {
     }
 
     func cancelAddingAccount() async {
-        guard isAddingAccount else { return }
+        guard isAddingAccount, !isCancellingAccount, !isLoading else { return }
+        isCancellingAccount = true
+        let accountToRestore = previousAccountID
+        stopQRCodeLogin()
         await telegram.discardSession()
         isAddingAccount = false
-        activeAccountID = previousAccountID
+        activeAccountID = accountToRestore
         previousAccountID = nil
+        isCancellingAccount = false
         if let activeAccountID {
             await activateAccount(activeAccountID)
         } else {
@@ -289,6 +509,7 @@ final class AppModel {
 
     func switchAccount(to account: TelegramAccount) async {
         guard account.id != activeAccountID, !isAddingAccount else { return }
+        stopQRCodeLogin()
         await stopListenTogether(endHostedCall: true)
         persistLibrary()
         activeAccountID = account.id
@@ -297,6 +518,7 @@ final class AppModel {
     }
 
     func logOut() async {
+        stopQRCodeLogin()
         await stopListenTogether(endHostedCall: true)
         musicChatIndexTask?.cancel()
         let removedAccountID = activeAccountID
@@ -1646,20 +1868,86 @@ final class AppModel {
         listenerMetadataObservedAt = nil
     }
 
-    private func finishLogin() async throws {
+    private func completeLogin(profile: TelegramAccount) async throws {
+        do {
+            try await finishLogin(profile: profile)
+        } catch {
+            await recoverFromFailedFreshSessionCommit(error)
+            throw error
+        }
+    }
+
+    private func finishLogin(profile initialProfile: TelegramAccount) async throws {
         phase = .connecting
         if activeAccountID == nil {
             activeAccountID = "legacy"
         }
-        allChats = mergedChats(try await telegram.loadChats(), with: playlists)
-        await refreshActiveAccountProfile()
-        applyMusicChatIndex()
-        await refreshPlaylists()
+        var profile = initialProfile
+        if let replacement = accounts.first(where: {
+            $0.userID == profile.userID && $0.id != profile.id
+        }) {
+            try await telegram.replaceCurrentSession(withAccountID: replacement.id)
+            activeAccountID = replacement.id
+            profile.id = replacement.id
+            // The temporary authorization slot intentionally starts empty. Once
+            // it replaces an existing account, restore that account's local
+            // queues, favorites, playlist mirrors and known tracks before any
+            // network refresh can persist over them.
+            restoreLibrary()
+            accounts.removeAll { $0.id != replacement.id && $0.userID == profile.userID }
+        }
+        if let index = accounts.firstIndex(where: { $0.id == profile.id }) {
+            accounts[index] = profile
+        } else {
+            accounts.append(profile)
+        }
         isAddingAccount = false
         previousAccountID = nil
         persistAccounts()
         phase = .ready
-        beginMusicChatIndexing()
+        errorMessage = nil
+        let committedAccountID = profile.id
+        postLoginRefreshTask?.cancel()
+        postLoginRefreshTask = Task { [weak self] in
+            await self?.refreshAfterLogin(profile: profile, accountID: committedAccountID)
+        }
+    }
+
+    private func refreshAfterLogin(profile: TelegramAccount, accountID: String) async {
+        await loadAvatar(for: profile)
+        guard !Task.isCancelled, activeAccountID == accountID else { return }
+        do {
+            let loadedChats = try await telegram.loadChats()
+            guard !Task.isCancelled, activeAccountID == accountID else { return }
+            allChats = mergedChats(loadedChats, with: playlists)
+            applyMusicChatIndex()
+            await refreshPlaylists(expectedAccountID: accountID)
+            guard !Task.isCancelled, activeAccountID == accountID else { return }
+            beginMusicChatIndexing()
+        } catch is CancellationError {
+            return
+        } catch {
+            // Authorization and local account commit already succeeded. Keep
+            // the offline library open and retry Telegram content later.
+            guard activeAccountID == accountID else { return }
+            errorMessage = UserFacingError.message(for: error)
+        }
+    }
+
+    private func recoverFromFailedFreshSessionCommit(_ error: Error) async {
+        let accountToRestore = previousAccountID
+        await telegram.discardSession()
+        passwordRequestedByQRCode = false
+        isAddingAccount = false
+        activeAccountID = accountToRestore
+        previousAccountID = nil
+        if let accountToRestore {
+            await activateAccount(accountToRestore)
+        } else {
+            resetForAccountTransition()
+            phase = .signedOut
+        }
+        errorMessage = UserFacingError.message(for: error)
     }
 
     private func activateAccount(_ id: String) async {
@@ -1681,12 +1969,21 @@ final class AppModel {
             beginMusicChatIndexing()
             errorMessage = nil
         } catch {
-            phase = .signedOut
-            errorMessage = UserFacingError.message(for: error)
+            if UserFacingError.isExpiredTelegramSession(error) {
+                phase = .signedOut
+                errorMessage = UserFacingError.message(for: error)
+            } else {
+                phase = canOpenLibrary ? .ready : .signedOut
+                if !canOpenLibrary {
+                    errorMessage = UserFacingError.message(for: error)
+                }
+            }
         }
     }
 
     private func resetForAccountTransition() {
+        postLoginRefreshTask?.cancel()
+        postLoginRefreshTask = nil
         musicChatIndexTask?.cancel()
         listenTogetherTask?.cancel()
         listenTogetherTask = nil
@@ -1794,8 +2091,8 @@ final class AppModel {
             phase = .emailAddress
         case let .password(hint):
             phase = .password(hint: hint)
-        case .ready:
-            try await finishLogin()
+        case let .ready(profile):
+            try await completeLogin(profile: profile)
         }
     }
 
@@ -1907,8 +2204,9 @@ final class AppModel {
         return result
     }
 
-    private func refreshPlaylists() async {
+    private func refreshPlaylists(expectedAccountID: String? = nil) async {
         if let values = try? await telegram.loadPlaylistChats(from: allChats) {
+            if let expectedAccountID, activeAccountID != expectedAccountID { return }
             playlists = values
             allChats = mergedChats(allChats, with: values, replacingExisting: true)
             persistLibrary()
@@ -2362,6 +2660,7 @@ final class AppModel {
         let localActiveID = defaults.string(forKey: "telegram.activeAccountID")
         let registry = keychain.loadAccountRegistry()
         let hasMigratedRegistry = defaults.bool(forKey: "telegram.accounts.keychainMigrated")
+        let storedSessionAccountIDs = keychain.availableSessionAccountIDs()
 
         if let registry, hasMigratedRegistry {
             accounts = registry.accounts
@@ -2376,14 +2675,22 @@ final class AppModel {
             accounts = localAccounts
         }
 
-        if accounts.isEmpty,
-           defaults.bool(forKey: "telegram.authorized") {
-            accounts = [TelegramAccount(
+        for accountID in storedSessionAccountIDs where !accounts.contains(where: { $0.id == accountID }) {
+            accounts.append(TelegramAccount(
+                id: accountID,
+                userID: 0,
+                displayName: "Telegram Account",
+                username: nil
+            ))
+        }
+        if !accounts.contains(where: { $0.id == "legacy" }),
+           accounts.isEmpty && defaults.bool(forKey: "telegram.authorized") {
+            accounts.append(TelegramAccount(
                 id: "legacy",
                 userID: 0,
                 displayName: "Telegram Account",
                 username: nil
-            )]
+            ))
         }
         let preferredIDs = hasMigratedRegistry
             ? [registry?.activeAccountID, localActiveID]
@@ -2393,6 +2700,16 @@ final class AppModel {
             .first { candidate in accounts.contains { $0.id == candidate } }
             ?? accounts.first?.id
         persistAccounts()
+    }
+
+    private func sessionRestoreCandidateIDs() -> [String] {
+        var result: [String] = []
+        var seen: Set<String> = []
+        for value in [activeAccountID].compactMap({ $0 }) + accounts.map(\.id) + ["legacy"]
+            where seen.insert(value).inserted {
+            result.append(value)
+        }
+        return result
     }
 
     private func persistAccounts() {

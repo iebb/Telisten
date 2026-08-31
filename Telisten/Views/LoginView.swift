@@ -60,6 +60,7 @@ struct LoginView: View {
                 .buttonStyle(.plain)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.telistenAccent)
+                .disabled(model.isLoading || model.isCancellingAccount)
             }
         }
     }
@@ -95,18 +96,32 @@ struct LoginView: View {
         VStack(alignment: .leading, spacing: 22) {
             switch model.phase {
             case .signedOut:
-                sectionTitle("Sign in", detail: "Enter your number in international format.")
-                underlinedField("PHONE NUMBER", focused: focusedField == .phone) {
-                    TextField("+81 90 1234 5678", text: $phone)
-                        .font(.title3.weight(.medium))
-                        .focused($focusedField, equals: .phone)
-                        #if os(iOS)
-                        .keyboardType(.phonePad)
-                        .textContentType(.telephoneNumber)
-                        #endif
-                }
-                primaryButton("Send code", symbol: "arrow.right", disabled: phone.isEmpty) {
-                    await model.requestCode(phone: phone)
+                if model.qrCodeLoginState == .idle {
+                    sectionTitle("Sign in", detail: "Enter your number in international format.")
+                    underlinedField("PHONE NUMBER", focused: focusedField == .phone) {
+                        TextField("+81 90 1234 5678", text: $phone)
+                            .font(.title3.weight(.medium))
+                            .focused($focusedField, equals: .phone)
+                            #if os(iOS)
+                            .keyboardType(.phonePad)
+                            .textContentType(.telephoneNumber)
+                            #endif
+                    }
+                    primaryButton("Send code", symbol: "arrow.right", disabled: phone.isEmpty) {
+                        await model.requestCode(phone: phone)
+                    }
+                    Button {
+                        focusedField = nil
+                        Task { await model.startQRCodeLogin() }
+                    } label: {
+                        Label("Sign in with QR code", systemImage: "qrcode")
+                            .font(.callout.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.telistenAccent)
+                    .disabled(model.isLoading)
+                } else {
+                    qrCodeAuthorization
                 }
 
             case let .code(_, hint, isEmail):
@@ -181,6 +196,79 @@ struct LoginView: View {
         }
     }
 
+    @ViewBuilder
+    private var qrCodeAuthorization: some View {
+        switch model.qrCodeLoginState {
+        case .idle:
+            EmptyView()
+
+        case .loading:
+            sectionTitle("Link this device", detail: "Creating a fresh Telegram session…")
+            HStack(spacing: 12) {
+                ProgressView()
+                Text("Requesting secure QR code")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            qrPhoneFallback
+
+        case let .waiting(url, expiresAt, status):
+            sectionTitle(
+                "Link this device",
+                detail: "On a signed-in device, open Telegram Settings → Devices → Link Desktop Device, then scan this code."
+            )
+            HStack {
+                Spacer(minLength: 0)
+                TelegramLoginQRCodeView(url: url)
+                    .frame(width: 218, height: 218)
+                    .accessibilityLabel("Telegram login QR code")
+                Spacer(minLength: 0)
+            }
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let seconds = max(0, Int(expiresAt.timeIntervalSince(context.date).rounded(.up)))
+                HStack(spacing: 7) {
+                    Image(systemName: status == nil ? "lock.shield" : "wifi.exclamationmark")
+                    Text(status ?? (seconds > 0 ? "Refreshes in \(seconds)s" : "Refreshing…"))
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+            }
+            HStack(spacing: 20) {
+                Button("Refresh code") {
+                    Task { await model.refreshQRCodeLogin() }
+                }
+                ShareLink(item: url) {
+                    Label("Share link", systemImage: "square.and.arrow.up")
+                }
+            }
+            .font(.callout.weight(.semibold))
+            .foregroundStyle(Color.telistenAccent)
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+            qrPhoneFallback
+
+        case let .failed(message):
+            sectionTitle("QR sign-in paused", detail: message)
+            primaryButton("Try again", symbol: "arrow.clockwise", disabled: false) {
+                await model.refreshQRCodeLogin()
+            }
+            qrPhoneFallback
+        }
+    }
+
+    private var qrPhoneFallback: some View {
+        Button("Use phone number instead") {
+            Task {
+                await model.usePhoneNumberLogin()
+                focusedField = .phone
+            }
+        }
+        .font(.callout.weight(.medium))
+        .foregroundStyle(.secondary)
+        .buttonStyle(.plain)
+    }
+
     private func sectionTitle(_ title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
@@ -219,7 +307,7 @@ struct LoginView: View {
             email = ""
             emailCode = ""
             focusedField = .phone
-            model.restartLogin()
+            Task { await model.restartLogin() }
         }
         .font(.callout.weight(.medium))
         .foregroundStyle(.secondary)

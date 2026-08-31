@@ -4,6 +4,9 @@ initConnection
 help.getConfig
 auth.sendCode
 auth.signIn
+auth.exportLoginToken
+auth.importLoginToken
+auth.acceptLoginToken
 account.sendVerifyEmailCode
 account.verifyEmail
 account.getPassword

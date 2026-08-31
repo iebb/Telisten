@@ -338,6 +338,13 @@ enum ConnectionPhase: Equatable, Sendable {
     case ready
 }
 
+enum QRCodeLoginState: Equatable, Sendable {
+    case idle
+    case loading
+    case waiting(url: URL, expiresAt: Date, status: String? = nil)
+    case failed(String)
+}
+
 struct DownloadStatus: Equatable, Sendable {
     var progress: Double
     var isCached: Bool

@@ -15,14 +15,16 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>TelegramAPIHash</key>
 	<string>$(TELEGRAM_API_HASH)</string>
 	<key>TelegramAPIID</key>
 	<string>$(TELEGRAM_API_ID)</string>
+	<key>TelistenKeychainAccessGroupPrefix</key>
+	<string>$(AppIdentifierPrefix)</string>
 </dict>
 </plist>

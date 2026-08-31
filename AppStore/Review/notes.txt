@@ -1,4 +1,4 @@
-Telisten is a focused music player for audio available in the user's Telegram account. It connects directly from the device to Telegram with MTProto and does not use TDLib, a bot, a proxy, or a developer-operated backend.
+Telisten is a focused music player for audio available in the user's Telegram account. It connects directly from the device to Telegram with MTProto and does not use TDLib, a proxy, a developer-operated bot, or a developer-operated backend. Users may optionally configure Telegram music-search bots; those queries and results stay within the user's own Telegram session.
 
 Telisten does not expose a general messaging interface. It extracts compatible audio documents for playback and ignores text, photos, video, and other message types. It does not send Telegram read-history calls, so browsing or playing music does not mark conversations as read.
 
@@ -13,6 +13,7 @@ Review path:
 
 External services:
 • Telegram data centers: account authentication, music search, audio streaming and downloads, and private playlist storage.
+• User-configured Telegram search bots: optional music queries and interactive result buttons inside the user's Telegram account.
 • lrclib.net: lyrics matching using track title, artist, and duration.
 
 The Debug-only --demo launch argument is not available in the submitted Release build.
@@ -20,8 +21,8 @@ The Debug-only --demo launch argument is not available in the submitted Release 
 Guideline 4.3 clarification:
 We respectfully disagree that Telisten is spam or a duplicate/template app. Telisten is one independently designed native music product, not a reskin, generic Telegram wrapper, or collection of similar apps. Its product and implementation are specific to turning audio already accessible in a user's Telegram account into a focused music library.
 
-Build 23 demonstrates the app's distinctive functionality:
-• A custom direct MTProto client, without TDLib, a bot, a proxy, or a developer-operated media backend.
+Build 24 demonstrates the app's distinctive functionality:
+• A custom direct MTProto client, without TDLib, a proxy, a developer-operated bot, or a developer-operated media backend.
 • Global, deduplicated music search and lazy music-only indexing that does not mark chats as read.
 • Progressive playback before a download completes, plus a shared offline cache that reuses full and partial downloads across Telegram accounts.
 • Telegram-backed playlists that preserve the original audio by forwarding it to dedicated private storage, with a local mirror for ordering and offline launch.

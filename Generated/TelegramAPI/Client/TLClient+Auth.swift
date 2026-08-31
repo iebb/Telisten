@@ -42,5 +42,17 @@ extension TLClient {
     public func checkPassword(password: TL.InputCheckPasswordSRPType) async throws -> TL.Auth.AuthorizationType {
       try await client.invoke(TL.Auth.CheckPassword(password: password))
     }
+    /// TL: `auth.exportLoginToken#b7e085fe api_id:int api_hash:string except_ids:Vector<long> = auth.LoginToken`
+    public func exportLoginToken(apiId: Int32, apiHash: String, exceptIds: [Int64]) async throws -> TL.Auth.LoginTokenType {
+      try await client.invoke(TL.Auth.ExportLoginToken(apiId: apiId, apiHash: apiHash, exceptIds: exceptIds))
+    }
+    /// TL: `auth.importLoginToken#95ac5ce4 token:bytes = auth.LoginToken`
+    public func importLoginToken(token: Data) async throws -> TL.Auth.LoginTokenType {
+      try await client.invoke(TL.Auth.ImportLoginToken(token: token))
+    }
+    /// TL: `auth.acceptLoginToken#e894ad4d token:bytes = Authorization`
+    public func acceptLoginToken(token: Data) async throws -> TL.Authorization {
+      try await client.invoke(TL.Auth.AcceptLoginToken(token: token))
+    }
   }
 }

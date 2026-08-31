@@ -22,7 +22,7 @@ settings:
     SWIFT_VERSION: 6.0
     SWIFT_STRICT_CONCURRENCY: complete
     MARKETING_VERSION: 1.0.0
-    CURRENT_PROJECT_VERSION: 1
+    CURRENT_PROJECT_VERSION: 24
     GENERATE_INFOPLIST_FILE: YES
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: 7P8CLHDH5G
@@ -64,7 +64,6 @@ targetTemplates:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
         INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 Kitta Ltd"
         ENABLE_HARDENED_RUNTIME: YES
-        CODE_SIGN_ENTITLEMENTS: Telisten/Telisten.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: Appicon
 targets:
   Telisten-iOS:
@@ -73,9 +72,12 @@ targets:
     info:
       path: Telisten/Info-iOS.plist
       properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false
         TelegramAPIID: $(TELEGRAM_API_ID)
         TelegramAPIHash: $(TELEGRAM_API_HASH)
+        TelistenKeychainAccessGroupPrefix: $(AppIdentifierPrefix)
         UIBackgroundModes:
           - audio
         UISupportedInterfaceOrientations:
@@ -90,6 +92,7 @@ targets:
           - UIInterfaceOrientationLandscapeRight
     settings:
       base:
+        CODE_SIGN_ENTITLEMENTS: Telisten/Telisten-iOS.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -102,11 +105,15 @@ targets:
     info:
       path: Telisten/Info-macOS.plist
       properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false
         TelegramAPIID: $(TELEGRAM_API_ID)
         TelegramAPIHash: $(TELEGRAM_API_HASH)
+        TelistenKeychainAccessGroupPrefix: $(AppIdentifierPrefix)
     settings:
       base:
+        CODE_SIGN_ENTITLEMENTS: Telisten/Telisten-macOS.entitlements
         INFOPLIST_KEY_LSMinimumSystemVersion: "15.0"
         INFOPLIST_KEY_NSMainStoryboardFile: ""
 schemes:

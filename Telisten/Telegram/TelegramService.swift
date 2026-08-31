@@ -1,6 +1,7 @@
 import Foundation
 import MTProtoClientKit
 import NIOMTProtoEncryption
+import TLCoding
 
 private enum FileRequestPriority {
     case playback
@@ -36,16 +37,57 @@ private actor FileRequestGate {
     }
 }
 
+private final class SessionPersistenceGeneration: @unchecked Sendable {
+    private let lock = NSLock()
+    private var generation: UInt64 = 0
+
+    func snapshot() -> UInt64 {
+        lock.lock()
+        defer { lock.unlock() }
+        return generation
+    }
+
+    func advance() {
+        lock.lock()
+        generation &+= 1
+        lock.unlock()
+    }
+
+    func save(
+        _ keys: MTProtoSessionKeys,
+        expectedGeneration: UInt64,
+        store: KeychainStore,
+        dcID: Int32,
+        accountID: String
+    ) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        guard generation == expectedGeneration else { return false }
+        return store.saveSession(keys, dcID: dcID, accountID: accountID)
+    }
+}
+
 actor TelegramService {
+    struct QRLoginCode: Sendable {
+        var url: URL
+        var expiresAt: Date
+    }
+
+    enum QRLoginResult: Sendable {
+        case code(QRLoginCode)
+        case password(hint: String)
+        case ready(TelegramAccount)
+    }
+
     enum RequestCodeResult: Sendable {
         case code(hint: String, isEmail: Bool)
         case emailSetup
         case password(hint: String)
-        case ready
+        case ready(TelegramAccount)
     }
 
     enum SignInResult: Sendable {
-        case ready
+        case ready(TelegramAccount)
         case password(hint: String)
     }
 
@@ -152,6 +194,7 @@ actor TelegramService {
 
     private let keychain: KeychainStore
     private let fileRequestGate = FileRequestGate()
+    private let sessionPersistenceGeneration = SessionPersistenceGeneration()
     private var credentials: TelegramCredentials?
     private var accountID: String
     private var primaryDC: Int32
@@ -164,24 +207,22 @@ actor TelegramService {
     private var phoneNumber = ""
     private var phoneCodeHash = ""
     private var pendingCodeIsEmail = false
+    private var pendingAuthorizationDC: Int32?
+    private var qrLoginDC: Int32?
+    private var isReplacingSession = false
+    private var accountGeneration: UInt64 = 0
+    private var loginTokenUpdateRevision: UInt64 = 0
 
     init(keychain: KeychainStore) {
         self.keychain = keychain
         let defaults = UserDefaults.standard
         let storedAccountID = defaults.string(forKey: "telegram.activeAccountID") ?? "legacy"
         accountID = storedAccountID
-        let primaryKey = "telegram.primaryDC.\(storedAccountID)"
-        if let syncedDC = keychain.loadPrimaryDC(accountID: storedAccountID) {
-            primaryDC = syncedDC
-        } else if defaults.object(forKey: primaryKey) != nil {
-            primaryDC = Int32(defaults.integer(forKey: primaryKey))
-        } else if storedAccountID == "legacy" {
-            primaryDC = Int32(defaults.integer(forKey: "telegram.primaryDC"))
-        } else {
-            primaryDC = 2
-        }
-        if primaryDC == 0 { primaryDC = 2 }
-        _ = keychain.savePrimaryDC(primaryDC, accountID: storedAccountID)
+        primaryDC = Self.restoredPrimaryDC(
+            accountID: storedAccountID,
+            keychain: keychain,
+            defaults: defaults
+        )
     }
 
     func configure(_ value: TelegramCredentials) throws {
@@ -191,22 +232,20 @@ actor TelegramService {
 
     func hasAuthorizedSession() -> Bool {
         guard credentials != nil else { return false }
-        guard keychain.loadSession(dcID: primaryDC, accountID: accountID) != nil else {
+        guard isAuthorizationSaved else { return false }
+        guard !storedSessionDCs(preferredDC: primaryDC, accountID: accountID).isEmpty else {
             setAuthorizationSaved(false)
             return false
         }
-        // The authorization marker is intentionally local, while MTProto keys
-        // can arrive through iCloud Keychain. Discovering a synced key promotes
-        // it to the active local session; restoreSession will still validate it
-        // with Telegram before the account is shown as connected.
-        if !isAuthorizationSaved { setAuthorizationSaved(true) }
+        // Both the marker and MTProto key are device-local. Another device must
+        // create its own authorization through QR or phone login; sharing one
+        // raw auth key can make Telegram reject it as duplicated.
         return true
     }
 
     func useAccount(_ id: String, clearExisting: Bool = false) async {
-        for connection in connections.values {
-            try? await connection.mtproto.disconnect()
-        }
+        advanceAccountGeneration()
+        let staleConnections = Array(connections.values)
         connections.removeAll()
         authorizedConnections.removeAll()
         refreshedTracks.removeAll()
@@ -217,27 +256,66 @@ actor TelegramService {
             setAuthorizationSaved(false)
         }
         let defaults = UserDefaults.standard
-        let key = primaryDCDefaultsKey
-        if let syncedDC = keychain.loadPrimaryDC(accountID: id) {
-            primaryDC = syncedDC
-        } else if defaults.object(forKey: key) != nil {
-            primaryDC = Int32(defaults.integer(forKey: key))
-        } else if id == "legacy" {
-            primaryDC = Int32(defaults.integer(forKey: "telegram.primaryDC"))
-        } else {
-            primaryDC = 2
-        }
-        if primaryDC == 0 { primaryDC = 2 }
-        _ = keychain.savePrimaryDC(primaryDC, accountID: id)
+        primaryDC = Self.restoredPrimaryDC(
+            accountID: id,
+            keychain: keychain,
+            defaults: defaults
+        )
         phoneNumber = ""
         phoneCodeHash = ""
         pendingCodeIsEmail = false
+        pendingAuthorizationDC = nil
+        qrLoginDC = nil
+        for connection in staleConnections {
+            try? await connection.mtproto.disconnect()
+        }
     }
 
     func restoreSession() async throws -> [MusicChat] {
-        guard hasAuthorizedSession() else { return [] }
-        _ = try await authorizedConnection(dcID: primaryDC, media: false)
-        return try await loadChats()
+        var candidates = storedSessionDCs(preferredDC: primaryDC, accountID: accountID)
+        guard !candidates.isEmpty else { return [] }
+
+        var attempted: Set<Int32> = []
+        var invalidSessionError: Error?
+        var transientError: Error?
+
+        while !candidates.isEmpty {
+            let dcID = candidates.removeFirst()
+            guard attempted.insert(dcID).inserted else { continue }
+            primaryDC = dcID
+
+            do {
+                _ = try await authorizedConnection(dcID: dcID, media: false)
+                let chats = try await loadChats()
+                // A stored key is not enough to identify an account's primary
+                // DC. Persist only after Telegram accepted an authorized call.
+                persistPrimaryDC()
+                return chats
+            } catch {
+                if let migratedDC = restoreMigrationDC(from: error),
+                   !attempted.contains(migratedDC),
+                   keychain.availableSessionDCs(accountID: accountID).contains(migratedDC) {
+                    candidates.insert(migratedDC, at: 0)
+                }
+
+                if shouldDiscardStoredSession(after: error) {
+                    keychain.deleteSession(dcID: dcID, accountID: accountID)
+                    invalidSessionError = error
+                } else {
+                    // Preserve valid-looking keys after offline, timeout, DNS,
+                    // and endpoint failures. Trying another already-stored DC is
+                    // safe, but a transient error wins over an auth error below
+                    // so AppModel will not clear the account.
+                    transientError = transientError ?? error
+                }
+                await invalidateConnection(dcID: dcID, media: false)
+            }
+        }
+
+        if let transientError { throw transientError }
+        setAuthorizationSaved(false)
+        if let invalidSessionError { throw invalidSessionError }
+        return []
     }
 
     func currentAccount() async throws -> TelegramAccount {
@@ -245,9 +323,12 @@ actor TelegramService {
         let users = try await connection.client.users.getUsers(
             id: [.inputUserSelf(TL.InputUserSelf())]
         )
-        guard case let .user(user)? = users.first else {
-            throw ServiceError.invalidCodeResponse
-        }
+        guard let user = users.first else { throw ServiceError.invalidCodeResponse }
+        return try account(from: user)
+    }
+
+    private func account(from userType: TL.UserType) throws -> TelegramAccount {
+        guard case let .user(user) = userType else { throw ServiceError.invalidCodeResponse }
         let fullName = [user.firstName, user.lastName]
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
@@ -269,12 +350,15 @@ actor TelegramService {
     }
 
     func sendCode(to phone: String) async throws -> RequestCodeResult {
+        pendingAuthorizationDC = nil
+        qrLoginDC = nil
         let digits = phone.filter(\.isNumber)
         guard (8...15).contains(digits.count) else { throw ServiceError.invalidPhoneNumber }
         phoneNumber = "+" + digits
         do {
             return try handleSentCode(try await sendCodeResponseWithMigration())
         } catch let error as MTProtoRPCError where error.message == "SESSION_PASSWORD_NEEDED" {
+            pendingAuthorizationDC = primaryDC
             let connection = try await connection(dcID: primaryDC, media: false)
             let password = try await connection.client.account.getPassword()
             return .password(hint: password.hint ?? "")
@@ -297,9 +381,9 @@ actor TelegramService {
                 phoneCode: pendingCodeIsEmail ? nil : cleanCode,
                 emailVerification: emailVerification
             )
-            try acceptAuthorization(authorization)
-            return .ready
+            return .ready(try acceptAuthorization(authorization))
         } catch let error as MTProtoRPCError where error.message == "SESSION_PASSWORD_NEEDED" {
+            pendingAuthorizationDC = primaryDC
             let password = try await connection.client.account.getPassword()
             return .password(hint: password.hint ?? "")
         } catch {
@@ -342,16 +426,132 @@ actor TelegramService {
         }
     }
 
-    func checkPassword(_ password: String) async throws {
-        let connection = try await connection(dcID: primaryDC, media: false)
+    func checkPassword(_ password: String) async throws -> TelegramAccount {
+        let authorizationDC = pendingAuthorizationDC ?? primaryDC
+        let connection = try await connection(dcID: authorizationDC, media: false)
         do {
             let configuration = try await connection.client.account.getPassword()
             let proof = try TelegramSRP.proof(password: password, configuration: configuration)
             let authorization = try await connection.client.auth.checkPassword(password: proof)
-            try acceptAuthorization(authorization)
+            primaryDC = authorizationDC
+            let account = try acceptAuthorization(authorization)
+            pendingAuthorizationDC = nil
+            qrLoginDC = nil
+            return account
         } catch {
             throw readableLoginError(error)
         }
+    }
+
+    func currentLoginTokenUpdateRevision() -> UInt64 {
+        loginTokenUpdateRevision
+    }
+
+    func discardPendingQRCodeLoginSession() async {
+        guard !isAuthorizationSaved else { return }
+        advanceAccountGeneration()
+        let staleConnections = Array(connections.values)
+        connections.removeAll()
+        authorizedConnections.removeAll()
+        keychain.clearSessions(accountID: accountID)
+        pendingAuthorizationDC = nil
+        qrLoginDC = nil
+        primaryDC = Self.restoredPrimaryDC(
+            accountID: accountID,
+            keychain: keychain,
+            defaults: UserDefaults.standard
+        )
+        for connection in staleConnections {
+            try? await connection.mtproto.disconnect()
+        }
+    }
+
+    func restartPendingQRCodeLoginTransport() async {
+        guard !isAuthorizationSaved else { return }
+        advanceAccountGeneration()
+        let staleConnections = Array(connections.values)
+        connections.removeAll()
+        authorizedConnections.removeAll()
+        pendingAuthorizationDC = nil
+        qrLoginDC = nil
+        for connection in staleConnections {
+            try? await connection.mtproto.disconnect()
+        }
+    }
+
+    func exportQRCodeLogin(exceptUserIDs: [Int64]) async throws -> QRLoginResult {
+        let expectedGeneration = accountGeneration
+        let expectedAccountID = accountID
+        let credentials = try apiCredentials()
+        let dcID = qrLoginDC ?? primaryDC
+        let target = try await connection(dcID: dcID, media: false)
+        try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+        do {
+            let result = try await target.client.auth.exportLoginToken(
+                apiId: credentials.apiID,
+                apiHash: credentials.apiHash,
+                exceptIds: Array(Set(exceptUserIDs.filter { $0 > 0 })).sorted()
+            )
+            try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+            return try await handleLoginToken(
+                result,
+                receivedOn: dcID,
+                visitedDCs: [dcID],
+                expectedGeneration: expectedGeneration,
+                expectedAccountID: expectedAccountID
+            )
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as MTProtoRPCError where error.message == "SESSION_PASSWORD_NEEDED" {
+            try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+            pendingAuthorizationDC = dcID
+            let password = try await target.client.account.getPassword()
+            try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+            return .password(hint: password.hint ?? "")
+        } catch {
+            throw readableLoginError(error)
+        }
+    }
+
+    func replaceCurrentSession(withAccountID replacementAccountID: String) async throws {
+        guard replacementAccountID != accountID else { return }
+        guard !isReplacingSession else { throw ServiceError.sessionPersistenceFailed }
+        isReplacingSession = true
+        defer { isReplacingSession = false }
+
+        let sourceAccountID = accountID
+        advanceAccountGeneration()
+        let replacementGeneration = accountGeneration
+        let staleConnections = Array(connections.values)
+        connections.removeAll()
+        authorizedConnections.removeAll()
+        refreshedTracks.removeAll()
+        searchBotPeers.removeAll()
+        for connection in staleConnections {
+            try? await connection.mtproto.disconnect()
+        }
+        try requireAccountContext(replacementGeneration, accountID: sourceAccountID)
+
+        // No old connection can persist another source key after this point.
+        // Move the fresh device-local sessions only after the transports have
+        // been quiesced, then switch the actor to the stable account slot.
+        guard keychain.moveDeviceLocalSessions(
+            fromAccountID: sourceAccountID,
+            toAccountID: replacementAccountID
+        ) else {
+            throw ServiceError.sessionPersistenceFailed
+        }
+
+        setAuthorizationSaved(false)
+        accountID = replacementAccountID
+        primaryDC = Self.restoredPrimaryDC(
+            accountID: replacementAccountID,
+            keychain: keychain,
+            defaults: UserDefaults.standard
+        )
+        setAuthorizationSaved(true)
+        pendingAuthorizationDC = nil
+        qrLoginDC = nil
     }
 
     func loadChats() async throws -> [MusicChat] {
@@ -1329,9 +1529,8 @@ actor TelegramService {
     }
 
     func discardSession() async {
-        for connection in connections.values {
-            try? await connection.mtproto.disconnect()
-        }
+        advanceAccountGeneration()
+        let staleConnections = Array(connections.values)
         connections.removeAll()
         authorizedConnections.removeAll()
         refreshedTracks.removeAll()
@@ -1341,9 +1540,17 @@ actor TelegramService {
         phoneNumber = ""
         phoneCodeHash = ""
         pendingCodeIsEmail = false
+        pendingAuthorizationDC = nil
+        qrLoginDC = nil
+        for connection in staleConnections {
+            try? await connection.mtproto.disconnect()
+        }
     }
 
     private func connection(dcID: Int32, media: Bool) async throws -> Connection {
+        guard !isReplacingSession else { throw ServiceError.noConnection }
+        let expectedGeneration = accountGeneration
+        let expectedAccountID = accountID
         let key = ConnectionKey(dcID: dcID, media: media)
         if let existing = connections[key] { return existing }
         guard let endpoint = endpoint(for: dcID, media: media) else { throw ServiceError.noConnection }
@@ -1352,6 +1559,7 @@ actor TelegramService {
         }
         let sessionStorageID = endpoint.mediaOnly ? -dcID : dcID
         let sessionAccountID = accountID
+        let sessionPersistenceSnapshot = sessionPersistenceGeneration.snapshot()
         var resumeSession = keychain.loadSession(dcID: sessionStorageID, accountID: sessionAccountID)
         var lastError: Error?
 
@@ -1359,6 +1567,7 @@ actor TelegramService {
             for modulus in Self.rsaModuli {
                 guard let rsaKey = RSAPublicKey(modulusHex: modulus, publicExponentHex: "010001") else { continue }
                 let store = keychain
+                let persistenceGeneration = sessionPersistenceGeneration
                 let client = MTProtoClient(
                     host: endpoint.host,
                     port: endpoint.port,
@@ -1366,28 +1575,45 @@ actor TelegramService {
                         rsaPublicKey: rsaKey,
                         dcID: dcID,
                         resumeSession: resumeSession,
-                        requestTimeout: .seconds(45),
+                        requestTimeout: .seconds(isAuthorizationSaved ? 45 : 15),
                         connectTimeout: .seconds(45),
                         onSessionEstablished: {
-                            keys in store.saveSession(
+                            keys in _ = persistenceGeneration.save(
                                 keys,
+                                expectedGeneration: sessionPersistenceSnapshot,
+                                store: store,
                                 dcID: sessionStorageID,
                                 accountID: sessionAccountID
                             )
+                        },
+                        onUnhandledMessage: { [weak self] body in
+                            Task { await self?.receiveUnhandledMessage(body) }
                         }
                     )
                 )
                 do {
                     try await client.connect()
+                    try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
                     let config = try await initialize(client)
+                    try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
                     updateEndpoints(from: config)
                     let value = Connection(mtproto: client, client: TLClient(transport: Transport(client: client)))
                     connections[key] = value
                     return value
+                } catch is CancellationError {
+                    try? await client.disconnect()
+                    throw CancellationError()
                 } catch {
                     lastError = error
                     try? await client.disconnect()
-                    if resumeSession != nil { break }
+                    if resumeSession != nil {
+                        // Network loss, timeouts, and endpoint failures say
+                        // nothing about the auth key. Preserve the stored login
+                        // and retry on a later launch. Only an explicit invalid
+                        // auth-key response justifies replacing the session.
+                        guard shouldDiscardStoredSession(after: error) else { throw error }
+                        break
+                    }
                 }
             }
 
@@ -1456,8 +1682,110 @@ actor TelegramService {
         endpointCursors[key, default: 0] += 1
     }
 
-    private func acceptAuthorization(_ authorization: TL.Auth.AuthorizationType) throws {
-        guard case .authorization = authorization else { throw ServiceError.signUpRequired }
+    private func receiveUnhandledMessage(_ body: Data) {
+        if let update = try? TL.UpdateType(tlData: body), isLoginTokenUpdate(update) {
+            loginTokenUpdateRevision &+= 1
+            return
+        }
+        guard let updates = try? TL.UpdatesType(tlData: body) else { return }
+        let values: [TL.UpdateType]
+        switch updates {
+        case let .updateShort(value):
+            values = [value.update]
+        case let .updatesCombined(value):
+            values = value.updates
+        case let .updates(value):
+            values = value.updates
+        default:
+            values = []
+        }
+        if values.contains(where: isLoginTokenUpdate) {
+            loginTokenUpdateRevision &+= 1
+        }
+    }
+
+    private func isLoginTokenUpdate(_ update: TL.UpdateType) -> Bool {
+        if case .updateLoginToken = update { return true }
+        return false
+    }
+
+    private func handleLoginToken(
+        _ result: TL.Auth.LoginTokenType,
+        receivedOn dcID: Int32,
+        visitedDCs: Set<Int32>,
+        expectedGeneration: UInt64,
+        expectedAccountID: String
+    ) async throws -> QRLoginResult {
+        try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+        switch result {
+        case let .loginToken(value):
+            qrLoginDC = dcID
+            pendingAuthorizationDC = dcID
+            let encodedToken = value.token
+                .base64EncodedString()
+                .replacingOccurrences(of: "+", with: "-")
+                .replacingOccurrences(of: "/", with: "_")
+                .replacingOccurrences(of: "=", with: "")
+            guard let url = URL(string: "tg://login?token=\(encodedToken)") else {
+                throw ServiceError.invalidCodeResponse
+            }
+            return .code(QRLoginCode(
+                url: url,
+                expiresAt: Date(timeIntervalSince1970: TimeInterval(value.expires))
+            ))
+
+        case let .loginTokenMigrateTo(value):
+            guard (1...5).contains(value.dcId), !visitedDCs.contains(value.dcId) else {
+                throw ServiceError.invalidCodeResponse
+            }
+            let migrated = try await connection(dcID: value.dcId, media: false)
+            try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+            do {
+                let imported = try await migrated.client.auth.importLoginToken(token: value.token)
+                try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+                return try await handleLoginToken(
+                    imported,
+                    receivedOn: value.dcId,
+                    visitedDCs: visitedDCs.union([value.dcId]),
+                    expectedGeneration: expectedGeneration,
+                    expectedAccountID: expectedAccountID
+                )
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch let error as MTProtoRPCError where error.message == "SESSION_PASSWORD_NEEDED" {
+                try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+                pendingAuthorizationDC = value.dcId
+                qrLoginDC = value.dcId
+                let password = try await migrated.client.account.getPassword()
+                try requireAccountContext(expectedGeneration, accountID: expectedAccountID)
+                return .password(hint: password.hint ?? "")
+            }
+
+        case let .loginTokenSuccess(value):
+            primaryDC = dcID
+            pendingAuthorizationDC = dcID
+            let account = try acceptAuthorization(value.authorization)
+            pendingAuthorizationDC = nil
+            qrLoginDC = nil
+            return .ready(account)
+        }
+    }
+
+    private func requireAccountContext(_ generation: UInt64, accountID expectedAccountID: String) throws {
+        guard !Task.isCancelled,
+              generation == accountGeneration,
+              expectedAccountID == accountID else {
+            throw CancellationError()
+        }
+    }
+
+    private func advanceAccountGeneration() {
+        accountGeneration &+= 1
+        sessionPersistenceGeneration.advance()
+    }
+
+    private func acceptAuthorization(_ authorization: TL.Auth.AuthorizationType) throws -> TelegramAccount {
+        guard case let .authorization(value) = authorization else { throw ServiceError.signUpRequired }
         guard keychain.loadSession(dcID: primaryDC, accountID: accountID) != nil else {
             throw ServiceError.sessionPersistenceFailed
         }
@@ -1465,6 +1793,9 @@ actor TelegramService {
         authorizedConnections.insert(key)
         setAuthorizationSaved(true)
         persistPrimaryDC()
+        pendingAuthorizationDC = nil
+        qrLoginDC = nil
+        return try account(from: value.user)
     }
 
     private func apiCredentials() throws -> TelegramCredentials {
@@ -1521,8 +1852,7 @@ actor TelegramService {
                 return .code(hint: deliveryHint(value.type), isEmail: false)
             }
         case let .sentCodeSuccess(value):
-            try acceptAuthorization(value.authorization)
-            return .ready
+            return .ready(try acceptAuthorization(value.authorization))
         case let .sentCodePaymentRequired(value):
             throw ServiceError.paidAuthorizationRequired(value.supportEmailAddress)
         }
@@ -1562,7 +1892,11 @@ actor TelegramService {
             case "SRP_ID_INVALID":
                 message = "The password challenge expired. Request a new login code and try again."
             case "AUTH_RESTART":
-                message = "Telegram restarted this login attempt. Request a new code and try again."
+                message = "Telegram restarted this login attempt. Refresh the QR code or request a new code."
+            case "AUTH_TOKEN_EXPIRED":
+                message = "That QR code expired. Refresh it and scan the new code."
+            case "AUTH_TOKEN_INVALID":
+                message = "Telegram rejected that QR login token. Refresh the code and try again."
             case "UPDATE_APP_TO_LOGIN":
                 message = "Telegram requires a newer API layer for this login."
             default:
@@ -1627,6 +1961,66 @@ actor TelegramService {
             defaults.set(Int(primaryDC), forKey: "telegram.primaryDC")
         }
     }
+
+    private static func restoredPrimaryDC(
+        accountID: String,
+        keychain: KeychainStore,
+        defaults: UserDefaults
+    ) -> Int32 {
+        if let syncedDC = keychain.loadPrimaryDC(accountID: accountID),
+           validPrimaryDCs.contains(syncedDC) {
+            return syncedDC
+        }
+
+        let accountKey = "telegram.primaryDC.\(accountID)"
+        if defaults.object(forKey: accountKey) != nil {
+            let value = Int32(defaults.integer(forKey: accountKey))
+            if validPrimaryDCs.contains(value) { return value }
+        }
+
+        if accountID == "legacy", defaults.object(forKey: "telegram.primaryDC") != nil {
+            let value = Int32(defaults.integer(forKey: "telegram.primaryDC"))
+            if validPrimaryDCs.contains(value) { return value }
+        }
+        return 2
+    }
+
+    private func storedSessionDCs(preferredDC: Int32, accountID: String) -> [Int32] {
+        let available = Set(keychain.availableSessionDCs(accountID: accountID))
+        var candidates = [preferredDC]
+        candidates.append(contentsOf: Self.validPrimaryDCs.filter { $0 != preferredDC })
+        return candidates.filter {
+            Self.validPrimaryDCs.contains($0) && available.contains($0)
+        }
+    }
+
+    private func restoreMigrationDC(from error: Error) -> Int32? {
+        guard let rpc = error as? MTProtoRPCError else { return nil }
+        for prefix in ["USER_MIGRATE_", "NETWORK_MIGRATE_"] where rpc.message.hasPrefix(prefix) {
+            guard let dcID = Int32(rpc.message.dropFirst(prefix.count)),
+                  Self.validPrimaryDCs.contains(dcID) else { return nil }
+            return dcID
+        }
+        return nil
+    }
+
+    private func shouldDiscardStoredSession(after error: Error) -> Bool {
+        if let rpc = error as? MTProtoRPCError {
+            return [
+                "AUTH_KEY_UNREGISTERED",
+                "AUTH_KEY_DUPLICATED",
+                "SESSION_REVOKED",
+                "SESSION_EXPIRED"
+            ].contains(rpc.message)
+        }
+        if let client = error as? MTProtoClientError,
+           case let .protocolError(code) = client {
+            return code == -404
+        }
+        return false
+    }
+
+    private static let validPrimaryDCs: [Int32] = [1, 2, 3, 4, 5]
 
     private var authorizationDefaultsKey: String {
         "telegram.authorized.\(accountID)"
