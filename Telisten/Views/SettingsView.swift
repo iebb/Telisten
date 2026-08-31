@@ -6,16 +6,14 @@ struct SettingsView: View {
     @State private var lyricsServerDraft = ""
     @State private var lyricsServerError: String?
     @State private var isApplyingLyricsServer = false
-    #if DEBUG
     @State private var editingSearchBot: SearchBotConfig?
-    #endif
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Library") {
-                    Toggle("Show music sources", isOn: $model.showChats)
-                    Text("Playlists, favorites, and downloads remain visible when music sources are hidden.")
+                    Toggle("Show chats on homepage", isOn: $model.showChats)
+                    Text("Telegram chats containing music appear below playlists when enabled.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -59,7 +57,6 @@ struct SettingsView: View {
                 } footer: {
                     Text("Use the base URL of an LRCLIB-compatible server. Telisten requests /api/get and /api/search; cached lyrics stay available offline.")
                 }
-                #if DEBUG
                 Section {
                     ForEach(model.searchBots) { config in
                         searchBotRow(config)
@@ -80,9 +77,8 @@ struct SettingsView: View {
                 } header: {
                     Text("Bot search")
                 } footer: {
-                    Text("Debug-only bot searches are stored in iCloud Keychain. No bot is included by default.")
+                    Text("Search bot configurations are stored in iCloud Keychain. No bot is included by default.")
                 }
-                #endif
                 Section {
                     Button("Sign out of this account", role: .destructive) {
                         Task {
@@ -97,7 +93,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .navigationTitle("Settings")
             .toolbar {
-                #if DEBUG && os(iOS)
+                #if os(iOS)
                 if model.searchBots.count > 1 {
                     ToolbarItem(placement: .primaryAction) { EditButton() }
                 }
@@ -112,11 +108,9 @@ struct SettingsView: View {
             lyricsServerDraft = model.lyricsServerURL.absoluteString
             await model.refreshCacheUsage()
         }
-        #if DEBUG
         .sheet(item: $editingSearchBot) { config in
             SearchBotEditorView(model: model, config: config)
         }
-        #endif
     }
 
     private var cacheLimit: Binding<Int64> {
@@ -140,7 +134,6 @@ struct SettingsView: View {
         }
     }
 
-    #if DEBUG
     @ViewBuilder
     private func searchBotRow(_ config: SearchBotConfig) -> some View {
         HStack(spacing: 10) {
@@ -195,10 +188,8 @@ struct SettingsView: View {
             .accessibilityLabel("Options for \(config.displayBotName)")
         }
     }
-    #endif
 }
 
-#if DEBUG
 private struct SearchBotEditorView: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
@@ -292,4 +283,3 @@ private struct SearchBotEditorView: View {
         }
     }
 }
-#endif

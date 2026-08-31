@@ -72,6 +72,7 @@ final class AppModel {
     var cacheLimitBytes: Int64
     var lyricsServerURL: URL
     var searchBots: [SearchBotConfig] = []
+    var savedChatIDs: Set<String> = []
     var activeBotSearchConfig: SearchBotConfig?
     var botSearchMessages: [BotSearchMessage] = []
     var isBotSearching = false
@@ -569,6 +570,16 @@ final class AppModel {
             selectedChat = nil
             tracks = []
         }
+    }
+
+    func toggleSavedChat(_ chat: MusicChat) {
+        guard !playlists.contains(where: { $0.id == chat.id }) else { return }
+        if savedChatIDs.contains(chat.id) {
+            savedChatIDs.remove(chat.id)
+        } else {
+            savedChatIDs.insert(chat.id)
+        }
+        persistSavedChats()
     }
 
     func loadTracks() async {
@@ -1994,6 +2005,7 @@ final class AppModel {
         player.reset()
         allChats = []
         chats = []
+        savedChatIDs = []
         tracks = []
         selected = nil
         selectedChat = nil
@@ -2507,6 +2519,7 @@ final class AppModel {
         chats = [source, discoveries, playlist]
         allChats = chats
         playlists = [playlist]
+        savedChatIDs = [source.id]
         chatMusicCounts = [source.id: 128, discoveries.id: 42]
         let arguments = ProcessInfo.processInfo.arguments
         let demoTrackChatID = arguments.contains("--demo-playlist") ? playlist.id : source.id
@@ -2606,12 +2619,11 @@ final class AppModel {
     }
 
     private func restoreSearchBots() {
-        #if DEBUG
         let defaults = UserDefaults.standard
-        let migrationKey = "debug.searchBots.removedBuiltInDefault"
+        let migrationKey = "searchBots.removedBuiltInDefault"
         var stored = keychain.loadSearchBotConfigs() ?? []
 
-        // Older debug builds seeded Music163DownBot and synchronized it as if
+        // Older builds seeded Music163DownBot and synchronized it as if
         // the user had configured it. Remove that one legacy seed exactly once;
         // all bot configurations are now explicit user additions.
         if !defaults.bool(forKey: migrationKey) {
@@ -2642,9 +2654,6 @@ final class AppModel {
         if searchBots != stored {
             _ = keychain.saveSearchBotConfigs(searchBots)
         }
-        #else
-        searchBots = []
-        #endif
     }
 
     private func normalizedSearchBot(_ config: SearchBotConfig) -> SearchBotConfig? {
@@ -2757,6 +2766,9 @@ final class AppModel {
         playlistOrders = [:]
         playlistTrackMirrors = [:]
         playlists = []
+        savedChatIDs = Set(
+            defaults.stringArray(forKey: accountStorageKey("library.savedChats")) ?? []
+        )
         favorites = Set(defaults.stringArray(forKey: accountStorageKey("library.favorites")) ?? [])
         if let rawMode = defaults.string(forKey: "player.playbackMode"),
            let savedMode = PlaybackMode(rawValue: rawMode) {
@@ -2804,6 +2816,7 @@ final class AppModel {
     private func persistLibrary() {
         let defaults = UserDefaults.standard
         defaults.set(Array(favorites), forKey: accountStorageKey("library.favorites"))
+        persistSavedChats()
         defaults.set(playbackMode.rawValue, forKey: "player.playbackMode")
         defaults.removeObject(forKey: "player.repeat")
         defaults.removeObject(forKey: "player.shuffle")
@@ -2818,6 +2831,13 @@ final class AppModel {
                 trackOrders: playlistOrders
             ),
             for: localMirrorAccountID
+        )
+    }
+
+    private func persistSavedChats() {
+        UserDefaults.standard.set(
+            Array(savedChatIDs),
+            forKey: accountStorageKey("library.savedChats")
         )
     }
 

@@ -31,6 +31,6 @@ FOLLOW THE LYRICS
 • Follow timed lines in the compact and expanded players
 
 PRIVATE BY DESIGN
-Telisten connects directly to Telegram with MTProto. It does not use TDLib, a proxy service, a bot, or a Kitta Ltd backend. Raw Telegram authorization keys and downloaded media stay on your device.
+Telisten connects directly to Telegram with MTProto. It does not use TDLib, a proxy service, a developer-operated bot, or a Kitta Ltd backend. You can optionally configure Telegram music-search bots; those conversations use your own Telegram session. Raw Telegram authorization keys and downloaded media stay on your device.
 
 Telisten is an independent app and is not affiliated with or endorsed by Telegram or LRCLIB. Music and lyrics availability depends on the source and service.

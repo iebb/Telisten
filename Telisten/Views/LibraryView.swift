@@ -79,14 +79,12 @@ struct LibraryView: View {
             .sheet(isPresented: $model.showListenTogetherSheet) {
                 ListenTogetherView(model: model)
             }
-            #if DEBUG
             .sheet(isPresented: $model.showBotSearch) {
                 BotSearchConversationView(model: model)
                     #if os(macOS)
                     .frame(minWidth: 360, minHeight: 520)
                     #endif
             }
-            #endif
             .alert(
                 "Delete playlist?",
                 isPresented: $showDeletePlaylistConfirmation,
@@ -210,33 +208,17 @@ struct LibraryView: View {
                     }
                 }
             }
+            if !savedChats.isEmpty {
+                Section("Saved Chats") {
+                    ForEach(savedChats) { chat in
+                        chatRow(chat)
+                    }
+                }
+            }
             if model.showChats {
-                Section("Music Sources") {
-                    ForEach(nonPlaylistChats) { chat in
-                        HStack(spacing: 9) {
-                            ChatAvatar(model: model, chat: chat, size: 26)
-                            Text(chat.title)
-                                .lineLimit(1)
-                            Spacer(minLength: 6)
-                            if let count = model.chatMusicCounts[chat.id] {
-                                Text(musicCountLabel(count))
-                                    .font(.caption2.monospacedDigit())
-                                    .foregroundStyle(.secondary)
-                                    .minimumScaleFactor(0.62)
-                                    .lineLimit(1)
-                                    .frame(width: 27, height: 27)
-                                    .background(Color.secondary.opacity(0.12), in: Circle())
-                                    .accessibilityLabel("\(count) music tracks")
-                            }
-                            if chat.isPinned == true {
-                                Image(systemName: "pin.fill")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 14)
-                                    .accessibilityLabel("Pinned music source")
-                            }
-                        }
-                        .tag(SidebarSelection.chat(chat.id))
+                Section("All Chats") {
+                    ForEach(unsavedChats) { chat in
+                        chatRow(chat)
                     }
                     if model.isIndexingChats {
                         HStack(spacing: 10) {
@@ -246,7 +228,11 @@ struct LibraryView: View {
                                 .foregroundStyle(.secondary)
                         }
                     } else if nonPlaylistChats.isEmpty {
-                        Text("No music sources found")
+                        Text("No music chats found")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if unsavedChats.isEmpty {
+                        Text("All music chats are saved")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -332,6 +318,49 @@ struct LibraryView: View {
     private var nonPlaylistChats: [MusicChat] {
         let playlistIDs = Set(model.playlists.map(\.id))
         return model.chats.filter { !playlistIDs.contains($0.id) }
+    }
+
+    private var savedChats: [MusicChat] {
+        nonPlaylistChats.filter { model.savedChatIDs.contains($0.id) }
+    }
+
+    private var unsavedChats: [MusicChat] {
+        nonPlaylistChats.filter { !model.savedChatIDs.contains($0.id) }
+    }
+
+    private func chatRow(_ chat: MusicChat) -> some View {
+        HStack(spacing: 9) {
+            ChatAvatar(model: model, chat: chat, size: 26)
+            Text(chat.title)
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            if let count = model.chatMusicCounts[chat.id] {
+                Text(musicCountLabel(count))
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .minimumScaleFactor(0.62)
+                    .lineLimit(1)
+                    .frame(width: 27, height: 27)
+                    .background(Color.secondary.opacity(0.12), in: Circle())
+                    .accessibilityLabel("\(count) music tracks")
+            }
+            if chat.isPinned == true {
+                Image(systemName: "pin.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 14)
+                    .accessibilityLabel("Pinned chat")
+            }
+        }
+        .tag(SidebarSelection.chat(chat.id))
+        .contextMenu {
+            Button(
+                model.savedChatIDs.contains(chat.id) ? "Remove from Saved Chats" : "Save Chat",
+                systemImage: model.savedChatIDs.contains(chat.id) ? "bookmark.slash" : "bookmark"
+            ) {
+                model.toggleSavedChat(chat)
+            }
+        }
     }
 
     private func musicCountLabel(_ count: Int) -> String {
@@ -458,14 +487,12 @@ struct LibraryView: View {
 
     private func trackList(includeSearchBots: Bool) -> some View {
         List {
-            #if DEBUG
             if includeSearchBots {
                 SearchBotProvidersView(model: model, query: model.searchText)
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
-            #endif
 
             if model.isLoading && model.tracks.isEmpty {
                 HStack {
