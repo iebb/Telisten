@@ -174,9 +174,26 @@ struct LRCLIBProvider: LyricsProviding {
         }
 
         var ranked = rank(responses, for: track, title: title, artist: artist)
+        if ranked.isEmpty,
+           !artist.isEmpty,
+           comparable(title) != comparable(artist) {
+            do {
+                if let exact = try await exactMatch(title: artist, artist: title, duration: track.duration) {
+                    responses.append(exact)
+                }
+                responses.append(contentsOf: try await search(title: artist, artist: title))
+                responses.append(contentsOf: try await search(title: artist, artist: ""))
+                ranked = rank(responses, for: track, title: title, artist: artist)
+            } catch {
+                lastError = error
+            }
+        }
         if ranked.isEmpty {
             do {
                 responses.append(contentsOf: try await keywordSearch(title))
+                if !artist.isEmpty, comparable(title) != comparable(artist) {
+                    responses.append(contentsOf: try await keywordSearch(artist))
+                }
                 ranked = rank(responses, for: track, title: title, artist: artist)
             } catch {
                 lastError = error
@@ -211,13 +228,27 @@ struct LRCLIBProvider: LyricsProviding {
         title: String,
         artist: String
     ) -> [(lyrics: TrackLyrics, score: Int, difference: Double)] {
+        let orientations = lyricTagOrientations(title: title, artist: artist)
         var seenResponses: Set<String> = []
         return values.compactMap { response -> (lyrics: TrackLyrics, score: Int, difference: Double)? in
             guard seenResponses.insert(responseKey(response)).inserted,
-                  isPlausible(response, title: title, artist: artist, duration: track.duration),
                   !response.instrumental,
                   let lyrics = makeLyrics(from: response, trackID: track.id) else { return nil }
-            let score = matchScore(response, title: title, artist: artist, duration: track.duration)
+            let scores = orientations.compactMap { orientation -> Int? in
+                guard isPlausible(
+                    response,
+                    title: orientation.title,
+                    artist: orientation.artist,
+                    duration: track.duration
+                ) else { return nil }
+                return matchScore(
+                    response,
+                    title: orientation.title,
+                    artist: orientation.artist,
+                    duration: track.duration
+                )
+            }
+            guard let score = scores.max() else { return nil }
             guard score >= 35 else { return nil }
             let difference = track.duration > 0 ? abs(response.duration - track.duration) : 0
             return (lyrics, score, difference)
@@ -229,6 +260,14 @@ struct LRCLIBProvider: LyricsProviding {
             if lhs.score != rhs.score { return lhs.score > rhs.score }
             return lhs.difference < rhs.difference
         }
+    }
+
+    private func lyricTagOrientations(title: String, artist: String) -> [(title: String, artist: String)] {
+        var values = [(title: title, artist: artist)]
+        if !artist.isEmpty, comparable(title) != comparable(artist) {
+            values.append((title: artist, artist: title))
+        }
+        return values
     }
 
     private func exactMatch(title: String, artist: String, duration: TimeInterval) async throws -> Response? {

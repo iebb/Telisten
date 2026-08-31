@@ -635,7 +635,7 @@ actor TelegramService {
         guard let chat else { return [] }
 
         var attachments = lyricsAttachmentCache[chat.id] ?? []
-        let queries = [track.displayTitle, track.fileName.deletingPathExtension]
+        let queries = [track.displayTitle, track.artist, track.fileName.deletingPathExtension]
             .map { $0.replacingOccurrences(of: "_", with: " ").trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         var seenQueries: Set<String> = []
@@ -732,19 +732,30 @@ actor TelegramService {
     private func lyricsAttachmentMatchScore(_ fileName: String, track: Track) -> Int {
         let candidate = comparableLyricsTitle(fileName.deletingPathExtension)
         let title = comparableLyricsTitle(track.displayTitle)
+        let artist = comparableLyricsTitle(track.artist)
         let fileTitle = comparableLyricsTitle(track.fileName.deletingPathExtension)
         guard !candidate.isEmpty, !title.isEmpty else { return 0 }
 
+        if !artist.isEmpty {
+            let titleArtist = title + artist
+            let artistTitle = artist + title
+            if candidate == titleArtist || candidate == artistTitle { return 140 }
+            if candidate.contains(titleArtist) || candidate.contains(artistTitle) { return 130 }
+        }
         if candidate == title { return 120 }
+        if !artist.isEmpty, candidate == artist { return 118 }
         if !fileTitle.isEmpty, candidate == fileTitle { return 115 }
         if candidate.contains(title) || title.contains(candidate) { return 100 }
+        if !artist.isEmpty, candidate.contains(artist) || artist.contains(candidate) { return 98 }
         if !fileTitle.isEmpty, candidate.contains(fileTitle) || fileTitle.contains(candidate) { return 95 }
 
         let candidateWords = Set(normalizedLyricsWords(fileName.deletingPathExtension))
         let titleWords = Set(normalizedLyricsWords(track.displayTitle))
-        guard !candidateWords.isEmpty, !titleWords.isEmpty else { return 0 }
-        let overlap = candidateWords.intersection(titleWords).count
-        return overlap * 2 >= titleWords.count ? 60 + overlap : 0
+        let artistWords = Set(normalizedLyricsWords(track.artist))
+        let expectedWords = titleWords.union(artistWords)
+        guard !candidateWords.isEmpty, !expectedWords.isEmpty else { return 0 }
+        let overlap = candidateWords.intersection(expectedWords).count
+        return overlap * 2 >= expectedWords.count ? 60 + overlap : 0
     }
 
     private func comparableLyricsTitle(_ value: String) -> String {
