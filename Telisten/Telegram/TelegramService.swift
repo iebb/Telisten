@@ -870,6 +870,14 @@ actor TelegramService {
         return try await botSearchHistory(for: bot, limit: limit)
     }
 
+    func searchBotChat(_ config: SearchBotConfig) async throws -> MusicChat {
+        try await resolveSearchBot(config)
+    }
+
+    func cachedSearchBot(chatID: String) -> MusicChat? {
+        searchBotPeers.values.first { $0.id == chatID }
+    }
+
     func startListenTogether(
         in chat: MusicChat,
         presence: ListenTogetherPresence

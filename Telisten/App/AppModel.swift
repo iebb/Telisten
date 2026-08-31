@@ -5,6 +5,7 @@ enum SidebarSelection: Hashable {
     case globalSearch
     case favorites
     case downloads
+    case bot(UUID)
     case chat(String)
 }
 
@@ -556,6 +557,22 @@ final class AppModel {
             isGlobalSearch = false
             selectedChat = allChats.first(where: { $0.id == id })
             await loadTracks()
+        case let .bot(id):
+            isGlobalSearch = false
+            selectedChat = nil
+            tracks = []
+            guard let config = searchBots.first(where: { $0.id == id }) else { return }
+            isLoading = true
+            defer { isLoading = false }
+            do {
+                let bot = try await telegram.searchBotChat(config)
+                guard selected == .bot(id) else { return }
+                selectedChat = bot
+                await loadTracks()
+            } catch {
+                guard selected == .bot(id) else { return }
+                errorMessage = UserFacingError.message(for: error)
+            }
         case .favorites:
             isGlobalSearch = false
             selectedChat = nil
@@ -1015,7 +1032,7 @@ final class AppModel {
                 return
             }
             #endif
-            guard let chat = allChats.first(where: { $0.id == track.chatID }) else {
+            guard let chat = await musicSource(for: track) else {
                 voteStates[track.id] = previous
                 errorMessage = "The music source is no longer available."
                 return
@@ -1041,7 +1058,7 @@ final class AppModel {
         #if DEBUG
         if isDemo { return true }
         #endif
-        guard let source = allChats.first(where: { $0.id == track.chatID }) else {
+        guard let source = await musicSource(for: track) else {
             errorMessage = "The music source is no longer available."
             return false
         }
@@ -1077,7 +1094,7 @@ final class AppModel {
             return true
         }
         #endif
-        guard let source = allChats.first(where: { $0.id == track.chatID }) else {
+        guard let source = await musicSource(for: track) else {
             errorMessage = "The music source is no longer available."
             return false
         }
@@ -1270,7 +1287,7 @@ final class AppModel {
             return
         }
         #endif
-        guard let chat = allChats.first(where: { $0.id == track.chatID }) else {
+        guard let chat = await musicSource(for: track) else {
             commentsState = .failed("The music source is no longer available.")
             return
         }
@@ -1308,7 +1325,7 @@ final class AppModel {
         }
         #endif
 
-        guard let chat = allChats.first(where: { $0.id == track.chatID }) else {
+        guard let chat = await musicSource(for: track) else {
             errorMessage = "The music source is no longer available."
             return false
         }
@@ -1697,7 +1714,7 @@ final class AppModel {
         if let transfer = activeTransfers[track.id] { return transfer }
         let location = await cache.partialLocation(for: track)
         let telegram = telegram
-        let sourceChat = allChats.first(where: { $0.id == track.chatID })
+        let sourceChat = await musicSource(for: track)
         let transfer = ProgressiveAudioTransfer(
             trackID: track.id,
             fileSize: track.size,
@@ -1712,6 +1729,18 @@ final class AppModel {
         }
         activeTransfers[track.id] = transfer
         return transfer
+    }
+
+    private func musicSource(for track: Track) async -> MusicChat? {
+        if let chat = allChats.first(where: { $0.id == track.chatID }) { return chat }
+        if let selectedChat, selectedChat.id == track.chatID { return selectedChat }
+        if let bot = await telegram.cachedSearchBot(chatID: track.chatID) { return bot }
+
+        for config in searchBots {
+            guard let bot = try? await telegram.searchBotChat(config) else { continue }
+            if bot.id == track.chatID { return bot }
+        }
+        return nil
     }
 
     private func startListenTogetherCoordinator() {

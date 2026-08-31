@@ -199,28 +199,7 @@ struct LibraryView: View {
             if !model.searchBots.isEmpty {
                 Section("Music Bots") {
                     ForEach(model.searchBots) { config in
-                        Button {
-                            Task { await model.openBotSearch(using: config) }
-                        } label: {
-                            HStack(spacing: 9) {
-                                Image(systemName: "paperplane.circle.fill")
-                                    .font(.title3)
-                                    .foregroundStyle(Color.telistenAccent)
-                                    .frame(width: 26)
-                                    .accessibilityHidden(true)
-                                Text(config.displayBotName)
-                                    .lineLimit(1)
-                                Spacer(minLength: 6)
-                                if model.activeBotSearchConfig?.id == config.id,
-                                   model.isBotSearching {
-                                    ProgressView().controlSize(.small)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Open \(config.displayBotName)")
-                        .accessibilityHint("Shows the Telegram music bot conversation")
+                        botRow(config)
                     }
                 }
             }
@@ -379,6 +358,37 @@ struct LibraryView: View {
                 model.toggleSavedChat(chat)
             }
         }
+    }
+
+    private func botRow(_ config: SearchBotConfig) -> some View {
+        HStack(spacing: 9) {
+            Image(systemName: "music.note.list")
+                .font(.title3)
+                .foregroundStyle(Color.telistenAccent)
+                .frame(width: 26)
+                .accessibilityHidden(true)
+            Text(config.displayBotName)
+                .lineLimit(1)
+            Spacer(minLength: 6)
+            if model.selected == .bot(config.id), model.isLoading {
+                ProgressView().controlSize(.small)
+            }
+            Button {
+                Task { await model.openBotSearch(using: config) }
+            } label: {
+                Image(systemName: "bubble.left.and.bubble.right")
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(Color.telistenAccent)
+            .accessibilityLabel("Chat with \(config.displayBotName)")
+            .accessibilityHint("Opens the interactive Telegram bot conversation")
+        }
+        .contentShape(Rectangle())
+        .tag(SidebarSelection.bot(config.id))
+        .accessibilityLabel("Music from \(config.displayBotName)")
+        .accessibilityHint("Shows audio received from this bot")
     }
 
     private var trackBrowser: some View {
@@ -629,6 +639,7 @@ struct LibraryView: View {
         case .globalSearch: "Search All Music"
         case .favorites: "Favorites"
         case .downloads: "Downloads"
+        case let .bot(id): model.searchBots.first(where: { $0.id == id })?.displayBotName ?? "Music Bot"
         case .chat: model.selectedChat?.title ?? "Music"
         case nil: "Music"
         }
@@ -639,6 +650,7 @@ struct LibraryView: View {
         case .globalSearch: "Search all music"
         case .favorites: "No favorites yet"
         case .downloads: "Nothing downloaded"
+        case .bot: "No music from this bot"
         case .chat: "No music found"
         case nil: "Choose music"
         }
@@ -658,6 +670,7 @@ struct LibraryView: View {
         case .globalSearch: "Find songs, artists, or albums across your Telegram music."
         case .favorites: "Tap the heart beside a track to keep it here."
         case .downloads: "Downloaded music remains available offline."
+        case .bot: "Use the chat button to ask the bot for music, then return here to play it."
         case .chat: "Try another search or choose a different music source."
         case nil: "Pick a playlist, favorite, download, or music source from the sidebar."
         }
