@@ -368,6 +368,13 @@ enum QRCodeLoginState: Equatable, Sendable {
 struct DownloadStatus: Equatable, Sendable {
     var progress: Double
     var isCached: Bool
+    var isDownloading: Bool
+
+    init(progress: Double, isCached: Bool, isDownloading: Bool = false) {
+        self.progress = progress
+        self.isCached = isCached
+        self.isDownloading = isDownloading
+    }
 
     static let none = DownloadStatus(progress: 0, isCached: false)
 }

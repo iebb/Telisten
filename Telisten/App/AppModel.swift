@@ -80,6 +80,7 @@ final class AppModel {
     var isDeletingPlaylist = false
     var deletingPlaylistTrackIDs: Set<String> = []
     var renamingPlaylistIDs: Set<String> = []
+    var downloadingPlaylistIDs: Set<String> = []
     var showChats = false {
         didSet { UserDefaults.standard.set(showChats, forKey: "library.showChats") }
     }
@@ -1432,6 +1433,52 @@ final class AppModel {
         }
     }
 
+    func isDownloadingAll(in playlist: MusicChat) -> Bool {
+        downloadingPlaylistIDs.contains(playlist.id)
+    }
+
+    func downloadAll(in playlist: MusicChat) {
+        guard isPlaylist(playlist), !isDownloadingAll(in: playlist) else { return }
+        let playlistID = playlist.id
+        downloadingPlaylistIDs.insert(playlistID)
+        Task { [weak self] in
+            guard let self else { return }
+            defer { downloadingPlaylistIDs.remove(playlistID) }
+
+            // Playlists are paged, so resolve the remainder before starting the
+            // batch. The existing cached mirror makes this instant offline.
+            if selectedChat?.id == playlistID {
+                while hasMoreTracks, selectedChat?.id == playlistID {
+                    let previousCount = tracks.count
+                    let previousOffset = trackSearchOffsetID
+                    await loadMoreTracks()
+                    if tracks.count == previousCount,
+                       trackSearchOffsetID == previousOffset {
+                        break
+                    }
+                }
+            }
+
+            let values = arranged(cachedTracks(in: playlist), in: playlist)
+            guard !values.isEmpty else { return }
+            var failedCount = 0
+            for track in values where !cachedIDs.contains(track.id) {
+                do {
+                    _ = try await cachedFile(for: track)
+                } catch is CancellationError {
+                    return
+                } catch {
+                    failedCount += 1
+                }
+            }
+            if failedCount > 0 {
+                errorMessage = failedCount == 1
+                    ? "One track could not be downloaded."
+                    : "\(failedCount) tracks could not be downloaded."
+            }
+        }
+    }
+
     func refreshCacheUsage() async {
         let actualCachedIDs = await cache.cachedTrackIDs()
         cachedIDs = actualCachedIDs
@@ -1675,6 +1722,11 @@ final class AppModel {
         }
         if let existing = downloadTasks[track.id] { return try await existing.value }
         knownTracks[track.id] = track
+        downloads[track.id] = DownloadStatus(
+            progress: downloads[track.id]?.progress ?? 0,
+            isCached: false,
+            isDownloading: true
+        )
         persistLibrary()
         let cache = cache
         let transfer = await progressiveTransfer(for: track)
@@ -1683,7 +1735,11 @@ final class AppModel {
             try await transfer.downloadAll { [weak self] value in
                 let bytes = await cache.totalBytes()
                 await MainActor.run {
-                    self?.downloads[track.id] = DownloadStatus(progress: value, isCached: false)
+                    self?.downloads[track.id] = DownloadStatus(
+                        progress: value,
+                        isCached: false,
+                        isDownloading: true
+                    )
                     self?.cacheBytes = bytes
                 }
             }
@@ -1706,6 +1762,11 @@ final class AppModel {
             return url
         } catch {
             cacheBytes = await cache.totalBytes()
+            downloads[track.id] = DownloadStatus(
+                progress: downloads[track.id]?.progress ?? 0,
+                isCached: false,
+                isDownloading: false
+            )
             throw error
         }
     }

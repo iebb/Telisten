@@ -480,6 +480,13 @@ struct LibraryView: View {
             #endif
             ToolbarItemGroup(placement: .primaryAction) {
                 if let playlist = selectedPlaylist {
+                    Button(
+                        model.isDownloadingAll(in: playlist) ? "Downloading" : "Download all",
+                        systemImage: "arrow.down.circle"
+                    ) {
+                        model.downloadAll(in: playlist)
+                    }
+                    .disabled(model.isDownloadingAll(in: playlist))
                     Button(isEditingPlaylist ? "Done" : "Edit") {
                         withAnimation(.easeInOut(duration: 0.18)) {
                             isEditingPlaylist.toggle()
@@ -719,11 +726,12 @@ private struct TrackRow: View {
                 }
                 .layoutPriority(1)
                 Spacer(minLength: 2)
-                downloadProgress
                 favoriteButton
                 moreMenu
             }
             .padding(.vertical, 6)
+
+            downloadProgress
 
             Divider()
                 .padding(.leading, 54)
@@ -759,11 +767,14 @@ private struct TrackRow: View {
 
     @ViewBuilder private var downloadProgress: some View {
         let status = model.downloads[track.id] ?? .none
-        if status.progress > 0, !status.isCached {
+        if status.isDownloading, !status.isCached {
             ProgressView(value: status.progress)
-                .progressViewStyle(.circular)
-                .controlSize(.small)
-                .frame(width: 24)
+                .progressViewStyle(.linear)
+                .tint(Color.telistenAccent)
+                .padding(.leading, 54)
+                .padding(.trailing, 8)
+                .accessibilityLabel("Downloading \(track.displayTitle)")
+                .accessibilityValue("\(Int(status.progress * 100)) percent")
         }
     }
 
