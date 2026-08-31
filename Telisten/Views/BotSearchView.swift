@@ -1,5 +1,7 @@
 import SwiftUI
 
+#if DEBUG
+
 struct SearchBotProvidersView: View {
     @Bindable var model: AppModel
     let query: String
@@ -430,3 +432,4 @@ struct BotSearchConversationView: View {
     private let loadingAnchor = "bot-search-loading"
     private let errorAnchor = "bot-search-error"
 }
+#endif

@@ -6,7 +6,9 @@ struct SettingsView: View {
     @State private var lyricsServerDraft = ""
     @State private var lyricsServerError: String?
     @State private var isApplyingLyricsServer = false
+    #if DEBUG
     @State private var editingSearchBot: SearchBotConfig?
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -57,6 +59,7 @@ struct SettingsView: View {
                 } footer: {
                     Text("Use the base URL of an LRCLIB-compatible server. Telisten requests /api/get and /api/search; cached lyrics stay available offline.")
                 }
+                #if DEBUG
                 Section {
                     ForEach(model.searchBots) { config in
                         searchBotRow(config)
@@ -77,8 +80,9 @@ struct SettingsView: View {
                 } header: {
                     Text("Bot search")
                 } footer: {
-                    Text("Bot searches and Telegram account sessions are stored in iCloud Keychain, with a local fallback when iCloud is unavailable.")
+                    Text("Debug-only bot searches are stored in iCloud Keychain. No bot is included by default.")
                 }
+                #endif
                 Section {
                     Button("Sign out of this account", role: .destructive) {
                         Task {
@@ -93,7 +97,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .navigationTitle("Settings")
             .toolbar {
-                #if os(iOS)
+                #if DEBUG && os(iOS)
                 if model.searchBots.count > 1 {
                     ToolbarItem(placement: .primaryAction) { EditButton() }
                 }
@@ -108,9 +112,11 @@ struct SettingsView: View {
             lyricsServerDraft = model.lyricsServerURL.absoluteString
             await model.refreshCacheUsage()
         }
+        #if DEBUG
         .sheet(item: $editingSearchBot) { config in
             SearchBotEditorView(model: model, config: config)
         }
+        #endif
     }
 
     private var cacheLimit: Binding<Int64> {
@@ -134,6 +140,7 @@ struct SettingsView: View {
         }
     }
 
+    #if DEBUG
     @ViewBuilder
     private func searchBotRow(_ config: SearchBotConfig) -> some View {
         HStack(spacing: 10) {
@@ -188,8 +195,10 @@ struct SettingsView: View {
             .accessibilityLabel("Options for \(config.displayBotName)")
         }
     }
+    #endif
 }
 
+#if DEBUG
 private struct SearchBotEditorView: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var dismiss
@@ -213,7 +222,7 @@ private struct SearchBotEditorView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("@Music163DownBot", text: $botName)
+                    TextField("@your_search_bot", text: $botName)
                         .autocorrectionDisabled()
                         #if os(iOS)
                         .textInputAutocapitalization(.never)
@@ -283,3 +292,4 @@ private struct SearchBotEditorView: View {
         }
     }
 }
+#endif

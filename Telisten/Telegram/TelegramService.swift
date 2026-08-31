@@ -319,10 +319,11 @@ actor TelegramService {
     }
 
     func currentAccount() async throws -> TelegramAccount {
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
-        let users = try await connection.client.users.getUsers(
-            id: [.inputUserSelf(TL.InputUserSelf())]
-        )
+        let users = try await withPrimaryConnectionRetry { connection in
+            try await connection.client.users.getUsers(
+                id: [.inputUserSelf(TL.InputUserSelf())]
+            )
+        }
         guard let user = users.first else { throw ServiceError.invalidCodeResponse }
         return try account(from: user)
     }
@@ -555,7 +556,6 @@ actor TelegramService {
     }
 
     func loadChats() async throws -> [MusicChat] {
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
         var result: [MusicChat] = []
         var seen: Set<String> = []
         var offsetDate: Int32 = 0
@@ -563,15 +563,17 @@ actor TelegramService {
         var offsetPeer: TL.InputPeerType = .inputPeerEmpty(TL.InputPeerEmpty())
 
         while true {
-            let page = try await connection.client.messages.getDialogs(
-                excludePinned: false,
-                folderId: nil,
-                offsetDate: offsetDate,
-                offsetId: offsetID,
-                offsetPeer: offsetPeer,
-                limit: 100,
-                hash: 0
-            )
+            let page = try await withPrimaryConnectionRetry { connection in
+                try await connection.client.messages.getDialogs(
+                    excludePinned: false,
+                    folderId: nil,
+                    offsetDate: offsetDate,
+                    offsetId: offsetID,
+                    offsetPeer: offsetPeer,
+                    limit: 100,
+                    hash: 0
+                )
+            }
             let mapped = TelegramMapping.chats(from: page)
             for chat in mapped where seen.insert(chat.id).inserted { result.append(chat) }
             guard dialogCount(page) >= 100,
@@ -591,35 +593,37 @@ actor TelegramService {
         offsetID: Int32 = 0,
         limit: Int32 = 30
     ) async throws -> [Track] {
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
-        let result = try await connection.client.messages.search(
-            peer: TelegramMapping.inputPeer(for: chat),
-            q: query,
-            filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
-            minDate: 0,
-            maxDate: 0,
-            offsetId: offsetID,
-            addOffset: 0,
-            limit: limit,
-            maxId: 0,
-            minId: 0,
-            hash: 0
-        )
+        let result = try await withPrimaryConnectionRetry { connection in
+            try await connection.client.messages.search(
+                peer: TelegramMapping.inputPeer(for: chat),
+                q: query,
+                filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
+                minDate: 0,
+                maxDate: 0,
+                offsetId: offsetID,
+                addOffset: 0,
+                limit: limit,
+                maxId: 0,
+                minId: 0,
+                hash: 0
+            )
+        }
         return TelegramMapping.tracks(from: result)
     }
 
     func searchAllMusic(query: String) async throws -> [Track] {
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
-        let result = try await connection.client.messages.searchGlobal(
-            q: query,
-            filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
-            minDate: 0,
-            maxDate: 0,
-            offsetRate: 0,
-            offsetPeer: .inputPeerEmpty(TL.InputPeerEmpty()),
-            offsetId: 0,
-            limit: 100
-        )
+        let result = try await withPrimaryConnectionRetry { connection in
+            try await connection.client.messages.searchGlobal(
+                q: query,
+                filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
+                minDate: 0,
+                maxDate: 0,
+                offsetRate: 0,
+                offsetPeer: .inputPeerEmpty(TL.InputPeerEmpty()),
+                offsetId: 0,
+                limit: 100
+            )
+        }
         return TelegramMapping.tracks(from: result)
     }
 
@@ -647,13 +651,15 @@ actor TelegramService {
         }
         let bot = try await resolveSearchBot(config)
         let baseline = try await botSearchHistory(for: bot, limit: 60)
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        let randomID = Int64.random(in: Int64.min...Int64.max)
         do {
-            _ = try await connection.client.messages.sendMessage(
-                peer: TelegramMapping.inputPeer(for: bot),
-                message: text,
-                randomId: Int64.random(in: Int64.min...Int64.max)
-            )
+            _ = try await withPrimaryConnectionRetry { connection in
+                try await connection.client.messages.sendMessage(
+                    peer: TelegramMapping.inputPeer(for: bot),
+                    message: text,
+                    randomId: randomID
+                )
+            }
         } catch {
             throw readableBotError(error, botName: config.displayBotName)
         }
@@ -675,13 +681,14 @@ actor TelegramService {
         case let .callback(messageID, data):
             let bot = try await resolveSearchBot(config)
             let baseline = try await botSearchHistory(for: bot, limit: 60)
-            let connection = try await authorizedConnection(dcID: primaryDC, media: false)
             do {
-                _ = try await connection.client.messages.getBotCallbackAnswer(
-                    peer: TelegramMapping.inputPeer(for: bot),
-                    msgId: messageID,
-                    data: data
-                )
+                _ = try await withPrimaryConnectionRetry { connection in
+                    try await connection.client.messages.getBotCallbackAnswer(
+                        peer: TelegramMapping.inputPeer(for: bot),
+                        msgId: messageID,
+                        data: data
+                    )
+                }
             } catch {
                 // Telegram may report BOT_RESPONSE_TIMEOUT even though the bot
                 // received the callback and is already editing/posting a result.
@@ -1389,6 +1396,52 @@ actor TelegramService {
         try? await connection.mtproto.disconnect()
     }
 
+    /// A closed NIO channel remains represented by the cached `Connection`.
+    /// Evict it and retry once so foreground searches do not keep invoking a
+    /// dead transport. Callers must keep mutation identifiers stable across the
+    /// retry (for example, Telegram `random_id`) so Telegram can deduplicate a
+    /// request whose response was lost while the socket closed.
+    private func withPrimaryConnectionRetry<Value>(
+        _ operation: (Connection) async throws -> Value
+    ) async throws -> Value {
+        var lastError: Error?
+        for attempt in 0..<2 {
+            do {
+                let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+                return try await operation(connection)
+            } catch {
+                lastError = error
+                if shouldDiscardStoredSession(after: error) {
+                    keychain.deleteSession(dcID: primaryDC, accountID: accountID)
+                    setAuthorizationSaved(false)
+                    await invalidateConnection(dcID: primaryDC, media: false)
+                    throw error
+                }
+                guard attempt == 0, isRetryableConnectionError(error) else { throw error }
+                await invalidateConnection(dcID: primaryDC, media: false)
+            }
+        }
+        throw lastError ?? ServiceError.noConnection
+    }
+
+    private func isRetryableConnectionError(_ error: Error) -> Bool {
+        if let client = error as? MTProtoClientError {
+            return switch client {
+            case .timeout, .connectionClosed, .notConnected: true
+            case .protocolError, .fatalBadMessage: false
+            }
+        }
+        if let urlError = error as? URLError {
+            return [
+                .cannotConnectToHost,
+                .networkConnectionLost,
+                .notConnectedToInternet,
+                .timedOut
+            ].contains(urlError.code)
+        }
+        return false
+    }
+
     private func hasMediaEndpoint(for dcID: Int32) -> Bool {
         endpoints[dcID]?.contains(where: { $0.mediaOnly }) == true
     }
@@ -1405,9 +1458,10 @@ actor TelegramService {
         let key = username.lowercased()
         if let cached = searchBotPeers[key] { return cached }
 
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
         do {
-            let result = try await connection.client.contacts.resolveUsername(username: username)
+            let result = try await withPrimaryConnectionRetry { connection in
+                try await connection.client.contacts.resolveUsername(username: username)
+            }
             guard let bot = TelegramMapping.botChat(from: result) else {
                 throw ServiceError.invalidSearchBot(config.displayBotName)
             }
@@ -1424,17 +1478,18 @@ actor TelegramService {
         for bot: MusicChat,
         limit: Int32
     ) async throws -> [BotSearchMessage] {
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
-        let page = try await connection.client.messages.getHistory(
-            peer: TelegramMapping.inputPeer(for: bot),
-            offsetId: 0,
-            offsetDate: 0,
-            addOffset: 0,
-            limit: min(max(limit, 1), 100),
-            maxId: 0,
-            minId: 0,
-            hash: 0
-        )
+        let page = try await withPrimaryConnectionRetry { connection in
+            try await connection.client.messages.getHistory(
+                peer: TelegramMapping.inputPeer(for: bot),
+                offsetId: 0,
+                offsetDate: 0,
+                addOffset: 0,
+                limit: min(max(limit, 1), 100),
+                maxId: 0,
+                minId: 0,
+                hash: 0
+            )
+        }
         return TelegramMapping.botSearchMessages(from: page)
     }
 
@@ -1506,6 +1561,8 @@ actor TelegramService {
         if error is ServiceError || error is CancellationError { return error }
         guard let rpc = error as? MTProtoRPCError else { return error }
         switch rpc.message {
+        case "AUTH_KEY_UNREGISTERED", "AUTH_KEY_DUPLICATED", "SESSION_REVOKED", "SESSION_EXPIRED":
+            return error
         case "USERNAME_INVALID", "USERNAME_NOT_OCCUPIED", "PEER_ID_INVALID":
             return ServiceError.invalidSearchBot(botName)
         case "MESSAGE_ID_INVALID", "BUTTON_DATA_INVALID":
@@ -1620,6 +1677,14 @@ actor TelegramService {
             guard resumeSession != nil else { break }
             keychain.deleteSession(dcID: sessionStorageID, accountID: sessionAccountID)
             resumeSession = nil
+            // A fresh transport is correct for login and for secondary/media
+            // DCs, which can import authorization from the primary DC. It must
+            // never replace a rejected authorized primary key: doing that leaves
+            // an unauthenticated connection cached as if it were authorized and
+            // the next API call fails with AUTH_KEY_UNREGISTERED.
+            if isAuthorizationSaved, !media, dcID == primaryDC {
+                throw lastError ?? ServiceError.noConnection
+            }
         }
         throw lastError ?? ServiceError.noConnection
     }

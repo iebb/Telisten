@@ -79,12 +79,14 @@ struct LibraryView: View {
             .sheet(isPresented: $model.showListenTogetherSheet) {
                 ListenTogetherView(model: model)
             }
+            #if DEBUG
             .sheet(isPresented: $model.showBotSearch) {
                 BotSearchConversationView(model: model)
                     #if os(macOS)
                     .frame(minWidth: 360, minHeight: 520)
                     #endif
             }
+            #endif
             .alert(
                 "Delete playlist?",
                 isPresented: $showDeletePlaylistConfirmation,
@@ -456,12 +458,14 @@ struct LibraryView: View {
 
     private func trackList(includeSearchBots: Bool) -> some View {
         List {
+            #if DEBUG
             if includeSearchBots {
                 SearchBotProvidersView(model: model, query: model.searchText)
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
+            #endif
 
             if model.isLoading && model.tracks.isEmpty {
                 HStack {

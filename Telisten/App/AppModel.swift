@@ -2424,7 +2424,7 @@ final class AppModel {
                 fileReference: Data(),
                 dcID: 2,
                 messageID: nextID + 1,
-                chatID: "u:Music163DownBot",
+                chatID: "u:DemoMusicBot",
                 title: "花鳥風月",
                 artist: "SEKAI NO OWARI",
                 fileName: "花鳥風月 - SEKAI NO OWARI.flac",
@@ -2437,7 +2437,7 @@ final class AppModel {
                 BotSearchMessage(
                     id: nextID + 1,
                     isOutgoing: false,
-                    text: "31.19 MB  ·  Lossless FLAC\nvia @Music163DownBot",
+                    text: "31.19 MB  ·  Lossless FLAC\nvia @DemoMusicBot",
                     date: .now,
                     buttonRows: [],
                     track: result
@@ -2606,27 +2606,45 @@ final class AppModel {
     }
 
     private func restoreSearchBots() {
-        if let stored = keychain.loadSearchBotConfigs() {
-            var seen: Set<String> = []
-            searchBots = stored.compactMap { config in
-                guard let normalized = normalizedSearchBot(config),
-                      !normalized.searchPrefix.contains(where: \.isNewline),
-                      !normalized.searchSuffix.contains(where: \.isNewline) else { return nil }
-                let identity = [
-                    normalized.normalizedBotName.lowercased(),
-                    normalized.searchPrefix,
-                    normalized.searchSuffix
-                ].joined(separator: "\u{1F}")
-                return seen.insert(identity).inserted ? normalized : nil
+        #if DEBUG
+        let defaults = UserDefaults.standard
+        let migrationKey = "debug.searchBots.removedBuiltInDefault"
+        var stored = keychain.loadSearchBotConfigs() ?? []
+
+        // Older debug builds seeded Music163DownBot and synchronized it as if
+        // the user had configured it. Remove that one legacy seed exactly once;
+        // all bot configurations are now explicit user additions.
+        if !defaults.bool(forKey: migrationKey) {
+            let original = stored
+            stored.removeAll {
+                $0.normalizedBotName.caseInsensitiveCompare("Music163DownBot") == .orderedSame
+                    && $0.searchPrefix.isEmpty
+                    && $0.searchSuffix.isEmpty
             }
-            if searchBots != stored {
-                _ = keychain.saveSearchBotConfigs(searchBots)
+            defaults.set(true, forKey: migrationKey)
+            if stored != original {
+                _ = keychain.saveSearchBotConfigs(stored)
             }
-            return
         }
 
-        searchBots = [SearchBotConfig(botName: "Music163DownBot")]
-        _ = keychain.saveSearchBotConfigs(searchBots)
+        var seen: Set<String> = []
+        searchBots = stored.compactMap { config in
+            guard let normalized = normalizedSearchBot(config),
+                  !normalized.searchPrefix.contains(where: \.isNewline),
+                  !normalized.searchSuffix.contains(where: \.isNewline) else { return nil }
+            let identity = [
+                normalized.normalizedBotName.lowercased(),
+                normalized.searchPrefix,
+                normalized.searchSuffix
+            ].joined(separator: "\u{1F}")
+            return seen.insert(identity).inserted ? normalized : nil
+        }
+        if searchBots != stored {
+            _ = keychain.saveSearchBotConfigs(searchBots)
+        }
+        #else
+        searchBots = []
+        #endif
     }
 
     private func normalizedSearchBot(_ config: SearchBotConfig) -> SearchBotConfig? {

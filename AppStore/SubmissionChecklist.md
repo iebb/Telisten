@@ -13,7 +13,7 @@ Prepared for app record `6804541534`, bundle ID `ad.neko.player`, version `1.0.0
 - The checked workflow specification and final secret-variable step are documented in `XcodeCloud.md`.
 - The 6.9-inch iPhone and 13-inch iPad screenshot sets are checked in without alpha channels and uploaded to the iOS version.
 - `ITSAppUsesNonExemptEncryption` is `false` in both platform Info.plists, and both uploaded builds have the same export-compliance declaration.
-- Build 24 is configured for both the iOS and macOS 1.0.0 versions; the shared Xcode Cloud workflows produce the signed archives after this revision is pushed.
+- Build 25 is configured for both the iOS and macOS 1.0.0 versions; the shared Xcode Cloud workflows produce the signed archives after this revision is pushed.
 - App pricing is free, with public availability in all supported countries and regions.
 - Final iPhone, iPad, and Mac screenshot sets are uploaded and complete.
 
