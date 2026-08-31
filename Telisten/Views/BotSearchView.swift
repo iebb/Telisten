@@ -127,6 +127,7 @@ struct BotSearchConversationView: View {
     @Environment(\.openURL) private var openURL
     @FocusState private var composerFocused: Bool
     @State private var composerText = ""
+    @State private var playlistTrack: Track?
 
     init(model: AppModel) {
         self.model = model
@@ -179,6 +180,9 @@ struct BotSearchConversationView: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 composer
+            }
+            .sheet(item: $playlistTrack) { track in
+                PlaylistSheet(model: model, track: track)
             }
         }
     }
@@ -233,38 +237,53 @@ struct BotSearchConversationView: View {
     }
 
     private func audioRow(_ track: Track) -> some View {
-        Button {
-            model.playBotSearchTrack(track)
-        } label: {
-            HStack(spacing: 9) {
-                TrackArtwork(model: model, track: track, size: 40)
+        HStack(spacing: 4) {
+            Button {
+                model.playBotSearchTrack(track)
+            } label: {
+                HStack(spacing: 9) {
+                    TrackArtwork(model: model, track: track, size: 40)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(track.displayTitle)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                    Text(trackMetadata(track))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(track.displayTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Text(trackMetadata(track))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 4)
+
+                    Image(systemName: model.player.track?.id == track.id && model.player.isPlaying
+                          ? "pause.circle.fill"
+                          : "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(Color.telistenAccent)
+                        .accessibilityHidden(true)
                 }
-
-                Spacer(minLength: 4)
-
-                Image(systemName: model.player.track?.id == track.id && model.player.isPlaying
-                      ? "pause.circle.fill"
-                      : "play.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(Color.telistenAccent)
-                    .accessibilityHidden(true)
+                .contentShape(Rectangle())
             }
-            .padding(8)
-            .background(Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .buttonStyle(.plain)
+            .accessibilityLabel("Play \(track.displayTitle) by \(track.displayArtist)")
+
+            Button {
+                playlistTrack = track
+            } label: {
+                Image(systemName: "text.badge.plus")
+                    .font(.headline)
+                    .foregroundStyle(Color.telistenAccent)
+                    .frame(width: 34, height: 40)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add \(track.displayTitle) to playlist")
+            .accessibilityHint("Choose an existing playlist or create a new one")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Play \(track.displayTitle) by \(track.displayArtist)")
+        .padding(8)
+        .background(Color.secondary.opacity(0.09), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func buttonGrid(_ rows: [[BotSearchButton]]) -> some View {
@@ -404,7 +423,9 @@ struct BotSearchConversationView: View {
     private var latestContentID: String {
         if let error = model.botSearchError, !error.isEmpty { return errorAnchor }
         if model.isBotSearching { return loadingAnchor }
-        return messages.last.map { "message:\($0.id)" } ?? "empty"
+        return messages.last.map {
+            "message:\($0.id):\($0.text):\($0.buttonRows.hashValue):\($0.track?.id ?? "")"
+        } ?? "empty"
     }
 
     private func scrollToLatest(using proxy: ScrollViewProxy, animated: Bool) {

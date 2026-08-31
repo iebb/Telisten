@@ -21,7 +21,7 @@ The Debug-only --demo launch argument is not available in the submitted Release 
 Guideline 4.3 clarification:
 We respectfully disagree that Telisten is spam or a duplicate/template app. Telisten is one independently designed native music product, not a reskin, generic Telegram wrapper, or collection of similar apps. Its product and implementation are specific to turning audio already accessible in a user's Telegram account into a focused music library.
 
-Build 26 demonstrates the app's distinctive functionality:
+Build 27 demonstrates the app's distinctive functionality:
 • A custom direct MTProto client, without TDLib, a proxy, a developer-operated bot, or a developer-operated media backend.
 • Global, deduplicated music search and lazy music-only indexing that does not mark chats as read.
 • Progressive playback before a download completes, plus a shared offline cache that reuses full and partial downloads across Telegram accounts.

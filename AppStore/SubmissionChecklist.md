@@ -1,6 +1,6 @@
 # Telisten submission checklist
 
-Prepared for app record `6804541534`, bundle ID `ad.neko.player`, version `1.0.0`, build `26`.
+Prepared for app record `6804541534`, bundle ID `ad.neko.player`, version `1.0.0`, build `27`.
 
 ## Ready
 
@@ -13,7 +13,7 @@ Prepared for app record `6804541534`, bundle ID `ad.neko.player`, version `1.0.0
 - The checked workflow specification and final secret-variable step are documented in `XcodeCloud.md`.
 - The 6.9-inch iPhone and 13-inch iPad screenshot sets are checked in without alpha channels and uploaded to the iOS version.
 - `ITSAppUsesNonExemptEncryption` is `false` in both platform Info.plists, and both uploaded builds have the same export-compliance declaration.
-- Build 26 is configured for both the iOS and macOS 1.0.0 versions; the shared Xcode Cloud workflows produce the signed archives after this revision is pushed.
+- Build 27 is configured for both the iOS and macOS 1.0.0 versions; the shared Xcode Cloud workflows produce the signed archives after this revision is pushed.
 - App pricing is free, with public availability in all supported countries and regions.
 - Final iPhone, iPad, and Mac screenshot sets are uploaded and complete.
 
@@ -30,5 +30,5 @@ Prepared for app record `6804541534`, bundle ID `ad.neko.player`, version `1.0.0
 
 - The internal `Admins` group contains three testers, all with Account Holder or Admin roles.
 - No external testing group or public link exists.
-- Distribute iOS and macOS build 26 only to the internal `Admins` group after processing completes.
+- Distribute iOS and macOS build 27 only to the internal `Admins` group after processing completes.
 - Keep the app record on Limited Access; Apple always grants Account Holder, Admin, Finance, and report roles their role-defined visibility.

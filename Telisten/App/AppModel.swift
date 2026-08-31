@@ -11,7 +11,6 @@ enum SidebarSelection: Hashable {
 private struct MusicChatIndexEntry: Codable {
     var hasMusic: Bool
     var checkedAt: Date
-    var musicCount: Int? = nil
 }
 
 private enum QRLoginWakeReason: Sendable {
@@ -61,7 +60,6 @@ final class AppModel {
     var artworkData: [String: Data] = [:]
     var chatAvatarData: [String: Data] = [:]
     var accountAvatarData: [String: Data] = [:]
-    var chatMusicCounts: [String: Int] = [:]
     var queue: [Track] = []
     var currentQueueIndex: Int?
     var playbackMode: PlaybackMode = .order
@@ -139,6 +137,7 @@ final class AppModel {
     @ObservationIgnored private var listenTogetherInviteLinks: [String: URL] = [:]
     @ObservationIgnored private var botSearchOperationID: UUID?
     @ObservationIgnored private var botSearchConversationStartID: Int32?
+    @ObservationIgnored private var botSearchRefreshTask: Task<Void, Never>?
 
     init() {
         let defaults = UserDefaults.standard
@@ -689,6 +688,37 @@ final class AppModel {
         }
     }
 
+    func openBotSearch(using config: SearchBotConfig) async {
+        botSearchRefreshTask?.cancel()
+        botSearchOperationID = nil
+        botSearchConversationStartID = nil
+        activeBotSearchConfig = config
+        botSearchMessages = []
+        botSearchError = nil
+        isBotSearching = true
+        showBotSearch = true
+
+        #if DEBUG
+        if isDemo {
+            isBotSearching = false
+            return
+        }
+        #endif
+
+        do {
+            let history = try await telegram.botSearchHistory(config: config)
+            guard activeBotSearchConfig?.id == config.id else { return }
+            botSearchMessages = Array(history.suffix(40))
+            install(botSearchMessages.compactMap(\.track))
+        } catch {
+            guard activeBotSearchConfig?.id == config.id else { return }
+            botSearchError = UserFacingError.message(for: error)
+        }
+        if activeBotSearchConfig?.id == config.id {
+            isBotSearching = false
+        }
+    }
+
     func sendBotSearchMessage(_ text: String) async {
         guard !isBotSearching else { return }
         guard let config = activeBotSearchConfig else { return }
@@ -1091,7 +1121,6 @@ final class AppModel {
         allChats.removeAll { $0.id == playlist.id }
         chats.removeAll { $0.id == playlist.id }
         musicChatIndex.removeValue(forKey: playlist.id)
-        chatMusicCounts.removeValue(forKey: playlist.id)
         chatAvatarData.removeValue(forKey: playlist.id)
         playlistOrders.removeValue(forKey: playlist.id)
         playlistTrackMirrors.removeValue(forKey: playlist.id)
@@ -1202,7 +1231,18 @@ final class AppModel {
         if case let .loaded(value) = lyricsState, value.trackID == track.id { return }
         lyricsState = .loading
         do {
-            let result = try await lyrics.lyrics(for: track)
+            let sourceChat = allChats.first(where: { $0.id == track.chatID })
+            let attachedLRC: [AttachedLRC]
+            #if DEBUG
+            if isDemo {
+                attachedLRC = []
+            } else {
+                attachedLRC = (try? await telegram.attachedLyrics(for: track, in: sourceChat)) ?? []
+            }
+            #else
+            attachedLRC = (try? await telegram.attachedLyrics(for: track, in: sourceChat)) ?? []
+            #endif
+            let result = try await lyrics.lyrics(for: track, attachedLRC: attachedLRC)
             guard player.track?.id == track.id else { return }
             lyricsCandidates = result?.matches ?? []
             lyricsState = result.map { .loaded($0.selected) } ?? .unavailable
@@ -2028,9 +2068,10 @@ final class AppModel {
         accountAvatarData = [:]
         accountAvatarLoading = []
         accountAvatarResolved = []
-        chatMusicCounts = [:]
         listenTogetherInviteLinks = [:]
         botSearchOperationID = nil
+        botSearchRefreshTask?.cancel()
+        botSearchRefreshTask = nil
         botSearchConversationStartID = nil
         activeBotSearchConfig = nil
         botSearchMessages = []
@@ -2045,9 +2086,14 @@ final class AppModel {
         operation: () async throws -> [BotSearchMessage]
     ) async {
         let operationID = UUID()
+        botSearchRefreshTask?.cancel()
         botSearchOperationID = operationID
         isBotSearching = true
         botSearchError = nil
+        startBotSearchRefresh(
+            operationID: operationID,
+            initialCommand: initialCommand
+        )
         defer {
             if botSearchOperationID == operationID {
                 isBotSearching = false
@@ -2057,28 +2103,96 @@ final class AppModel {
         do {
             let values = try await operation()
             guard botSearchOperationID == operationID else { return }
-            if let initialCommand,
-               let sent = values.last(where: {
-                   $0.isOutgoing
-                       && $0.text.trimmingCharacters(in: .whitespacesAndNewlines) == initialCommand
-               }) {
-                botSearchConversationStartID = sent.id
-            }
-
-            let scoped: [BotSearchMessage]
-            if let startID = botSearchConversationStartID {
-                scoped = values.filter { $0.id >= startID }
-            } else {
-                scoped = Array(values.suffix(40))
-            }
-            botSearchMessages = scoped
-            install(scoped.compactMap(\.track))
+            _ = applyBotSearchSnapshot(
+                values,
+                initialCommand: initialCommand,
+                operationID: operationID
+            )
         } catch is CancellationError {
             // A newer bot action or account switch superseded this request.
         } catch {
             guard botSearchOperationID == operationID else { return }
             botSearchError = UserFacingError.message(for: error)
         }
+    }
+
+    private func startBotSearchRefresh(
+        operationID: UUID,
+        initialCommand: String?
+    ) {
+        guard let config = activeBotSearchConfig else { return }
+        botSearchRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            var sawIncomingResponse = false
+            var stableReadsAfterResponse = 0
+
+            // Bot replies are frequently created and then edited in place. Keep
+            // refreshing long enough to render those streamed edits, while using
+            // a slower tail so an unusually slow bot does not hammer Telegram.
+            for attempt in 0..<75 {
+                if Task.isCancelled || botSearchOperationID != operationID { return }
+                let delay: Duration = attempt < 20 ? .milliseconds(750) : .seconds(2)
+                try? await Task.sleep(for: delay)
+                if Task.isCancelled || botSearchOperationID != operationID { return }
+
+                do {
+                    let values = try await telegram.botSearchHistory(config: config)
+                    let changed = applyBotSearchSnapshot(
+                        values,
+                        initialCommand: initialCommand,
+                        operationID: operationID
+                    )
+                    let hasIncoming = botSearchMessages.contains { !$0.isOutgoing }
+                    sawIncomingResponse = sawIncomingResponse || hasIncoming
+                    if sawIncomingResponse {
+                        stableReadsAfterResponse = changed ? 0 : stableReadsAfterResponse + 1
+                        if stableReadsAfterResponse >= 10 { return }
+                    }
+                } catch is CancellationError {
+                    return
+                } catch {
+                    // The foreground operation reports actionable failures. A
+                    // transient refresh failure should not erase a reply already
+                    // on screen; the next bounded poll can recover the stream.
+                    continue
+                }
+            }
+        }
+    }
+
+    @discardableResult
+    private func applyBotSearchSnapshot(
+        _ values: [BotSearchMessage],
+        initialCommand: String?,
+        operationID: UUID
+    ) -> Bool {
+        guard botSearchOperationID == operationID else { return false }
+        if botSearchConversationStartID == nil,
+           let initialCommand,
+           let sent = values.last(where: {
+               $0.isOutgoing
+                   && $0.text.trimmingCharacters(in: .whitespacesAndNewlines) == initialCommand
+           }) {
+            botSearchConversationStartID = sent.id
+        }
+
+        let scoped: [BotSearchMessage]
+        if let startID = botSearchConversationStartID {
+            scoped = values.filter { $0.id >= startID }
+        } else if initialCommand != nil {
+            // Do not flash an older conversation while Telegram is committing
+            // the newly sent command to history.
+            scoped = []
+        } else {
+            scoped = Array(values.suffix(40))
+        }
+        guard scoped != botSearchMessages else { return false }
+        botSearchMessages = scoped
+        if scoped.contains(where: { !$0.isOutgoing }) {
+            botSearchError = nil
+        }
+        install(scoped.compactMap(\.track))
+        return true
     }
 
     private func refreshActiveAccountProfile() async {
@@ -2240,7 +2354,6 @@ final class AppModel {
         let candidates = allChats.filter { chat in
             guard !playlistIDs.contains(chat.id) else { return false }
             guard let entry = musicChatIndex[chat.id] else { return true }
-            guard entry.musicCount != nil else { return true }
             let maximumAge: TimeInterval = entry.hasMusic ? 7 * 24 * 60 * 60 : 24 * 60 * 60
             return now.timeIntervalSince(entry.checkedAt) >= maximumAge
         }
@@ -2254,11 +2367,10 @@ final class AppModel {
         for chat in candidates {
             guard !Task.isCancelled else { return }
             do {
-                let count = try await telegram.musicCount(in: chat)
+                let hasMusic = try await telegram.hasMusic(in: chat)
                 musicChatIndex[chat.id] = MusicChatIndexEntry(
-                    hasMusic: count > 0,
-                    checkedAt: .now,
-                    musicCount: count
+                    hasMusic: hasMusic,
+                    checkedAt: .now
                 )
                 persistMusicChatIndex()
                 applyMusicChatIndex()
@@ -2281,11 +2393,9 @@ final class AppModel {
     }
 
     private func rememberMusic(in chat: MusicChat) {
-        let count = max(musicChatIndex[chat.id]?.musicCount ?? 0, 1)
         musicChatIndex[chat.id] = MusicChatIndexEntry(
             hasMusic: true,
-            checkedAt: .now,
-            musicCount: count
+            checkedAt: .now
         )
         persistMusicChatIndex()
         applyMusicChatIndex()
@@ -2295,10 +2405,6 @@ final class AppModel {
         let validIDs = Set(allChats.map(\.id))
         musicChatIndex = musicChatIndex.filter { validIDs.contains($0.key) }
         chats = allChats.filter { musicChatIndex[$0.id]?.hasMusic == true }
-        chatMusicCounts = Dictionary(uniqueKeysWithValues: musicChatIndex.compactMap { id, entry in
-            guard entry.hasMusic else { return nil }
-            return (id, entry.musicCount ?? 1)
-        })
     }
 
     private func resetTrackDetails(ifChangingTo track: Track) {
@@ -2520,7 +2626,6 @@ final class AppModel {
         allChats = chats
         playlists = [playlist]
         savedChatIDs = [source.id]
-        chatMusicCounts = [source.id: 128, discoveries.id: 42]
         let arguments = ProcessInfo.processInfo.arguments
         let demoTrackChatID = arguments.contains("--demo-playlist") ? playlist.id : source.id
         let samples = [

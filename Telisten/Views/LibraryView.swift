@@ -196,6 +196,34 @@ struct LibraryView: View {
                 Label("Downloads", systemImage: "arrow.down.circle.fill")
                     .tag(SidebarSelection.downloads)
             }
+            if !model.searchBots.isEmpty {
+                Section("Music Bots") {
+                    ForEach(model.searchBots) { config in
+                        Button {
+                            Task { await model.openBotSearch(using: config) }
+                        } label: {
+                            HStack(spacing: 9) {
+                                Image(systemName: "paperplane.circle.fill")
+                                    .font(.title3)
+                                    .foregroundStyle(Color.telistenAccent)
+                                    .frame(width: 26)
+                                    .accessibilityHidden(true)
+                                Text(config.displayBotName)
+                                    .lineLimit(1)
+                                Spacer(minLength: 6)
+                                if model.activeBotSearchConfig?.id == config.id,
+                                   model.isBotSearching {
+                                    ProgressView().controlSize(.small)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Open \(config.displayBotName)")
+                        .accessibilityHint("Shows the Telegram music bot conversation")
+                    }
+                }
+            }
             if !model.playlists.isEmpty {
                 Section("Playlists") {
                     ForEach(model.playlists) { playlist in
@@ -334,16 +362,6 @@ struct LibraryView: View {
             Text(chat.title)
                 .lineLimit(1)
             Spacer(minLength: 6)
-            if let count = model.chatMusicCounts[chat.id] {
-                Text(musicCountLabel(count))
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .minimumScaleFactor(0.62)
-                    .lineLimit(1)
-                    .frame(width: 27, height: 27)
-                    .background(Color.secondary.opacity(0.12), in: Circle())
-                    .accessibilityLabel("\(count) music tracks")
-            }
             if chat.isPinned == true {
                 Image(systemName: "pin.fill")
                     .font(.caption2)
@@ -361,10 +379,6 @@ struct LibraryView: View {
                 model.toggleSavedChat(chat)
             }
         }
-    }
-
-    private func musicCountLabel(_ count: Int) -> String {
-        count > 999 ? "999+" : String(count)
     }
 
     private var trackBrowser: some View {

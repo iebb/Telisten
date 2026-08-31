@@ -204,6 +204,7 @@ actor TelegramService {
     private var authorizedConnections: Set<ConnectionKey> = []
     private var refreshedTracks: [String: Track] = [:]
     private var searchBotPeers: [String: MusicChat] = [:]
+    private var lyricsAttachmentCache: [String: [TelegramLyricsAttachment]] = [:]
     private var phoneNumber = ""
     private var phoneCodeHash = ""
     private var pendingCodeIsEmail = false
@@ -250,6 +251,7 @@ actor TelegramService {
         authorizedConnections.removeAll()
         refreshedTracks.removeAll()
         searchBotPeers.removeAll()
+        lyricsAttachmentCache.removeAll()
         accountID = id
         if clearExisting {
             keychain.clearSessions(accountID: id)
@@ -528,6 +530,7 @@ actor TelegramService {
         authorizedConnections.removeAll()
         refreshedTracks.removeAll()
         searchBotPeers.removeAll()
+        lyricsAttachmentCache.removeAll()
         for connection in staleConnections {
             try? await connection.mtproto.disconnect()
         }
@@ -625,6 +628,141 @@ actor TelegramService {
             )
         }
         return TelegramMapping.tracks(from: result)
+    }
+
+    func attachedLyrics(for track: Track, in sourceChat: MusicChat?) async throws -> [AttachedLRC] {
+        let chat = sourceChat ?? searchBotPeers.values.first(where: { $0.id == track.chatID })
+        guard let chat else { return [] }
+
+        var attachments = lyricsAttachmentCache[chat.id] ?? []
+        let queries = [track.displayTitle, track.fileName.deletingPathExtension]
+            .map { $0.replacingOccurrences(of: "_", with: " ").trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        var seenQueries: Set<String> = []
+
+        for query in queries where seenQueries.insert(query.lowercased()).inserted {
+            let result = try await withPrimaryConnectionRetry { connection in
+                try await connection.client.messages.search(
+                    peer: TelegramMapping.inputPeer(for: chat),
+                    q: query,
+                    filter: .inputMessagesFilterDocument(TL.InputMessagesFilterDocument()),
+                    minDate: 0,
+                    maxDate: 0,
+                    offsetId: 0,
+                    addOffset: 0,
+                    limit: 50,
+                    maxId: 0,
+                    minId: 0,
+                    hash: 0
+                )
+            }
+            attachments.append(contentsOf: TelegramMapping.lyricsAttachments(from: result))
+        }
+
+        attachments = Dictionary(attachments.map { ($0.id, $0) }, uniquingKeysWith: { current, _ in current })
+            .values
+            .sorted { $0.date > $1.date }
+        lyricsAttachmentCache[chat.id] = attachments
+
+        let matches = attachments
+            .compactMap { attachment -> (TelegramLyricsAttachment, Int)? in
+                let score = lyricsAttachmentMatchScore(attachment.fileName, track: track)
+                return score > 0 ? (attachment, score) : nil
+            }
+            .sorted {
+                if $0.1 != $1.1 { return $0.1 > $1.1 }
+                return $0.0.date > $1.0.date
+            }
+            .prefix(4)
+
+        var values: [AttachedLRC] = []
+        for (attachment, _) in matches {
+            guard attachment.size > 0, attachment.size <= 2 * 1_024 * 1_024 else { continue }
+            let data = try await downloadLyricsAttachment(attachment)
+            guard let contents = decodeLyricsText(data), !contents.isEmpty else { continue }
+            values.append(AttachedLRC(id: attachment.id, fileName: attachment.fileName, contents: contents))
+        }
+        return values
+    }
+
+    private func downloadLyricsAttachment(_ attachment: TelegramLyricsAttachment) async throws -> Data {
+        let location: TL.InputFileLocationType = .inputDocumentFileLocation(
+            TL.InputDocumentFileLocation(
+                id: attachment.documentID,
+                accessHash: attachment.accessHash,
+                fileReference: attachment.fileReference,
+                thumbSize: ""
+            )
+        )
+        var data = Data()
+        var offset: Int64 = 0
+        let chunkSize: Int32 = 256 * 1_024
+        while offset < attachment.size {
+            try Task.checkCancellation()
+            let requested = Int32(min(Int64(chunkSize), attachment.size - offset))
+            let chunk = try await fileChunk(
+                at: location,
+                dcID: attachment.dcID,
+                offset: offset,
+                limit: requested,
+                priority: .background
+            )
+            guard !chunk.bytes.isEmpty else { throw ServiceError.incompleteDownload }
+            data.append(chunk.bytes)
+            offset += Int64(chunk.bytes.count)
+        }
+        return data
+    }
+
+    private func decodeLyricsText(_ data: Data) -> String? {
+        if data.starts(with: [0xEF, 0xBB, 0xBF]) {
+            return String(data: data.dropFirst(3), encoding: .utf8)
+        }
+        if data.starts(with: [0xFF, 0xFE]) {
+            return String(data: data.dropFirst(2), encoding: .utf16LittleEndian)
+        }
+        if data.starts(with: [0xFE, 0xFF]) {
+            return String(data: data.dropFirst(2), encoding: .utf16BigEndian)
+        }
+        return String(data: data, encoding: .utf8)
+            ?? String(data: data, encoding: .utf16)
+            ?? String(data: data, encoding: .windowsCP1252)
+    }
+
+    private func lyricsAttachmentMatchScore(_ fileName: String, track: Track) -> Int {
+        let candidate = comparableLyricsTitle(fileName.deletingPathExtension)
+        let title = comparableLyricsTitle(track.displayTitle)
+        let fileTitle = comparableLyricsTitle(track.fileName.deletingPathExtension)
+        guard !candidate.isEmpty, !title.isEmpty else { return 0 }
+
+        if candidate == title { return 120 }
+        if !fileTitle.isEmpty, candidate == fileTitle { return 115 }
+        if candidate.contains(title) || title.contains(candidate) { return 100 }
+        if !fileTitle.isEmpty, candidate.contains(fileTitle) || fileTitle.contains(candidate) { return 95 }
+
+        let candidateWords = Set(normalizedLyricsWords(fileName.deletingPathExtension))
+        let titleWords = Set(normalizedLyricsWords(track.displayTitle))
+        guard !candidateWords.isEmpty, !titleWords.isEmpty else { return 0 }
+        let overlap = candidateWords.intersection(titleWords).count
+        return overlap * 2 >= titleWords.count ? 60 + overlap : 0
+    }
+
+    private func comparableLyricsTitle(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "_", with: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+            .lowercased()
+            .filter { $0.isLetter || $0.isNumber }
+    }
+
+    private func normalizedLyricsWords(_ value: String) -> [String] {
+        value
+            .replacingOccurrences(of: "_", with: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+            .lowercased()
+            .split { !$0.isLetter && !$0.isNumber }
+            .map(String.init)
+            .filter { !$0.isEmpty }
     }
 
     func sendBotSearchCommand(
@@ -895,22 +1033,23 @@ actor TelegramService {
         return invitedCount
     }
 
-    func musicCount(in chat: MusicChat) async throws -> Int {
-        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
-        let result = try await connection.client.messages.search(
-            peer: TelegramMapping.inputPeer(for: chat),
-            q: "",
-            filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
-            minDate: 0,
-            maxDate: 0,
-            offsetId: 0,
-            addOffset: 0,
-            limit: 0,
-            maxId: 0,
-            minId: 0,
-            hash: 0
-        )
-        return TelegramMapping.messageCount(from: result)
+    func hasMusic(in chat: MusicChat) async throws -> Bool {
+        let result = try await withPrimaryConnectionRetry { connection in
+            try await connection.client.messages.search(
+                peer: TelegramMapping.inputPeer(for: chat),
+                q: "",
+                filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
+                minDate: 0,
+                maxDate: 0,
+                offsetId: 0,
+                addOffset: 0,
+                limit: 1,
+                maxId: 0,
+                minId: 0,
+                hash: 0
+            )
+        }
+        return TelegramMapping.messageCount(from: result) > 0
     }
 
     func comments(for track: Track, in chat: MusicChat) async throws -> [TrackComment] {

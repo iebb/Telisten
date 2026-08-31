@@ -4,6 +4,97 @@ protocol LyricsProviding: Sendable {
     func lyricsCandidates(for track: Track) async throws -> [TrackLyrics]
 }
 
+enum LRCParser {
+    static func lines(from value: String) -> (lines: [LyricLine], isSynced: Bool) {
+        let rawLines = value.components(separatedBy: .newlines)
+        let offset = rawLines.compactMap(metadataOffset).last ?? 0
+        var timed: [(time: TimeInterval, order: Int, text: String)] = []
+
+        for (order, raw) in rawLines.enumerated() {
+            var remainder = raw[...]
+            var timestamps: [TimeInterval] = []
+            while remainder.first == "[", let close = remainder.firstIndex(of: "]") {
+                let token = remainder[remainder.index(after: remainder.startIndex)..<close]
+                guard let timestamp = timestamp(String(token)) else { break }
+                timestamps.append(max(0, timestamp + offset))
+                remainder = remainder[remainder.index(after: close)...]
+            }
+
+            let text = stripEnhancedTimestamps(String(remainder))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !timestamps.isEmpty, !text.isEmpty else { continue }
+            timed.append(contentsOf: timestamps.map { ($0, order, text) })
+        }
+
+        if !timed.isEmpty {
+            let sorted = timed.sorted {
+                if $0.time != $1.time { return $0.time < $1.time }
+                return $0.order < $1.order
+            }
+            return (
+                sorted.enumerated().map {
+                    LyricLine(sequence: $0.offset, time: $0.element.time, text: $0.element.text)
+                },
+                true
+            )
+        }
+
+        let plain = rawLines.compactMap { raw -> String? in
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !isMetadataLine(trimmed) else { return nil }
+            let text = stripEnhancedTimestamps(trimmed)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? nil : text
+        }
+        return (
+            plain.enumerated().map { LyricLine(sequence: $0.offset, time: nil, text: $0.element) },
+            false
+        )
+    }
+
+    private static func timestamp(_ token: String) -> TimeInterval? {
+        let parts = token.split(separator: ":", omittingEmptySubsequences: false)
+        if parts.count == 2,
+           let minutes = Double(parts[0]),
+           let seconds = Double(parts[1]),
+           (0..<60).contains(seconds) {
+            return minutes * 60 + seconds
+        }
+        if parts.count == 3,
+           let hours = Double(parts[0]),
+           let minutes = Double(parts[1]),
+           let seconds = Double(parts[2]),
+           (0..<60).contains(minutes), (0..<60).contains(seconds) {
+            return hours * 3_600 + minutes * 60 + seconds
+        }
+        return nil
+    }
+
+    private static func metadataOffset(_ raw: String) -> TimeInterval? {
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard value.hasPrefix("[offset:"), value.hasSuffix("]") else { return nil }
+        let start = value.index(value.startIndex, offsetBy: 8)
+        guard let milliseconds = Double(value[start..<value.index(before: value.endIndex)]) else { return nil }
+        return milliseconds / 1_000
+    }
+
+    private static func isMetadataLine(_ value: String) -> Bool {
+        guard value.hasPrefix("["), let close = value.firstIndex(of: "]") else { return false }
+        let token = value[value.index(after: value.startIndex)..<close].lowercased()
+        return ["ar:", "al:", "ti:", "au:", "by:", "re:", "ve:", "length:", "offset:"].contains {
+            token.hasPrefix($0)
+        }
+    }
+
+    private static func stripEnhancedTimestamps(_ value: String) -> String {
+        value.replacingOccurrences(
+            of: #"<\d{1,3}:\d{1,2}(?:\.\d{1,3})?>"#,
+            with: "",
+            options: .regularExpression
+        )
+    }
+}
+
 enum LyricsServerConfiguration {
     static let defaultAddress = "https://lrclib.net"
     static let defaultURL = URL(string: defaultAddress)!
@@ -202,13 +293,13 @@ struct LRCLIBProvider: LyricsProviding {
     private func makeLyrics(from value: Response, trackID: String) -> TrackLyrics? {
         if value.instrumental { return nil }
         if let synced = value.syncedLyrics, !synced.isEmpty {
-            let lines = parseLRC(synced)
-            if !lines.isEmpty {
+            let parsed = LRCParser.lines(from: synced)
+            if !parsed.lines.isEmpty {
                 return TrackLyrics(
                     trackID: trackID,
                     source: "LRCLIB",
-                    lines: lines,
-                    isSynced: true,
+                    lines: parsed.lines,
+                    isSynced: parsed.isSynced,
                     matchID: value.id,
                     matchedTitle: value.trackName,
                     matchedArtist: value.artistName,
@@ -311,21 +402,6 @@ struct LRCLIBProvider: LyricsProviding {
             .filter { $0.isLetter || $0.isNumber }
     }
 
-    private func parseLRC(_ value: String) -> [LyricLine] {
-        value.components(separatedBy: .newlines).compactMap { raw -> (TimeInterval, String)? in
-            guard raw.first == "[", let close = raw.firstIndex(of: "]") else { return nil }
-            let timestamp = raw[raw.index(after: raw.startIndex)..<close]
-            let parts = timestamp.split(separator: ":", maxSplits: 1)
-            guard parts.count == 2,
-                  let minutes = Double(parts[0]),
-                  let seconds = Double(parts[1]) else { return nil }
-            let text = raw[raw.index(after: close)...].trimmingCharacters(in: .whitespaces)
-            guard !text.isEmpty else { return nil }
-            return (minutes * 60 + seconds, text)
-        }
-        .enumerated()
-        .map { LyricLine(sequence: $0.offset, time: $0.element.0, text: $0.element.1) }
-    }
 }
 
 actor LyricsService {
@@ -353,18 +429,20 @@ actor LyricsService {
         }
     }
 
-    func lyrics(for track: Track) async throws -> LyricsResult? {
-        if let matches = fetchedMatches[track.id], !matches.isEmpty {
+    func lyrics(for track: Track, attachedLRC: [AttachedLRC] = []) async throws -> LyricsResult? {
+        let attachedMatches = attachedLRC.compactMap { attachedLyrics($0, for: track) }
+        if let fetched = fetchedMatches[track.id], !fetched.isEmpty {
+            let matches = merged(attachedMatches, with: fetched)
+            fetchedMatches[track.id] = matches
             return result(for: track.id, matches: matches)
         }
 
         let fallback = cached[track.id]
-        var matches: [TrackLyrics]
+        var matches = attachedMatches
         do {
-            matches = try await provider.lyricsCandidates(for: track)
+            matches = merged(matches, with: try await provider.lyricsCandidates(for: track))
         } catch {
-            guard let fallback else { throw error }
-            matches = [fallback]
+            guard !matches.isEmpty || fallback != nil else { throw error }
         }
 
         if let fallback,
@@ -388,6 +466,34 @@ actor LyricsService {
         selectedMatchKeys[value.trackID] = value.matchKey
         persist()
         persistSelections()
+    }
+
+    private func attachedLyrics(_ value: AttachedLRC, for track: Track) -> TrackLyrics? {
+        let parsed = LRCParser.lines(from: value.contents)
+        guard !parsed.lines.isEmpty else { return nil }
+        return TrackLyrics(
+            trackID: track.id,
+            source: "Telegram · \(value.fileName)",
+            lines: parsed.lines,
+            isSynced: parsed.isSynced,
+            matchedTitle: value.fileName.deletingPathExtension,
+            matchedArtist: nil,
+            matchedAlbum: nil,
+            matchedDuration: nil
+        )
+    }
+
+    private func merged(_ preferred: [TrackLyrics], with fallback: [TrackLyrics]) -> [TrackLyrics] {
+        var seen: Set<String> = []
+        return (preferred + fallback)
+            .filter { seen.insert($0.matchKey).inserted }
+            .sorted { lhs, rhs in
+                if lhs.isSynced != rhs.isSynced { return lhs.isSynced }
+                let lhsAttached = lhs.source.hasPrefix("Telegram ·")
+                let rhsAttached = rhs.source.hasPrefix("Telegram ·")
+                if lhsAttached != rhsAttached { return lhsAttached }
+                return false
+            }
     }
 
     func setServerURL(_ serverURL: URL) {

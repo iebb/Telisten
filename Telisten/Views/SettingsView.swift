@@ -149,7 +149,7 @@ struct SettingsView: View {
                         Text("Search with \(config.displayBotName)")
                             .foregroundStyle(.primary)
                             .lineLimit(1)
-                        Text("Send \(config.searchPrefix)query\(config.searchSuffix) to bot")
+                        Text(config.commandPreview)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -234,7 +234,7 @@ private struct SearchBotEditorView: View {
 
                 Section("Preview") {
                     LabeledContent("Message") {
-                        Text(searchPrefix + "SEKAI NO OWARI" + searchSuffix)
+                        Text(searchPrefix + "<query>" + searchSuffix)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.trailing)
                             .textSelection(.enabled)

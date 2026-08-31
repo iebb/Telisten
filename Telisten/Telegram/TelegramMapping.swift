@@ -34,6 +34,10 @@ enum TelegramMapping {
         messages(from: result).compactMap(map(message:))
     }
 
+    static func lyricsAttachments(from result: TL.Messages.MessagesType) -> [TelegramLyricsAttachment] {
+        messages(from: result).compactMap(mapLyricsAttachment(message:))
+    }
+
     static func messages(from result: TL.Messages.MessagesType) -> [TL.MessageType] {
         switch result {
         case let .messages(value): value.messages
@@ -335,6 +339,36 @@ enum TelegramMapping {
             didUpvote: vote.chosen,
             artworkThumbSize: artwork.thumbSize,
             artworkPreview: artwork.preview
+        )
+    }
+
+    private static func mapLyricsAttachment(message item: TL.MessageType) -> TelegramLyricsAttachment? {
+        guard case let .message(message) = item,
+              let media = message.media,
+              case let .messageMediaDocument(documentMedia) = media,
+              let documentType = documentMedia.document,
+              case let .document(document) = documentType else { return nil }
+
+        let fileName = document.attributes.compactMap { attribute -> String? in
+            guard case let .documentAttributeFilename(value) = attribute else { return nil }
+            return value.fileName
+        }.first ?? "lyrics-\(document.id).lrc"
+        let isLRC = fileName.lowercased().hasSuffix(".lrc")
+            || document.mimeType.caseInsensitiveCompare("text/lrc") == .orderedSame
+            || document.mimeType.caseInsensitiveCompare("application/lrc") == .orderedSame
+        guard isLRC else { return nil }
+
+        return TelegramLyricsAttachment(
+            documentID: document.id,
+            accessHash: document.accessHash,
+            fileReference: document.fileReference,
+            dcID: document.dcId,
+            messageID: message.id,
+            chatID: key(for: message.peerId),
+            fileName: fileName,
+            mimeType: document.mimeType,
+            size: document.size,
+            date: Date(timeIntervalSince1970: TimeInterval(message.date))
         )
     }
 

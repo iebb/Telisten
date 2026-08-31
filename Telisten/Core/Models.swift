@@ -51,7 +51,7 @@ struct SearchBotConfig: Identifiable, Codable, Hashable, Sendable {
     }
 
     var commandPreview: String {
-        "Send \(searchPrefix)query\(searchSuffix) to bot"
+        "Send \(searchPrefix)<query>\(searchSuffix) to bot"
     }
 }
 
@@ -75,6 +75,26 @@ struct BotSearchMessage: Identifiable, Hashable, Sendable {
     var date: Date
     var buttonRows: [[BotSearchButton]]
     var track: Track?
+}
+
+struct TelegramLyricsAttachment: Identifiable, Hashable, Sendable {
+    var id: String { "\(dcID):\(documentID)" }
+    var documentID: Int64
+    var accessHash: Int64
+    var fileReference: Data
+    var dcID: Int32
+    var messageID: Int32
+    var chatID: String
+    var fileName: String
+    var mimeType: String
+    var size: Int64
+    var date: Date
+}
+
+struct AttachedLRC: Hashable, Sendable {
+    var id: String
+    var fileName: String
+    var contents: String
 }
 
 enum PeerKind: String, Codable, Sendable {
