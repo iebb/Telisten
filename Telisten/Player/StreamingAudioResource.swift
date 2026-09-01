@@ -5,12 +5,15 @@ import UniformTypeIdentifiers
 typealias AudioByteProvider = @Sendable (_ offset: Int64, _ length: Int32) async throws -> Data
 
 private actor StreamWindow {
-    private static let preferredSize = 512 * 1_024
+    private static let chunkSize: Int64 = 512 * 1_024
+    private static let prefetchChunkCount = 4
+    private static let maxConcurrentFetches = 4
 
     private let fileSize: Int64
     private let provider: AudioByteProvider
-    private var offset: Int64 = 0
-    private var data = Data()
+    private var chunks: [Int64: Data] = [:]
+    private var chunkOrder: [Int64] = []
+    private var requests: [Int64: Task<Data, Error>] = [:]
 
     init(fileSize: Int64, provider: @escaping AudioByteProvider) {
         self.fileSize = fileSize
@@ -23,20 +26,94 @@ private actor StreamWindow {
         }
 
         let length = Int(min(Int64(requestedLength), fileSize - requestedOffset))
-        let cachedEnd = offset + Int64(data.count)
-        if requestedOffset >= offset, requestedOffset + Int64(length) <= cachedEnd {
-            let start = Int(requestedOffset - offset)
-            return data.subdata(in: start..<(start + length))
+        let firstChunk = requestedOffset - (requestedOffset % Self.chunkSize)
+        let lastByte = requestedOffset + Int64(length) - 1
+        let lastChunk = lastByte - (lastByte % Self.chunkSize)
+        let requiredChunkCount = Int((lastChunk - firstChunk) / Self.chunkSize) + 1
+        let fetchCount = max(requiredChunkCount, Self.prefetchChunkCount)
+
+        var offsets: [Int64] = []
+        offsets.reserveCapacity(fetchCount)
+        for index in 0..<fetchCount {
+            let offset = firstChunk + Int64(index) * Self.chunkSize
+            guard offset < fileSize else { break }
+            offsets.append(offset)
         }
 
-        let fetchLength = Int32(min(
-            Int64(Int32.max),
-            min(fileSize - requestedOffset, Int64(max(length, Self.preferredSize)))
-        ))
-        let fresh = try await provider(requestedOffset, fetchLength)
-        offset = requestedOffset
-        data = fresh
-        return Data(fresh.prefix(length))
+        var fetched: [Int64: Data] = [:]
+        var index = 0
+        while index < offsets.count {
+            let end = min(index + Self.maxConcurrentFetches, offsets.count)
+            let batch = Array(offsets[index..<end])
+            try await withThrowingTaskGroup(of: (Int64, Data).self) { group in
+                for offset in batch {
+                    group.addTask {
+                        (offset, try await self.chunk(at: offset))
+                    }
+                }
+                for try await (offset, data) in group {
+                    fetched[offset] = data
+                }
+            }
+            index = end
+        }
+
+        var result = Data()
+        result.reserveCapacity(length)
+        var offset = firstChunk
+        var remaining = length
+        var skip = Int(requestedOffset - firstChunk)
+        while remaining > 0 {
+            guard let chunk = fetched[offset] ?? chunks[offset] else {
+                throw TransferError.incompleteData
+            }
+            guard skip < chunk.count else { throw TransferError.incompleteData }
+            let count = min(remaining, chunk.count - skip)
+            result.append(chunk.subdata(in: skip..<(skip + count)))
+            remaining -= count
+            offset += Self.chunkSize
+            skip = 0
+        }
+        return result
+    }
+
+    private func chunk(at offset: Int64) async throws -> Data {
+        if let data = chunks[offset] { return data }
+        if let request = requests[offset] {
+            return try await request.value
+        }
+
+        let provider = provider
+        let length = Int32(min(Self.chunkSize, fileSize - offset))
+        let request = Task<Data, Error> {
+            try await provider(offset, length)
+        }
+        requests[offset] = request
+
+        do {
+            let data = try await request.value
+            requests.removeValue(forKey: offset)
+            guard data.count == Int(length) else { throw TransferError.incompleteData }
+            chunks[offset] = data
+            chunkOrder.removeAll { $0 == offset }
+            chunkOrder.append(offset)
+            while chunkOrder.count > Self.prefetchChunkCount * 2 {
+                let evicted = chunkOrder.removeFirst()
+                chunks.removeValue(forKey: evicted)
+            }
+            return data
+        } catch {
+            requests.removeValue(forKey: offset)
+            throw error
+        }
+    }
+
+    private enum TransferError: LocalizedError {
+        case incompleteData
+
+        var errorDescription: String? {
+            "Telegram stopped sending this stream before the requested bytes arrived."
+        }
     }
 }
 

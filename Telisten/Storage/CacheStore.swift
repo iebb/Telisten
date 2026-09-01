@@ -32,6 +32,7 @@ private struct PartialDownloadState: Codable {
 
 actor ProgressiveAudioTransfer {
     private static let chunkSize: Int64 = 512 * 1_024
+    private static let maxConcurrentChunks = 4
 
     private let fileSize: Int64
     private let trackID: String
@@ -93,13 +94,44 @@ actor ProgressiveAudioTransfer {
     }
 
     func downloadAll(progress: @escaping @Sendable (Double) async -> Void) async throws {
-        var offset: Int64 = 0
-        while offset < fileSize {
-            try Task.checkCancellation()
-            let data = try await chunk(at: offset)
-            guard !data.isEmpty else { throw TransferError.incompleteData }
-            offset += Int64(data.count)
-            await progress(min(1, Double(offset) / Double(max(fileSize, 1))))
+        guard fileSize > 0 else {
+            await progress(1)
+            return
+        }
+
+        // Keep a small bounded window of requests in flight. Telegram file
+        // chunks are independent, and the actor still serializes cache writes,
+        // so this improves throughput without risking concurrent FileHandle
+        // access or an unbounded task queue.
+        var nextOffset: Int64 = 0
+        var completedBytes: Int64 = 0
+        var activeTasks = 0
+
+        try await withThrowingTaskGroup(of: Int64.self) { group in
+            func addNextChunk() {
+                guard nextOffset < fileSize else { return }
+                let offset = nextOffset
+                nextOffset += Self.chunkSize
+                activeTasks += 1
+                group.addTask {
+                    let data = try await self.chunk(at: offset)
+                    guard !data.isEmpty else { throw TransferError.incompleteData }
+                    return Int64(data.count)
+                }
+            }
+
+            while activeTasks < Self.maxConcurrentChunks, nextOffset < fileSize {
+                addNextChunk()
+            }
+
+            while activeTasks > 0 {
+                try Task.checkCancellation()
+                guard let bytes = try await group.next() else { break }
+                activeTasks -= 1
+                completedBytes += bytes
+                await progress(min(1, Double(completedBytes) / Double(fileSize)))
+                addNextChunk()
+            }
         }
         try handle?.synchronize()
     }

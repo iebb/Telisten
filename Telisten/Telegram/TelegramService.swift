@@ -9,17 +9,19 @@ private enum FileRequestPriority {
 }
 
 private actor FileRequestGate {
+    private static let maxConcurrentRequests = 4
+
     private struct Waiter {
         var priority: FileRequestPriority
         var continuation: CheckedContinuation<Void, Never>
     }
 
-    private var isBusy = false
+    private var activeRequests = 0
     private var waiters: [Waiter] = []
 
     func enter(priority: FileRequestPriority) async {
-        guard isBusy else {
-            isBusy = true
+        guard activeRequests >= Self.maxConcurrentRequests else {
+            activeRequests += 1
             return
         }
         await withCheckedContinuation { continuation in
@@ -28,11 +30,11 @@ private actor FileRequestGate {
     }
 
     func leave() {
-        if waiters.isEmpty {
-            isBusy = false
-        } else {
+        activeRequests = max(0, activeRequests - 1)
+        while activeRequests < Self.maxConcurrentRequests, !waiters.isEmpty {
             let nextIndex = waiters.firstIndex { $0.priority == .playback } ?? waiters.startIndex
             waiters.remove(at: nextIndex).continuation.resume()
+            activeRequests += 1
         }
     }
 }
