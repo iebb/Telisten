@@ -447,33 +447,63 @@ actor LyricsService {
     private var provider: any LyricsProviding
     private let cacheURL: URL
     private let selectionsURL: URL
+    private let matchesURL: URL
     private var cached: [String: TrackLyrics] = [:]
     private var fetchedMatches: [String: [TrackLyrics]] = [:]
     private var selectedMatchKeys: [String: String] = [:]
 
-    init(provider: any LyricsProviding = LRCLIBProvider()) {
+    init(provider: any LyricsProviding = LRCLIBProvider(), directory: URL? = nil) {
         self.provider = provider
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        let root = caches.appending(path: "Telisten", directoryHint: .isDirectory)
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let root = directory ?? support.appending(path: "Telisten/Lyrics", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         cacheURL = root.appending(path: "lyrics-index.json")
         selectionsURL = root.appending(path: "lyrics-selections.json")
+        matchesURL = root.appending(path: "lyrics-matches.json")
+        if directory == nil {
+            let legacy = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+                .appending(path: "Telisten", directoryHint: .isDirectory)
+            for destination in [cacheURL, selectionsURL] where !FileManager.default.fileExists(atPath: destination.path) {
+                try? FileManager.default.copyItem(
+                    at: legacy.appending(path: destination.lastPathComponent), to: destination
+                )
+            }
+        }
         if let data = try? Data(contentsOf: cacheURL),
            let values = try? JSONDecoder().decode([TrackLyrics].self, from: data) {
-            cached = Dictionary(uniqueKeysWithValues: values.map { ($0.trackID, $0) })
+            cached = Dictionary(values.filter { !$0.lines.isEmpty }.map { ($0.trackID, $0) }, uniquingKeysWith: { _, last in last })
         }
         if let data = try? Data(contentsOf: selectionsURL),
            let values = try? JSONDecoder().decode([String: String].self, from: data) {
             selectedMatchKeys = values
         }
+        if let data = try? Data(contentsOf: matchesURL),
+           let values = try? JSONDecoder().decode([String: [TrackLyrics]].self, from: data) {
+            fetchedMatches = values.mapValues { $0.filter { !$0.lines.isEmpty } }
+        }
+    }
+
+    // Positive matches are local library data, with no expiry or network refresh
+    // during playback. This lookup also keeps Telegram attachment scans off the hot path.
+    func cachedLyrics(for track: Track) -> LyricsResult? {
+        var matches = fetchedMatches[track.id] ?? []
+        if let saved = cached[track.id] {
+            if !matches.contains(where: { $0.matchKey == saved.matchKey }) { matches.insert(saved, at: 0) }
+            return LyricsResult(selected: saved, matches: matches)
+        }
+        return result(for: track.id, matches: matches)
     }
 
     func lyrics(for track: Track, attachedLRC: [AttachedLRC] = []) async throws -> LyricsResult? {
+        if attachedLRC.isEmpty, let saved = cachedLyrics(for: track) { return saved }
         let attachedMatches = attachedLRC.compactMap { attachedLyrics($0, for: track) }
-        if let fetched = fetchedMatches[track.id], !fetched.isEmpty {
-            let matches = merged(attachedMatches, with: fetched)
+        if let saved = cachedLyrics(for: track) {
+            let matches = merged(attachedMatches, with: saved.matches)
             fetchedMatches[track.id] = matches
-            return result(for: track.id, matches: matches)
+            guard let value = result(for: track.id, matches: matches) else { return saved }
+            cached[track.id] = value.selected
+            persist()
+            return value
         }
 
         let fallback = cached[track.id]
@@ -537,7 +567,6 @@ actor LyricsService {
 
     func setServerURL(_ serverURL: URL) {
         provider = LRCLIBProvider(serverURL: serverURL)
-        fetchedMatches.removeAll()
     }
 
     private func result(for trackID: String, matches: [TrackLyrics]) -> LyricsResult? {
@@ -552,6 +581,9 @@ actor LyricsService {
         let values = cached.values.sorted { $0.trackID < $1.trackID }
         guard let data = try? JSONEncoder().encode(values) else { return }
         try? data.write(to: cacheURL, options: .atomic)
+        if let matches = try? JSONEncoder().encode(fetchedMatches) {
+            try? matches.write(to: matchesURL, options: .atomic)
+        }
     }
 
     private func persistSelections() {

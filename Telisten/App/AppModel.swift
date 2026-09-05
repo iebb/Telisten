@@ -606,11 +606,9 @@ final class AppModel {
         remoteHasMoreTracks = true
         visibleTrackLimit = Int(Self.chatMusicPageSize)
 
-        if query.isEmpty {
-            tracks = Array(cachedTracks(in: chat).prefix(visibleTrackLimit))
-        } else {
-            tracks = []
-        }
+        let localTracks = cachedTracks(in: chat).filter { matchesSearch($0, query: query) }
+        tracks = Array(localTracks.prefix(visibleTrackLimit))
+        hasMoreTracks = localTracks.count > tracks.count
 
         isLoading = tracks.isEmpty
         defer { isLoading = false }
@@ -620,6 +618,8 @@ final class AppModel {
                 query: query,
                 limit: Self.chatMusicPageSize
             )
+            guard selectedChat?.id == chat.id,
+                  searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
             let values = deduplicated(rawValues)
             install(values)
             if query.isEmpty { mergePlaylistTracks(values, in: chat, appending: false) }
@@ -636,12 +636,20 @@ final class AppModel {
             if !values.isEmpty { rememberMusic(in: chat) }
             errorMessage = nil
         } catch {
-            if query.isEmpty {
-                let cached = cachedTracks(in: chat)
-                hasMoreTracks = cached.count > tracks.count
-            }
-            errorMessage = UserFacingError.message(for: error)
+            guard selectedChat?.id == chat.id,
+                  searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
+            remoteHasMoreTracks = false
+            hasMoreTracks = localTracks.count > tracks.count
+            errorMessage = tracks.isEmpty ? UserFacingError.message(for: error) : nil
         }
+    }
+
+    private func matchesSearch(_ track: Track, query: String) -> Bool {
+        guard !query.isEmpty else { return true }
+        let text = [track.displayTitle, track.artist, track.fileName].joined(separator: " ")
+            .replacingOccurrences(of: "_", with: " ")
+        return query.replacingOccurrences(of: "_", with: " ").split(whereSeparator: \.isWhitespace)
+            .allSatisfy { text.localizedStandardContains(String($0)) }
     }
 
     func search() async {
@@ -665,16 +673,23 @@ final class AppModel {
                 return
             }
             #endif
-            isLoading = true
+            tracks = deduplicated(knownTracks.values.filter { matchesSearch($0, query: query) })
+                .sorted { $0.date > $1.date }
+            hasMoreTracks = false
+            isLoading = tracks.isEmpty
             defer { isLoading = false }
             do {
                 let values = deduplicated(try await telegram.searchAllMusic(query: query))
+                guard isGlobalSearch,
+                      searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
                 install(values)
-                tracks = values
+                tracks = deduplicated(values + tracks)
                 hasMoreTracks = false
                 errorMessage = nil
             } catch {
-                errorMessage = UserFacingError.message(for: error)
+                guard isGlobalSearch,
+                      searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
+                errorMessage = tracks.isEmpty ? UserFacingError.message(for: error) : nil
             }
         } else {
             await loadTracks()
@@ -786,17 +801,17 @@ final class AppModel {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         isLoadingMore = true
         defer { isLoadingMore = false }
-        var revealedCachedPage = false
 
-        if query.isEmpty {
-            let cached = cachedTracks(in: chat)
+        if query.isEmpty || !remoteHasMoreTracks {
+            let cached = cachedTracks(in: chat).filter { matchesSearch($0, query: query) }
             if cached.count > tracks.count {
                 visibleTrackLimit = min(
                     cached.count,
                     max(visibleTrackLimit, tracks.count) + Int(Self.chatMusicPageSize)
                 )
                 tracks = Array(cached.prefix(visibleTrackLimit))
-                revealedCachedPage = true
+                hasMoreTracks = cached.count > tracks.count || remoteHasMoreTracks
+                return
             }
         }
 
@@ -809,6 +824,8 @@ final class AppModel {
                     offsetID: previousOffset,
                     limit: Self.chatMusicPageSize
                 )
+                guard selectedChat?.id == chat.id,
+                      searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
                 let deduplicatedValues = deduplicated(values)
                 install(deduplicatedValues)
                 if query.isEmpty { mergePlaylistTracks(deduplicatedValues, in: chat, appending: true) }
@@ -819,12 +836,10 @@ final class AppModel {
 
                 if query.isEmpty {
                     let cached = cachedTracks(in: chat)
-                    if !revealedCachedPage {
-                        visibleTrackLimit = min(
-                            cached.count,
-                            visibleTrackLimit + Int(Self.chatMusicPageSize)
-                        )
-                    }
+                    visibleTrackLimit = min(
+                        cached.count,
+                        visibleTrackLimit + Int(Self.chatMusicPageSize)
+                    )
                     tracks = Array(cached.prefix(visibleTrackLimit))
                     hasMoreTracks = cached.count > tracks.count || remoteHasMoreTracks
                 } else {
@@ -841,11 +856,16 @@ final class AppModel {
             }
             errorMessage = nil
         } catch {
+            guard selectedChat?.id == chat.id,
+                  searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
+            remoteHasMoreTracks = false
             if query.isEmpty {
                 let cached = cachedTracks(in: chat)
-                hasMoreTracks = cached.count > tracks.count || remoteHasMoreTracks
+                hasMoreTracks = cached.count > tracks.count
+            } else {
+                hasMoreTracks = false
             }
-            errorMessage = UserFacingError.message(for: error)
+            errorMessage = tracks.isEmpty ? UserFacingError.message(for: error) : nil
         }
     }
 
@@ -1247,6 +1267,13 @@ final class AppModel {
         }
         #endif
         if case let .loaded(value) = lyricsState, value.trackID == track.id { return }
+        if let saved = await lyrics.cachedLyrics(for: track) {
+            guard player.track?.id == track.id else { return }
+            lyricsCandidates = saved.matches
+            lyricsState = .loaded(saved.selected)
+            return
+        }
+        guard player.track?.id == track.id else { return }
         lyricsState = .loading
         do {
             let sourceChat = allChats.first(where: { $0.id == track.chatID })
