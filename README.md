@@ -1,6 +1,10 @@
 # Telisten
 
-Telisten is a compact, native Telegram music player for iPhone, iPad, and Mac. It signs in as the user over MTProto, finds audio in every accessible cloud chat, and keeps downloaded tracks available offline. It does not use TDLib, a bot token, a proxy service, or a custom backend.
+Telisten is a native Telegram music player for iPhone, iPad, Mac, and Android. It signs in as the user, finds audio in accessible cloud chats, and keeps downloaded tracks available offline. Both platform implementations live in this repository; there is no Telisten backend or bot token.
+
+- **iOS and macOS:** SwiftUI app in `Telisten/`, with `Telisten.xcodeproj` at the repository root. Uses Swift MTProto libraries, not TDLib.
+- **Android:** Kotlin/Compose app in [`android/`](android/README.md), with its own Gradle project. The Android implementation uses TDLib and Media3.
+- **CI:** GitHub Actions builds both implementations on `master`; Xcode Cloud handles Apple distribution. See [credential handling and publication checks](SECURITY.md).
 
 ## Features
 
@@ -9,7 +13,7 @@ Telisten is a compact, native Telegram music player for iPhone, iPad, and Mac. I
 - Queue playback in shuffle, order, reverse-order, or repeat-one mode; seek, previous/next, favorites, and a full now-playing view
 - Synchronized or plain lyrics from LRCLIB or a configured LRCLIB-compatible server, cached locally with source attribution
 - Telegram-backed 👍 votes, including shared counts and optimistic UI updates
-- “Save to playlist” using private Telegram channels collected in a `_Playlist` folder
+- “Save to playlist” using private Telegram channels collected in a configurable folder (default `_Playlist`)
 - Lock-screen/Control Center media controls and background audio on iOS
 - Seekable MTProto streaming for quick playback, plus explicit downloads with progress and a bounded 2 GB least-recently-used cache
 - Offline Downloads and Favorites libraries
@@ -18,7 +22,7 @@ Telisten is a compact, native Telegram music player for iPhone, iPad, and Mac. I
 
 “Any chat” means any Telegram cloud chat the signed-in account can access. Telegram secret chats are device-specific, end-to-end encrypted sessions and are not exposed to a newly authorized API client.
 
-## Run it
+## Run the Apple app
 
 Requirements:
 
@@ -44,6 +48,12 @@ Open `Telisten.xcodeproj`, select either `Telisten-iOS` or `Telisten-macOS`, and
 The repository includes `ci_scripts/ci_post_clone.sh` for Xcode Cloud. Configure one workflow from pushes to `master` with two archive actions: `Telisten-iOS` for iOS and `Telisten-macOS` for macOS. Distribute successful archives only to the admins-only internal TestFlight group. Add `TELEGRAM_API_ID` plus `TELEGRAM_API_HASH` as secret environment variables; the hook generates the ignored `.local/Telegram.xcconfig` before Xcode builds.
 
 The App Store copy, review notes, submission checklist, and verified screenshot output folders live in `AppStore`.
+
+### GitHub Actions
+
+`Apple builds` verifies iOS Simulator and macOS builds plus the offline-library tests. `Android APKs` builds, tests, lints, and packages Android APKs. `Secret scan` checks the full reachable Git history and current source using checksum-pinned Gitleaks. Actions are pinned to commit hashes and use read-only repository permissions.
+
+Configure repository Actions secrets `TELEGRAM_API_ID` and `TELEGRAM_API_HASH`; both platform workflows consume them for trusted builds only. Pull requests build without application credentials or signing keys. Android release-signing secret names and artifact details are documented in [`android/README.md`](android/README.md). Neither workflow publishes to an app store. Xcode Cloud has a separate secret store and still needs its own secret environment variables.
 
 To inspect the complete interface without Telegram credentials, add the `--demo` launch argument to a Debug scheme. The fixture never writes to Telegram; it provides sample chats, votes, a playlist, and a current track so the LRCLIB and playlist interfaces can be exercised in Simulator.
 

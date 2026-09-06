@@ -1,0 +1,11 @@
+title = "Telisten source secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Only the documented, non-functional example Telegram hash"
+condition = "AND"
+paths = ['''(^|/)\.env\.example$''']
+regexTarget = "secret"
+regexes = ['''^0123456789abcdef0123456789abcdef$''']

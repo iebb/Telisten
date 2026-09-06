@@ -1,0 +1,26 @@
+Telisten is a native music player for audio you already have access to through your Telegram account. Sign in to your existing account, find your music, and keep listening with a compact Android interface.
+
+YOUR MUSIC, WITH USEFUL CONTROLS
+• Search music in your accessible Telegram chats and channels
+• Play while audio is loading, then seek, skip, shuffle, or repeat
+• Keep listening in the background with Android media controls
+• Save favorites and manage the playback queue
+
+PLAYLISTS AND OFFLINE LISTENING
+• Create and manage private Telegram-backed playlists
+• Download music for offline playback
+• Choose a storage limit and manage downloaded tracks
+• Switch between your Telegram accounts
+
+LYRICS AND SHARED LISTENING
+• Follow synchronized lyrics matched through LRCLIB or your chosen compatible server
+• Import your own LRC lyrics files
+• React to tracks or reply in their Telegram comment threads where available
+• Host a Listen Together session in a Telegram group or channel you manage, or join an existing session
+
+DIRECT CONNECTIONS
+Telisten connects directly to Telegram using TDLib. There is no Kitta-operated media backend, advertising SDK, or analytics SDK. Lyrics matching sends the song title, artist and duration to the selected lyrics service. Optional music-search bots are configured by you, and use your Telegram account.
+
+An existing Telegram account is required for cloud features. Explore demo provides a labeled preview of the interface without sign-in. Offline playback requires previously downloaded music. Available music, lyrics, comments and shared sessions depend on your account and the source services. Only use and share music you have permission to access and share.
+
+Telisten is an independent app and is not affiliated with or endorsed by Telegram or LRCLIB.

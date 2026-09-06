@@ -1,0 +1,54 @@
+name: Apple builds
+
+on:
+  push:
+    branches: [master]
+    paths: ['Telisten/**', 'Telisten.xcodeproj/**', 'Generated/**', 'Config/**', 'Tests/**', 'Scripts/**', 'Appicon.icon/**', 'project.yml', '.env.example', '.github/workflows/apple-builds.yml']
+  pull_request:
+    paths: ['Telisten/**', 'Telisten.xcodeproj/**', 'Generated/**', 'Config/**', 'Tests/**', 'Scripts/**', 'Appicon.icon/**', 'project.yml', '.env.example', '.github/workflows/apple-builds.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apple-builds-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Configure Telegram for trusted master builds only
+        env:
+          TELEGRAM_API_ID: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.TELEGRAM_API_ID || '' }}
+          TELEGRAM_API_HASH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && secrets.TELEGRAM_API_HASH || '' }}
+        run: |
+          if [[ -n "$TELEGRAM_API_ID" && -n "$TELEGRAM_API_HASH" ]]; then
+            ./Scripts/generate-local-config.sh
+          fi
+      - name: Test local playlists and offline lyrics
+        run: |
+          bash Scripts/test-playlist-mirror.sh
+          bash Scripts/test-offline-lyrics.sh
+      - name: Build iOS Simulator
+        run: >-
+          xcodebuild -quiet -project Telisten.xcodeproj -scheme Telisten-iOS
+          -configuration Debug -destination 'generic/platform=iOS Simulator'
+          -derivedDataPath "$RUNNER_TEMP/TelistenBuild" -skipMacroValidation
+          -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO build
+      - name: Build macOS
+        run: >-
+          xcodebuild -quiet -project Telisten.xcodeproj -scheme Telisten-macOS
+          -configuration Debug -destination 'platform=macOS'
+          -derivedDataPath "$RUNNER_TEMP/TelistenBuild" -skipMacroValidation
+          -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO build
+      - name: Remove generated credential file
+        if: always()
+        run: rm -f .local/Telegram.xcconfig
