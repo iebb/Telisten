@@ -3,6 +3,13 @@ import Foundation
 @main
 enum PlaylistMirrorTests {
     static func main() throws {
+        precondition(PlaylistFolderConfiguration.defaultName == "_Playlist")
+        precondition(PlaylistFolderConfiguration.normalizedName("  我的歌单  ") == "我的歌单")
+        precondition(PlaylistFolderConfiguration.normalizedName("Music 🎵") == "Music 🎵")
+        precondition(PlaylistFolderConfiguration.normalizedName("123456789012") != nil)
+        for invalid in ["", "   ", "1234567890123", "my\nplaylists", "my\tplaylists"] {
+            precondition(PlaylistFolderConfiguration.normalizedName(invalid) == nil)
+        }
         let local = MusicChat(id: "c:1", peerID: 1, accessHash: 2, kind: .channel, title: "New playlist", username: nil)
         let remote = MusicChat(id: "c:2", peerID: 2, accessHash: 3, kind: .channel, title: "Existing playlist", username: nil)
         let mirror = LocalPlaylistMirror(

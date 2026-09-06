@@ -7,6 +7,8 @@ struct SettingsView: View {
     @State private var lyricsServerError: String?
     @State private var isApplyingLyricsServer = false
     @State private var editingSearchBot: SearchBotConfig?
+    @State private var playlistFolderDraft = ""
+    @State private var playlistFolderError: String?
 
     var body: some View {
         NavigationStack {
@@ -27,6 +29,28 @@ struct SettingsView: View {
                     Text("Partial streams resume from disk. Oldest cached music is removed when this limit is reached.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                Section {
+                    TextField("Playlist folder name", text: $playlistFolderDraft)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                        .onSubmit { applyPlaylistFolder() }
+                    Button("Apply folder") { applyPlaylistFolder() }
+                        .disabled(model.isSavingToPlaylist)
+                    Button("Use _Playlist default") {
+                        playlistFolderDraft = PlaylistFolderConfiguration.defaultName
+                        applyPlaylistFolder()
+                    }
+                    .disabled(model.isSavingToPlaylist)
+                    if let playlistFolderError {
+                        Text(playlistFolderError).font(.caption).foregroundStyle(.red)
+                    }
+                } header: {
+                    Text("Playlist folder")
+                } footer: {
+                    Text("Use a Telegram folder with this exact name for this account. New playlists go here. Existing folders are not renamed. 1–12 characters.")
                 }
                 Section {
                     TextField("https://lrclib.net", text: $lyricsServerDraft)
@@ -106,6 +130,7 @@ struct SettingsView: View {
         #endif
         .task {
             lyricsServerDraft = model.lyricsServerURL.absoluteString
+            playlistFolderDraft = model.playlistFolderName
             await model.refreshCacheUsage()
         }
         .sheet(item: $editingSearchBot) { config in
@@ -118,6 +143,15 @@ struct SettingsView: View {
             get: { model.cacheLimitBytes },
             set: { model.setCacheLimit($0) }
         )
+    }
+
+    private func applyPlaylistFolder() {
+        guard model.setPlaylistFolderName(playlistFolderDraft) else {
+            playlistFolderError = "Enter a folder name of 1–12 characters, without line breaks."
+            return
+        }
+        playlistFolderDraft = model.playlistFolderName
+        playlistFolderError = nil
     }
 
     private func applyLyricsServer() {

@@ -135,7 +135,7 @@ actor TelegramService {
             case .incompleteDownload: "The file download ended before all bytes arrived."
             case .expiredFileReference: "Telegram expired this track reference. Telisten could not refresh it automatically."
             case .playlistCreationFailed: "Telegram created no usable playlist chat."
-            case .playlistFolderFailed: "Telegram did not accept the _Playlist folder update."
+            case .playlistFolderFailed: "Telegram did not accept the playlist folder update."
             case .playlistDeletionUnavailable: "Only Telegram channel playlists can be deleted."
             case .playlistTrackDeletionUnavailable: "This playlist entry cannot be deleted."
             case .playlistRenameUnavailable: "This playlist cannot be renamed."
@@ -1121,10 +1121,10 @@ actor TelegramService {
         )
     }
 
-    func loadPlaylistChats(from chats: [MusicChat]) async throws -> [MusicChat] {
+    func loadPlaylistChats(from chats: [MusicChat], folderName: String) async throws -> [MusicChat] {
         let connection = try await authorizedConnection(dcID: primaryDC, media: false)
         let filters = try await connection.client.messages.getDialogFilters()
-        guard let folder = playlistFolder(in: filters.filters) else { return [] }
+        guard let folder = playlistFolder(in: filters.filters, named: folderName) else { return [] }
         let ids = Set(folderPeers(folder).compactMap(TelegramMapping.chatID(for:)))
         return chats.filter { ids.contains($0.id) }.sorted {
             $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
@@ -1145,9 +1145,9 @@ actor TelegramService {
         return playlist
     }
 
-    func addToPlaylistFolder(_ playlist: MusicChat) async throws {
+    func addToPlaylistFolder(_ playlist: MusicChat, folderName: String) async throws {
         let connection = try await authorizedConnection(dcID: primaryDC, media: false)
-        try await addToPlaylistFolder(playlist, using: connection)
+        try await addToPlaylistFolder(playlist, named: folderName, using: connection)
     }
 
     func deletePlaylist(_ playlist: MusicChat) async throws {
@@ -2325,13 +2325,14 @@ actor TelegramService {
         }
     }
 
-    private func addToPlaylistFolder(_ playlist: MusicChat, using connection: Connection) async throws {
+    private func addToPlaylistFolder(_ playlist: MusicChat, named name: String, using connection: Connection) async throws {
+        guard let name = PlaylistFolderConfiguration.normalizedName(name) else { throw ServiceError.playlistFolderFailed }
         let values = try await connection.client.messages.getDialogFilters().filters
         let peer = TelegramMapping.inputPeer(for: playlist)
         let filter: TL.DialogFilterType
         let filterID: Int32
 
-        if let existing = playlistFolder(in: values) {
+        if let existing = playlistFolder(in: values, named: name) {
             filter = appending(peer, to: existing)
             filterID = folderID(existing)
         } else {
@@ -2342,7 +2343,7 @@ actor TelegramService {
             filter = .dialogFilter(
                 TL.DialogFilter(
                     id: candidate,
-                    title: TL.TextWithEntities(text: "_Playlist", entities: []),
+                    title: TL.TextWithEntities(text: name, entities: []),
                     emoticon: "🎵",
                     pinnedPeers: [],
                     includePeers: [peer],
@@ -2355,11 +2356,11 @@ actor TelegramService {
         }
     }
 
-    private func playlistFolder(in filters: [TL.DialogFilterType]) -> TL.DialogFilterType? {
+    private func playlistFolder(in filters: [TL.DialogFilterType], named name: String) -> TL.DialogFilterType? {
         filters.first { value in
             switch value {
-            case let .dialogFilter(filter): filter.title.text == "_Playlist"
-            case let .dialogFilterChatlist(filter): filter.title.text == "_Playlist"
+            case let .dialogFilter(filter): filter.title.text == name
+            case let .dialogFilterChatlist(filter): filter.title.text == name
             case .dialogFilterDefault: false
             }
         }

@@ -44,6 +44,7 @@ final class AppModel {
     var hasMoreTracks = false
     var errorMessage: String?
     var playlists: [MusicChat] = []
+    private(set) var playlistFolderName = PlaylistFolderConfiguration.defaultName
     var playlistTrack: Track?
     var showPlaylistSheet = false
     var isSavingToPlaylist = false
@@ -1100,6 +1101,7 @@ final class AppModel {
 
     func createPlaylist(named name: String, saving track: Track) async -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let folderName = playlistFolderName
         guard !trimmed.isEmpty, !isSavingToPlaylist else { return false }
         isSavingToPlaylist = true
         defer { isSavingToPlaylist = false }
@@ -1142,7 +1144,7 @@ final class AppModel {
             }
             if unfiledPlaylistIDs.contains(playlist.id) {
                 do {
-                    try await telegram.addToPlaylistFolder(playlist)
+                    try await telegram.addToPlaylistFolder(playlist, folderName: folderName)
                     unfiledPlaylistIDs.remove(playlist.id)
                     persistLibrary()
                 } catch {
@@ -2478,8 +2480,21 @@ final class AppModel {
         return result
     }
 
+    func setPlaylistFolderName(_ rawName: String) -> Bool {
+        guard !isSavingToPlaylist, let name = PlaylistFolderConfiguration.normalizedName(rawName) else { return false }
+        guard name != playlistFolderName else { return true }
+        playlistFolderName = name
+        UserDefaults.standard.set(name, forKey: accountStorageKey("playlist.folderName"))
+        let accountID = activeAccountID
+        Task { await refreshPlaylists(expectedAccountID: accountID) }
+        return true
+    }
+
     private func refreshPlaylists(expectedAccountID: String? = nil) async {
-        if let values = try? await telegram.loadPlaylistChats(from: allChats) {
+        let name = playlistFolderName
+        let accountID = activeAccountID
+        if let values = try? await telegram.loadPlaylistChats(from: allChats, folderName: name) {
+            guard playlistFolderName == name, activeAccountID == accountID else { return }
             if let expectedAccountID, activeAccountID != expectedAccountID { return }
             let mirror = LocalPlaylistMirror(playlists: playlists, unfiledPlaylistIDs: unfiledPlaylistIDs)
             playlists = mirror.mergingFolderPlaylists(values)
@@ -3014,6 +3029,8 @@ final class AppModel {
 
     private func restoreLibrary() {
         let defaults = UserDefaults.standard
+        playlistFolderName = defaults.string(forKey: accountStorageKey("playlist.folderName"))
+            .flatMap(PlaylistFolderConfiguration.normalizedName) ?? PlaylistFolderConfiguration.defaultName
         favorites = []
         knownTracks = [:]
         queue = []

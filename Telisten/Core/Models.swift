@@ -1,5 +1,16 @@
 import Foundation
 
+enum PlaylistFolderConfiguration {
+    static let defaultName = "_Playlist"
+
+    static func normalizedName(_ raw: String) -> String? {
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty, value.unicodeScalars.count <= 12,
+              value.rangeOfCharacter(from: .controlCharacters) == nil else { return nil }
+        return value
+    }
+}
+
 struct TelegramCredentials: Codable, Equatable, Sendable {
     var apiID: Int32
     var apiHash: String
