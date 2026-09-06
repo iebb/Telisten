@@ -116,6 +116,8 @@ final class AppModel {
     @ObservationIgnored private var musicChatIndex: [String: MusicChatIndexEntry] = [:]
     @ObservationIgnored private var playlistOrders: [String: [String]] = [:]
     @ObservationIgnored private var playlistTrackMirrors: [String: [Track]] = [:]
+    @ObservationIgnored private var unfiledPlaylistIDs: Set<String> = []
+    @ObservationIgnored private var pendingPlaylistCreationIDs: Set<String> = []
     @ObservationIgnored private var sharedDownloadedTracks: [String: Track] = [:]
     @ObservationIgnored private var trackSearchOffsetID: Int32 = 0
     @ObservationIgnored private var remoteHasMoreTracks = false
@@ -1074,6 +1076,7 @@ final class AppModel {
     }
 
     func save(_ track: Track, to playlist: MusicChat) async -> Bool {
+        guard !isSavingToPlaylist else { return false }
         isSavingToPlaylist = true
         defer { isSavingToPlaylist = false }
         #if DEBUG
@@ -1085,7 +1088,9 @@ final class AppModel {
         }
         do {
             try await telegram.save(track, from: source, to: playlist)
+            pendingPlaylistCreationIDs.remove(playlist.id)
             mirrorSavedTrack(track, in: playlist)
+            errorMessage = nil
             return true
         } catch {
             errorMessage = UserFacingError.message(for: error)
@@ -1095,7 +1100,7 @@ final class AppModel {
 
     func createPlaylist(named name: String, saving track: Track) async -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
+        guard !trimmed.isEmpty, !isSavingToPlaylist else { return false }
         isSavingToPlaylist = true
         defer { isSavingToPlaylist = false }
         #if DEBUG
@@ -1120,12 +1125,36 @@ final class AppModel {
             return false
         }
         do {
-            let playlist = try await telegram.createPlaylist(named: trimmed)
-            playlists.append(playlist)
-            allChats.append(playlist)
+            let playlist: MusicChat
+            if let pending = playlists.first(where: {
+                pendingPlaylistCreationIDs.contains($0.id) && $0.title == trimmed
+            }) {
+                playlist = pending
+            } else {
+                playlist = try await telegram.createPlaylist(named: trimmed)
+                playlists.append(playlist)
+                allChats.append(playlist)
+                unfiledPlaylistIDs.insert(playlist.id)
+                pendingPlaylistCreationIDs.insert(playlist.id)
+                // The channel exists now. Persist it before optional folder work
+                // or forwarding can fail, so retry never recreates this channel.
+                persistLibrary()
+            }
+            if unfiledPlaylistIDs.contains(playlist.id) {
+                do {
+                    try await telegram.addToPlaylistFolder(playlist)
+                    unfiledPlaylistIDs.remove(playlist.id)
+                    persistLibrary()
+                } catch {
+                    // Folder capacity and connectivity do not invalidate a created
+                    // channel. Keep its local playlist membership and continue.
+                }
+            }
             try await telegram.save(track, from: source, to: playlist)
+            pendingPlaylistCreationIDs.remove(playlist.id)
             mirrorSavedTrack(track, in: playlist)
             rememberMusic(in: playlist)
+            errorMessage = nil
             return true
         } catch {
             errorMessage = UserFacingError.message(for: error)
@@ -1162,6 +1191,8 @@ final class AppModel {
         chatAvatarData.removeValue(forKey: playlist.id)
         playlistOrders.removeValue(forKey: playlist.id)
         playlistTrackMirrors.removeValue(forKey: playlist.id)
+        unfiledPlaylistIDs.remove(playlist.id)
+        pendingPlaylistCreationIDs.remove(playlist.id)
         if selectedChat?.id == playlist.id {
             selected = nil
             selectedChat = nil
@@ -2450,7 +2481,9 @@ final class AppModel {
     private func refreshPlaylists(expectedAccountID: String? = nil) async {
         if let values = try? await telegram.loadPlaylistChats(from: allChats) {
             if let expectedAccountID, activeAccountID != expectedAccountID { return }
-            playlists = values
+            let mirror = LocalPlaylistMirror(playlists: playlists, unfiledPlaylistIDs: unfiledPlaylistIDs)
+            playlists = mirror.mergingFolderPlaylists(values)
+            unfiledPlaylistIDs.subtract(values.map(\.id))
             allChats = mergedChats(allChats, with: values, replacingExisting: true)
             persistLibrary()
         }
@@ -3024,6 +3057,8 @@ final class AppModel {
 
         let mirror = localLibrary.playlistMirror(for: localMirrorAccountID)
         playlists = mirror.playlists
+        unfiledPlaylistIDs = mirror.unfiledPlaylistIDs ?? []
+        pendingPlaylistCreationIDs = mirror.pendingCreationIDs ?? []
         playlistTrackMirrors = mirror.tracksByPlaylist
         for (playlistID, order) in mirror.trackOrders where playlistOrders[playlistID] == nil {
             playlistOrders[playlistID] = order
@@ -3050,7 +3085,9 @@ final class AppModel {
             LocalPlaylistMirror(
                 playlists: playlists,
                 tracksByPlaylist: playlistTrackMirrors,
-                trackOrders: playlistOrders
+                trackOrders: playlistOrders,
+                unfiledPlaylistIDs: unfiledPlaylistIDs,
+                pendingCreationIDs: pendingPlaylistCreationIDs
             ),
             for: localMirrorAccountID
         )

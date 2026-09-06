@@ -1142,8 +1142,12 @@ actor TelegramService {
         guard let playlist = TelegramMapping.chats(from: updates).first(where: { $0.kind == .channel }) else {
             throw ServiceError.playlistCreationFailed
         }
-        try await addToPlaylistFolder(playlist, using: connection)
         return playlist
+    }
+
+    func addToPlaylistFolder(_ playlist: MusicChat) async throws {
+        let connection = try await authorizedConnection(dcID: primaryDC, media: false)
+        try await addToPlaylistFolder(playlist, using: connection)
     }
 
     func deletePlaylist(_ playlist: MusicChat) async throws {

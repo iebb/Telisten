@@ -92,7 +92,7 @@ struct PlaylistSheet: View {
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.secondary)
                 .tracking(0.8)
-            Text("Creates a private channel and places it in Telegram's _Playlist folder.")
+            Text("Creates a private Telegram channel. If the _Playlist folder is full, the playlist stays available in Telisten.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack(spacing: 10) {

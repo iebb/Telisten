@@ -4,6 +4,16 @@ struct LocalPlaylistMirror: Codable, Equatable, Sendable {
     var playlists: [MusicChat] = []
     var tracksByPlaylist: [String: [Track]] = [:]
     var trackOrders: [String: [String]] = [:]
+    // Optional so mirrors saved by earlier builds still decode.
+    var unfiledPlaylistIDs: Set<String>? = nil
+    var pendingCreationIDs: Set<String>? = nil
+
+    func mergingFolderPlaylists(_ remote: [MusicChat]) -> [MusicChat] {
+        let retained = playlists.filter { unfiledPlaylistIDs?.contains($0.id) == true }
+        var byID = Dictionary(retained.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+        for playlist in remote { byID[playlist.id] = playlist }
+        return byID.values.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
 }
 
 final class LocalLibraryStore {
