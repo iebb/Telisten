@@ -24,13 +24,13 @@ The Play publishing service account is not needed by build CI and must not be up
 
 Pull requests receive none of these secrets, including same-repository PRs. Do not change builds to `pull_request_target` or run unreviewed code with signing credentials. Restrict who can push `master` and `android-v*` tags. Review workflow, build-script, and dependency changes before merging. Build actions use read-only permissions and do not persist checkout credentials; Android dependencies and the Gradle wrapper are checksum-pinned. Do not cache generated credential configuration or upload complete build directories.
 
-## Before making the repository public
+## Publication and ongoing checks
 
 1. Run `gitleaks git --redact=100 --log-opts='--all' .` with Gitleaks 8.30.1 or newer. The only configured exception is the exact dummy hash in `.env.example`.
 2. Scan a clean checkout with `gitleaks dir --redact=100 .`; do not scan ignored private local configuration into a public report. The `Secret scan` workflow performs both checks on each push/PR.
 3. Inspect tracked files, historical files, screenshots, releases, issues, and existing Actions logs/artifacts for private information. Secret scanning is not a guarantee and does not read screenshot text.
 4. If any real credential was committed, revoke/rotate it first and coordinate history cleanup before publication. Removing it from the latest version does not remove it from history.
 5. Enable GitHub secret scanning/push protection where available; require the CI checks and review on `master`. Review outside-collaborator and Actions permissions.
-6. Choose a source license before describing the repository as open source. Public visibility alone does not grant reuse rights; no project-wide source license is selected yet. Review bundled media and dependency redistribution notices separately.
+6. Telisten is licensed under [BSD 3-Clause](LICENSE). Preserve third-party licenses and notices, and review bundled media separately.
 
-Publication is a separate owner action; CI never changes repository visibility. Report security issues privately to the maintainer, not in a public issue containing credentials or session data.
+CI never changes repository visibility. Report security issues privately through [GitHub security advisories](https://github.com/iebb/Telisten/security/advisories/new), not in a public issue containing credentials or session data.
