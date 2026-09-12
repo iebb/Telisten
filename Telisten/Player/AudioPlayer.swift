@@ -34,7 +34,7 @@ final class AudioPlayer {
     var onPrevious: (@MainActor @Sendable () -> Void)?
     var onError: (@MainActor @Sendable (String) -> Void)?
 
-    private let player = AVPlayer()
+    private let player: AVPlayer
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
     private var statusObservation: NSKeyValueObservation?
@@ -44,19 +44,20 @@ final class AudioPlayer {
     private var wantsPlayback = false
     private var volumeBeforeMute: Float = 1
 
-    init() {
+    init(player: AVPlayer = AVPlayer(), configureSystemPlayback: Bool = true) {
+        self.player = player
         player.automaticallyWaitsToMinimizeStalling = false
-        configureAudioSession()
+        if configureSystemPlayback { configureAudioSession() }
         installTimeObserver()
         installTimeControlObserver()
-        installRemoteCommands()
+        if configureSystemPlayback { installRemoteCommands() }
     }
 
     func beginLoading(_ track: Track) {
         activateAudioSession()
         clearCurrentItem()
         self.track = track
-        duration = track.duration
+        duration = track.duration.isFinite ? max(0, track.duration) : 0
         currentTime = 0
         wantsPlayback = true
         isPlaying = false
@@ -103,7 +104,7 @@ final class AudioPlayer {
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         statusObservation = nil
         self.track = track
-        duration = track.duration
+        duration = track.duration.isFinite ? max(0, track.duration) : 0
         currentTime = 0
         wantsPlayback = autoplay
         isLoading = autoplay
@@ -136,12 +137,14 @@ final class AudioPlayer {
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
             queue: .main
-        ) { [weak self] _ in
+        ) { [weak self, weak item] _ in
             Task { @MainActor in
-                self?.wantsPlayback = false
-                self?.isPlaying = false
-                self?.isLoading = false
-                self?.onFinished?()
+                guard let self, let item, self.player.currentItem === item else { return }
+                self.wantsPlayback = false
+                self.isPlaying = false
+                self.isLoading = false
+                self.updateNowPlaying()
+                self.onFinished?()
             }
         }
         updateNowPlaying()
@@ -186,6 +189,7 @@ final class AudioPlayer {
     }
 
     func seek(to seconds: TimeInterval) {
+        guard seconds.isFinite else { return }
         let target = max(0, min(seconds, duration))
         player.seek(to: CMTime(seconds: target, preferredTimescale: 600))
         currentTime = target
@@ -199,7 +203,7 @@ final class AudioPlayer {
     #if DEBUG
     func preview(_ track: Track, at seconds: TimeInterval = 0) {
         self.track = track
-        duration = track.duration
+        duration = track.duration.isFinite ? max(0, track.duration) : 0
         currentTime = seconds
         isPlaying = false
         isLoading = false
@@ -215,9 +219,12 @@ final class AudioPlayer {
         ) { [weak self] time in
             Task { @MainActor in
                 guard let self else { return }
-                self.currentTime = max(0, time.seconds.isFinite ? time.seconds : 0)
+                // Read the current item when the actor task runs; the callback
+                // may have been queued immediately before a track switch.
+                let seconds = self.player.currentTime().seconds
+                self.currentTime = max(0, seconds.isFinite ? seconds : 0)
                 if let itemDuration = self.player.currentItem?.duration.seconds, itemDuration.isFinite {
-                    self.duration = itemDuration
+                    self.duration = max(0, itemDuration)
                 }
                 self.updateNowPlaying()
             }

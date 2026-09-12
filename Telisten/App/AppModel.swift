@@ -42,6 +42,7 @@ final class AppModel {
     var isLoading = false
     var isLoadingMore = false
     var hasMoreTracks = false
+    var loadMoreError: String?
     var errorMessage: String?
     var playlists: [MusicChat] = []
     private(set) var playlistFolderName = PlaylistFolderConfiguration.defaultName
@@ -127,6 +128,7 @@ final class AppModel {
     @ObservationIgnored private var commentsTrackID: String?
     @ObservationIgnored private var loginPhone = ""
     @ObservationIgnored private var previousAccountID: String?
+    @ObservationIgnored private var playbackTask: Task<Void, Never>?
     @ObservationIgnored private var qrCodeLoginTask: Task<Void, Never>?
     @ObservationIgnored private var qrCodeLoginOperationID: UUID?
     @ObservationIgnored private var passwordRequestedByQRCode = false
@@ -552,6 +554,7 @@ final class AppModel {
         selected = selection
         searchText = ""
         hasMoreTracks = false
+        loadMoreError = nil
         switch selection {
         case .globalSearch:
             isGlobalSearch = true
@@ -605,6 +608,7 @@ final class AppModel {
     func loadTracks() async {
         guard let chat = selectedChat else { return }
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        loadMoreError = nil
         trackSearchOffsetID = 0
         remoteHasMoreTracks = true
         visibleTrackLimit = Int(Self.chatMusicPageSize)
@@ -803,6 +807,7 @@ final class AppModel {
               let chat = selectedChat else { return }
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         isLoadingMore = true
+        loadMoreError = nil
         defer { isLoadingMore = false }
 
         if query.isEmpty || !remoteHasMoreTracks {
@@ -861,25 +866,21 @@ final class AppModel {
         } catch {
             guard selectedChat?.id == chat.id,
                   searchText.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
-            remoteHasMoreTracks = false
-            if query.isEmpty {
-                let cached = cachedTracks(in: chat)
-                hasMoreTracks = cached.count > tracks.count
-            } else {
-                hasMoreTracks = false
-            }
-            errorMessage = tracks.isEmpty ? UserFacingError.message(for: error) : nil
+            // Preserve the cursor so a temporary connection failure cannot
+            // silently turn a partial channel into a completed music library.
+            hasMoreTracks = true
+            loadMoreError = UserFacingError.message(for: error)
         }
     }
 
     func play(_ track: Track, from list: [Track]? = nil) {
         let source = list ?? tracks
         queue = source
-        currentQueueIndex = source.firstIndex(of: track)
+        currentQueueIndex = source.firstIndex(where: { $0.id == track.id })
         persistLibrary()
         resetTrackDetails(ifChangingTo: track)
         player.beginLoading(track)
-        Task { await prepareAndPlay(track) }
+        schedulePlayback(of: track)
     }
 
     var listenTogetherChats: [MusicChat] {
@@ -1301,12 +1302,12 @@ final class AppModel {
         #endif
         if case let .loaded(value) = lyricsState, value.trackID == track.id { return }
         if let saved = await lyrics.cachedLyrics(for: track) {
-            guard player.track?.id == track.id else { return }
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             lyricsCandidates = saved.matches
             lyricsState = .loaded(saved.selected)
             return
         }
-        guard player.track?.id == track.id else { return }
+        guard !Task.isCancelled, player.track?.id == track.id else { return }
         lyricsState = .loading
         do {
             let sourceChat = allChats.first(where: { $0.id == track.chatID })
@@ -1321,11 +1322,11 @@ final class AppModel {
             attachedLRC = (try? await telegram.attachedLyrics(for: track, in: sourceChat)) ?? []
             #endif
             let result = try await lyrics.lyrics(for: track, attachedLRC: attachedLRC)
-            guard player.track?.id == track.id else { return }
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             lyricsCandidates = result?.matches ?? []
             lyricsState = result.map { .loaded($0.selected) } ?? .unavailable
         } catch {
-            guard player.track?.id == track.id else { return }
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             lyricsCandidates = []
             lyricsState = .failed(UserFacingError.message(for: error))
         }
@@ -1354,10 +1355,10 @@ final class AppModel {
         }
         do {
             let comments = try await telegram.comments(for: track, in: chat)
-            guard player.track?.id == track.id else { return }
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             commentsState = .loaded(comments)
         } catch {
-            guard player.track?.id == track.id else { return }
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             commentsState = .failed(UserFacingError.message(for: error))
         }
     }
@@ -1650,25 +1651,17 @@ final class AppModel {
 
     func next() {
         guard !queue.isEmpty else { return }
-        if playbackMode == .repeatOne, let track = player.track {
-            player.seek(to: 0)
-            player.play()
-            if player.track?.id != track.id { play(track, from: queue) }
-            return
-        }
         let index: Int
         switch playbackMode {
         case .shuffle:
             let candidates = queue.indices.filter { $0 != currentQueueIndex }
             index = candidates.randomElement() ?? 0
-        case .order:
+        case .order, .repeatOne:
             guard let currentQueueIndex, currentQueueIndex + 1 < queue.count else { return }
             index = currentQueueIndex + 1
         case .reverseOrder:
             guard let currentQueueIndex, currentQueueIndex > 0 else { return }
             index = currentQueueIndex - 1
-        case .repeatOne:
-            return
         }
         playQueueTrack(at: index)
     }
@@ -1685,12 +1678,10 @@ final class AppModel {
         case .shuffle:
             let candidates = queue.indices.filter { $0 != currentQueueIndex }
             index = candidates.randomElement() ?? current
-        case .order:
+        case .order, .repeatOne:
             index = max(current - 1, 0)
         case .reverseOrder:
             index = min(current + 1, queue.count - 1)
-        case .repeatOne:
-            index = current
         }
         playQueueTrack(at: index)
     }
@@ -1708,27 +1699,38 @@ final class AppModel {
     private func playQueueTrack(at index: Int) {
         guard queue.indices.contains(index) else { return }
         currentQueueIndex = index
-        resetTrackDetails(ifChangingTo: queue[index])
-        player.beginLoading(queue[index])
-        Task { await prepareAndPlay(queue[index]) }
+        let track = queue[index]
+        resetTrackDetails(ifChangingTo: track)
+        player.beginLoading(track)
+        schedulePlayback(of: track)
+    }
+
+    private func schedulePlayback(of track: Track) {
+        playbackTask?.cancel()
+        playbackTask = Task { [weak self] in
+            guard !Task.isCancelled else { return }
+            await self?.prepareAndPlay(track)
+        }
     }
 
     private func prepareAndPlay(_ track: Track) async {
         if let url = await cache.localURL(for: track) {
-            guard player.track?.id == track.id else { return }
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             cachedIDs.insert(track.id)
             downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
             knownTracks[track.id] = track
             persistLibrary()
             player.load(track, from: url)
         } else {
-            guard player.track?.id == track.id else { return }
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             let transfer = await progressiveTransfer(for: track)
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
             player.loadStreaming(track) { offset, length in
                 try await transfer.bytes(at: offset, length: length)
             }
             cacheDuringPlayback(track)
         }
+        guard !Task.isCancelled, player.track?.id == track.id else { return }
         await loadLyrics(for: track)
     }
 
@@ -2183,6 +2185,8 @@ final class AppModel {
     }
 
     private func resetForAccountTransition() {
+        playbackTask?.cancel()
+        playbackTask = nil
         postLoginRefreshTask?.cancel()
         postLoginRefreshTask = nil
         musicChatIndexTask?.cancel()
@@ -2885,7 +2889,12 @@ final class AppModel {
     #endif
 
     private func trackFinished() {
-        next()
+        if playbackMode == .repeatOne {
+            player.seek(to: 0)
+            player.play()
+        } else {
+            next()
+        }
     }
 
     private func restoreSearchBots() {

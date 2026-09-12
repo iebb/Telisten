@@ -1,5 +1,14 @@
 import Foundation
 
+enum AudioDocumentFormat {
+    static func isWAV(fileName: String, mimeType: String) -> Bool {
+        let mime = mimeType.split(separator: ";", maxSplits: 1).first?
+            .trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+        return (fileName as NSString).pathExtension.lowercased() == "wav"
+            || ["audio/wav", "audio/wave", "audio/x-wav", "audio/vnd.wave"].contains(mime)
+    }
+}
+
 enum PlaylistFolderConfiguration {
     static let defaultName = "_Playlist"
 

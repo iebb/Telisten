@@ -15,7 +15,6 @@ struct LibraryView: View {
     @FocusState private var playlistTitleFocused: Bool
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var nowPlayingDetent: PresentationDetent = .medium
     #elseif os(macOS)
     @State private var showsDesktopLyrics = false
     #endif
@@ -50,18 +49,11 @@ struct LibraryView: View {
                 }
             }
             #if os(iOS)
-            .sheet(isPresented: compactNowPlayingPresentation, onDismiss: presentPendingSettings) {
-                NowPlayingView(model: model, presentationDetent: $nowPlayingDetent)
-                    .presentationDetents([.medium, .large], selection: $nowPlayingDetent)
-                    .presentationDragIndicator(.visible)
-                    .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+            .fullScreenCover(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {
+                NowPlayingView(model: model, presentationDetent: .constant(.large), showsCloseButton: true)
             }
-            .sheet(isPresented: compactSettingsPresentation) {
+            .sheet(isPresented: $showSettings) {
                 SettingsView(model: model)
-            }
-            .inspector(isPresented: regularInspectorPresentation) {
-                regularWidthInspector
-                    .inspectorColumnWidth(min: 380, ideal: 440, max: 520)
             }
             #else
             .sheet(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {
@@ -101,16 +93,6 @@ struct LibraryView: View {
             } message: { playlist in
                 Text("This permanently deletes \(playlist.title) from Telegram. This cannot be undone.")
             }
-            #if os(iOS)
-            .onChange(of: model.showNowPlaying) { _, isPresented in
-                guard isPresented else { return }
-                if horizontalSizeClass == .regular {
-                    showSettings = false
-                } else {
-                    nowPlayingDetent = .medium
-                }
-            }
-            #endif
         }
     }
 
@@ -119,14 +101,6 @@ struct LibraryView: View {
             showSettings = true
             return
         }
-
-        #if os(iOS)
-        if horizontalSizeClass == .regular {
-            model.showNowPlaying = false
-            showSettings = true
-            return
-        }
-        #endif
 
         showSettingsAfterPlayerDismissal = true
         model.showNowPlaying = false
@@ -137,54 +111,6 @@ struct LibraryView: View {
         showSettingsAfterPlayerDismissal = false
         showSettings = true
     }
-
-    #if os(iOS)
-    private var compactNowPlayingPresentation: Binding<Bool> {
-        Binding(
-            get: { horizontalSizeClass != .regular && model.showNowPlaying },
-            set: { isPresented in
-                guard !isPresented, horizontalSizeClass != .regular else { return }
-                model.showNowPlaying = false
-            }
-        )
-    }
-
-    private var compactSettingsPresentation: Binding<Bool> {
-        Binding(
-            get: { horizontalSizeClass != .regular && showSettings },
-            set: { isPresented in
-                guard !isPresented, horizontalSizeClass != .regular else { return }
-                showSettings = false
-            }
-        )
-    }
-
-    private var regularInspectorPresentation: Binding<Bool> {
-        Binding(
-            get: {
-                horizontalSizeClass == .regular && (showSettings || model.showNowPlaying)
-            },
-            set: { isPresented in
-                guard !isPresented, horizontalSizeClass == .regular else { return }
-                showSettings = false
-                model.showNowPlaying = false
-            }
-        )
-    }
-
-    @ViewBuilder
-    private var regularWidthInspector: some View {
-        if showSettings {
-            SettingsView(model: model)
-        } else {
-            NowPlayingView(
-                model: model,
-                presentationDetent: .constant(.large),
-                showsCloseButton: true
-            )
-        }
-    }
-    #endif
 
     private var sidebar: some View {
         List(selection: $model.selected) {
@@ -562,19 +488,22 @@ struct LibraryView: View {
             }
 
             if model.hasMoreTracks {
-                HStack {
-                    Spacer()
-                    if model.isLoadingMore {
+                VStack(spacing: 8) {
+                    if let error = model.loadMoreError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button("Retry loading songs") {
+                            Task { await model.loadMoreTracks() }
+                        }
+                        .disabled(model.isLoadingMore)
+                    } else {
                         ProgressView()
                             .controlSize(.small)
+                            .onAppear { Task { await model.loadMoreTracks() } }
                     }
-                    Spacer()
                 }
-                .frame(height: 28)
-                .contentShape(Rectangle())
-                .onAppear {
-                    Task { await model.loadMoreTracks() }
-                }
+                .frame(maxWidth: .infinity, minHeight: 28)
                 .listRowSeparator(.hidden)
             }
         }

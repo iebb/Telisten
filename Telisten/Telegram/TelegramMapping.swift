@@ -307,10 +307,12 @@ enum TelegramMapping {
               case let .document(document) = documentType else { return nil }
 
         var audio: TL.DocumentAttributeAudio?
+        var isVoice = false
         var fileName = "audio-\(document.id)"
         for attribute in document.attributes {
             switch attribute {
-            case let .documentAttributeAudio(value) where !value.voice:
+            case let .documentAttributeAudio(value):
+                isVoice = value.voice
                 audio = value
             case let .documentAttributeFilename(value):
                 fileName = value.fileName
@@ -318,7 +320,9 @@ enum TelegramMapping {
                 break
             }
         }
-        guard let audio else { return nil }
+        let isWAV = AudioDocumentFormat.isWAV(fileName: fileName, mimeType: document.mimeType)
+        guard !isVoice, audio != nil || isWAV else { return nil }
+        if isWAV, (fileName as NSString).pathExtension.isEmpty { fileName += ".wav" }
         let vote = upvote(in: message.reactions)
         let artwork = artworkReference(in: document.thumbs)
         return Track(
@@ -328,11 +332,11 @@ enum TelegramMapping {
             dcID: document.dcId,
             messageID: message.id,
             chatID: key(for: message.peerId),
-            title: audio.title ?? fileName.deletingPathExtension,
-            artist: audio.performer ?? "",
+            title: audio?.title ?? fileName.deletingPathExtension,
+            artist: audio?.performer ?? "",
             fileName: fileName,
-            mimeType: document.mimeType,
-            duration: TimeInterval(audio.duration),
+            mimeType: isWAV ? "audio/wav" : document.mimeType,
+            duration: TimeInterval(audio?.duration ?? 0),
             size: document.size,
             date: Date(timeIntervalSince1970: TimeInterval(message.date)),
             upvoteCount: vote.count,

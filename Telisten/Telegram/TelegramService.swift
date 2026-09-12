@@ -598,11 +598,53 @@ actor TelegramService {
         offsetID: Int32 = 0,
         limit: Int32 = 30
     ) async throws -> [Track] {
-        let result = try await withPrimaryConnectionRetry { connection in
+        guard limit > 0 else { return [] }
+        let result = try await searchMusicMessages(
+            in: chat, query: query, offsetID: offsetID, limit: limit,
+            filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic())
+        )
+        var tracks = TelegramMapping.tracks(from: result)
+        var seen = Set(tracks.map(\.id))
+        var documentOffset = offsetID
+        let documentQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? ".wav" : query
+        // WAV uploads can be ordinary documents, outside Telegram's music filter.
+        // Walk document pages until they pass the merged music page's boundary.
+        // Filtering just one raw page could hide older WAVs behind PDFs or photos.
+        while true {
+            try Task.checkCancellation()
+            let documents = try await searchMusicMessages(
+                in: chat, query: documentQuery, offsetID: documentOffset, limit: 100,
+                filter: .inputMessagesFilterDocument(TL.InputMessagesFilterDocument())
+            )
+            let messages = TelegramMapping.messages(from: documents)
+            for track in TelegramMapping.tracks(from: documents) where seen.insert(track.id).inserted {
+                tracks.append(track)
+            }
+            tracks.sort { $0.messageID > $1.messageID }
+            let oldestID = messages.compactMap { item -> Int32? in
+                if case let .message(message) = item { return message.id }
+                return nil
+            }.min()
+            guard messages.count == 100, let oldestID,
+                  documentOffset == 0 || oldestID < documentOffset else { break }
+            if tracks.count >= Int(limit), oldestID <= tracks[Int(limit) - 1].messageID { break }
+            documentOffset = oldestID
+        }
+        return Array(tracks.prefix(Int(limit)))
+    }
+
+    private func searchMusicMessages(
+        in chat: MusicChat,
+        query: String,
+        offsetID: Int32,
+        limit: Int32,
+        filter: TL.MessagesFilterType
+    ) async throws -> TL.Messages.MessagesType {
+        try await withPrimaryConnectionRetry { connection in
             try await connection.client.messages.search(
                 peer: TelegramMapping.inputPeer(for: chat),
                 q: query,
-                filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
+                filter: filter,
                 minDate: 0,
                 maxDate: 0,
                 offsetId: offsetID,
@@ -613,23 +655,31 @@ actor TelegramService {
                 hash: 0
             )
         }
-        return TelegramMapping.tracks(from: result)
     }
 
     func searchAllMusic(query: String) async throws -> [Track] {
-        let result = try await withPrimaryConnectionRetry { connection in
-            try await connection.client.messages.searchGlobal(
-                q: query,
-                filter: .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
-                minDate: 0,
-                maxDate: 0,
-                offsetRate: 0,
-                offsetPeer: .inputPeerEmpty(TL.InputPeerEmpty()),
-                offsetId: 0,
-                limit: 100
-            )
+        var tracks: [Track] = []
+        var seen: Set<String> = []
+        let filters: [TL.MessagesFilterType] = [
+            .inputMessagesFilterMusic(TL.InputMessagesFilterMusic()),
+            .inputMessagesFilterDocument(TL.InputMessagesFilterDocument())
+        ]
+        for filter in filters {
+            let result = try await withPrimaryConnectionRetry { connection in
+                try await connection.client.messages.searchGlobal(
+                    q: query,
+                    filter: filter,
+                    minDate: 0,
+                    maxDate: 0,
+                    offsetRate: 0,
+                    offsetPeer: .inputPeerEmpty(TL.InputPeerEmpty()),
+                    offsetId: 0,
+                    limit: 100
+                )
+            }
+            tracks.append(contentsOf: TelegramMapping.tracks(from: result).filter { seen.insert($0.id).inserted })
         }
-        return TelegramMapping.tracks(from: result)
+        return tracks.sorted { $0.date > $1.date }
     }
 
     func attachedLyrics(for track: Track, in sourceChat: MusicChat?) async throws -> [AttachedLRC] {
@@ -1070,7 +1120,12 @@ actor TelegramService {
                 hash: 0
             )
         }
-        return TelegramMapping.messageCount(from: result) > 0
+        if TelegramMapping.messageCount(from: result) > 0 { return true }
+        let documents = try await searchMusicMessages(
+            in: chat, query: ".wav", offsetID: 0, limit: 30,
+            filter: .inputMessagesFilterDocument(TL.InputMessagesFilterDocument())
+        )
+        return !TelegramMapping.tracks(from: documents).isEmpty
     }
 
     func comments(for track: Track, in chat: MusicChat) async throws -> [TrackComment] {

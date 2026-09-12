@@ -10,9 +10,9 @@ enum DisplayFormat {
     }()
 
     static func duration(_ seconds: TimeInterval) -> String {
-        guard seconds.isFinite, seconds >= 0 else { return "0:00" }
+        guard seconds.isFinite, seconds >= 0, seconds < Double(Int.max) else { return "0:00" }
         let total = Int(seconds.rounded(.down))
-        return String(format: "%d:%02d", total / 60, total % 60)
+        return "\(total / 60):" + String(format: "%02d", total % 60)
     }
 
     static func fileSize(_ value: Int64) -> String {
