@@ -14,13 +14,50 @@ struct NowPlayingView: View {
     @Binding var presentationDetent: PresentationDetent
     var showsCloseButton = false
     #endif
+    var isEmbedded = false
 
     var body: some View {
-        NavigationStack {
+        Group {
+            if isEmbedded {
+                playerContent
+            } else {
+                NavigationStack { playerContent }
+            }
+        }
+        #if os(iOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #else
+        .frame(minWidth: 360, minHeight: 620)
+        #endif
+        .sheet(isPresented: isEmbedded ? .constant(false) : $model.showPlaylistSheet) {
+            if let track = model.playlistTrack {
+                PlaylistSheet(model: model, track: track)
+            }
+        }
+        .sheet(isPresented: isEmbedded ? .constant(false) : $model.showListenTogetherSheet) {
+            ListenTogetherView(model: model)
+        }
+        .task(id: model.player.track?.id) {
+            guard let track = model.player.track else { return }
+            await model.loadLyrics(for: track)
+        }
+    }
+
+    private var playerContent: some View {
+        GeometryReader { geometry in
             VStack(spacing: 14) {
-                hero
+                Group {
+                    if isEmbedded {
+                        albumSleeve(artworkSize: min(220, max(80, geometry.size.height * 0.24)))
+                    } else {
+                        hero
+                    }
+                }
+                    .frame(maxWidth: 560)
                 timeline
+                    .frame(maxWidth: 560)
                 controls
+                    .frame(maxWidth: 560)
                 if showsDetails {
                     Picker("Now playing section", selection: $section) {
                         ForEach(Section.allCases) { Text($0.rawValue).tag($0) }
@@ -31,7 +68,7 @@ struct NowPlayingView: View {
 
                     Group {
                         switch section {
-                        case .lyrics: LyricsPanel(model: model)
+                        case .lyrics: LyricsPanel(model: model, style: isEmbedded ? .spread : .player)
                         case .queue: queue
                         }
                     }
@@ -80,7 +117,7 @@ struct NowPlayingView: View {
                         .accessibilityHint("Saves this track to a private playlist")
                     }
                     if showsCloseButton {
-                        Button("Close", systemImage: "xmark") { dismiss() }
+                        Button("Close", systemImage: "xmark") { model.showNowPlaying = false }
                             .labelStyle(.iconOnly)
                     }
                 }
@@ -94,23 +131,37 @@ struct NowPlayingView: View {
                 #endif
             }
         }
-        #if os(iOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        #else
-        .frame(minWidth: 360, minHeight: 620)
-        #endif
-        .sheet(isPresented: $model.showPlaylistSheet) {
-            if let track = model.playlistTrack {
-                PlaylistSheet(model: model, track: track)
+    }
+
+    // A listening spread pairs the browsable collection with an album sleeve.
+    // It uses the same player/queue as the compact view, so resizing never reloads audio.
+    private func albumSleeve(artworkSize: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let track = model.player.track {
+                ViewThatFits(in: .horizontal) {
+                    sleeveArtwork(track, size: artworkSize)
+                    sleeveArtwork(track, size: 80)
+                }
+                .frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(track.displayTitle)
+                        .font(.title2.bold())
+                        .lineLimit(2)
+                    Text(track.displayArtist)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .sheet(isPresented: $model.showListenTogetherSheet) {
-            ListenTogetherView(model: model)
-        }
-        .task(id: model.player.track?.id) {
-            guard let track = model.player.track else { return }
-            await model.loadLyrics(for: track)
-        }
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+    }
+
+    private func sleeveArtwork(_ track: Track, size: CGFloat) -> some View {
+        TrackArtwork(model: model, track: track, size: size)
+            .shadow(color: .black.opacity(0.16), radius: 18, y: 10)
     }
 
     private var isListeningTogether: Bool {
@@ -261,9 +312,9 @@ struct NowPlayingView: View {
             .foregroundStyle(model.player.isMuted ? Color.telistenAccent : .secondary)
             .accessibilityLabel(model.player.isMuted ? "Unmute" : "Mute")
 
-            Spacer(minLength: 12)
+            Spacer(minLength: isEmbedded ? 6 : 12)
 
-            HStack(spacing: 30) {
+            HStack(spacing: isEmbedded ? 16 : 30) {
                 Button("Previous", systemImage: "backward.fill") { model.previous() }
                     .labelStyle(.iconOnly)
                 if model.player.isLoading {
@@ -283,13 +334,13 @@ struct NowPlayingView: View {
                     .labelStyle(.iconOnly)
             }
 
-            Spacer(minLength: 12)
+            Spacer(minLength: isEmbedded ? 6 : 12)
 
             playbackModeMenu
         }
         .buttonStyle(.plain)
         .font(.title2)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, isEmbedded ? 12 : 24)
     }
 
     private var playbackModeMenu: some View {
@@ -367,6 +418,7 @@ struct DesktopLyricsView: View {
 struct LyricsPanel: View {
     enum Style: Equatable {
         case player
+        case spread
         case desktop
     }
 
@@ -560,11 +612,11 @@ struct LyricsPanel: View {
             }
             .contentMargins(
                 .vertical,
-                style == .desktop ? 150 : (lyrics.isSynced ? 90 : 0),
+                style == .desktop ? 150 : (lyrics.isSynced ? (style == .spread ? 40 : 90) : 0),
                 for: .scrollContent
             )
             .background(
-                Color.primary.opacity(style == .desktop ? 0 : 0.035),
+                Color.primary.opacity(style == .player ? 0.035 : 0),
                 in: RoundedRectangle(cornerRadius: 20, style: .continuous)
             )
             .onChange(of: activeID, initial: true) { _, lineID in

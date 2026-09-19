@@ -21,19 +21,14 @@ struct LibraryView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            NavigationSplitView(columnVisibility: $columnVisibility) {
-                sidebar
-                    .navigationSplitViewColumnWidth(min: 210, ideal: 250, max: 320)
-            } detail: {
-                #if os(macOS)
-                if showsDesktopLyrics, model.player.track != nil {
-                    DesktopLyricsView(model: model)
-                } else {
-                    trackBrowser
-                }
-                #else
-                trackBrowser
-                #endif
+            #if os(iOS)
+            let wideLayout = horizontalSizeClass == .regular
+            #else
+            let wideLayout = true
+            #endif
+            libraryColumns(wideLayout: wideLayout, width: geometry.size.width)
+            .onChange(of: model.selected) { _, value in
+                Task { await model.select(value) }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if model.player.track != nil, !model.showNowPlaying {
@@ -44,16 +39,22 @@ struct LibraryView: View {
                         bottomSafeArea: geometry.safeAreaInsets.bottom
                     )
                     #else
-                    PlayerBar(model: model, bottomSafeArea: geometry.safeAreaInsets.bottom)
+                    PlayerBar(
+                        model: model, bottomSafeArea: geometry.safeAreaInsets.bottom,
+                        usesWideLayout: wideLayout
+                    )
                     #endif
                 }
             }
             #if os(iOS)
-            .fullScreenCover(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {
+            .fullScreenCover(isPresented: compactPlayerPresentation(wideLayout: wideLayout), onDismiss: presentPendingSettings) {
                 NowPlayingView(model: model, presentationDetent: .constant(.large), showsCloseButton: true)
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(model: model)
+            }
+            .onChange(of: wideLayout) { _, isWide in
+                if isWide { columnVisibility = .all }
             }
             #else
             .sheet(isPresented: $model.showNowPlaying, onDismiss: presentPendingSettings) {
@@ -96,7 +97,74 @@ struct LibraryView: View {
         }
     }
 
+    @ViewBuilder
+    private func libraryColumns(wideLayout: Bool, width: CGFloat) -> some View {
+        #if os(iOS)
+        if wideLayout {
+            // Two independent navigation roots keep both panes interactive. A
+            // NavigationSplitView may overlay its sidebar at this aspect ratio.
+            HStack(spacing: 0) {
+                NavigationStack {
+                    if model.showNowPlaying, model.selected != nil {
+                        trackBrowser
+                    } else {
+                        sidebar
+                    }
+                }
+                .frame(width: model.showNowPlaying ? width / 2 : min(260, width * 0.36))
+                Divider()
+                NavigationStack {
+                    if model.showNowPlaying, model.player.track != nil {
+                        NowPlayingView(
+                            model: model, presentationDetent: .constant(.large),
+                            showsCloseButton: true, isEmbedded: true
+                        )
+                    } else {
+                        trackBrowser
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+        } else {
+            NavigationSplitView(columnVisibility: $columnVisibility) {
+                sidebar
+            } detail: {
+                trackBrowser
+            }
+        }
+        #else
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            sidebar.navigationSplitViewColumnWidth(min: 210, ideal: 250, max: 320)
+        } detail: {
+            if showsDesktopLyrics, model.player.track != nil {
+                DesktopLyricsView(model: model)
+            } else {
+                trackBrowser
+            }
+        }
+        #endif
+    }
+
+    #if os(iOS)
+    private func compactPlayerPresentation(wideLayout: Bool) -> Binding<Bool> {
+        Binding(
+            get: { model.showNowPlaying && !wideLayout },
+            set: { value in
+                // Expanding the window moves playback into the detail pane;
+                // dismissal of the old cover must not close that pane as well.
+                if !wideLayout { model.showNowPlaying = value }
+            }
+        )
+    }
+    #endif
+
     private func openSettings() {
+        #if os(iOS)
+        // The sidebar remains interactive beside the embedded player. A cover
+        // hides it in compact layouts, so an accessible Settings button here
+        // can present directly without waiting for a cover's dismissal callback.
+        showSettings = true
+        #else
         guard model.showNowPlaying else {
             showSettings = true
             return
@@ -104,6 +172,7 @@ struct LibraryView: View {
 
         showSettingsAfterPlayerDismissal = true
         model.showNowPlaying = false
+        #endif
     }
 
     private func presentPendingSettings() {
@@ -191,9 +260,6 @@ struct LibraryView: View {
                     Button("Settings", systemImage: "gearshape", action: openSettings)
                 }
             }
-        }
-        .onChange(of: model.selected) { _, value in
-            Task { await model.select(value) }
         }
     }
 
@@ -406,20 +472,31 @@ struct LibraryView: View {
             #endif
             ToolbarItemGroup(placement: .primaryAction) {
                 if let playlist = selectedPlaylist {
-                    Button(
-                        model.isDownloadingAll(in: playlist) ? "Downloading" : "Download all",
-                        systemImage: "arrow.down.circle"
-                    ) {
-                        model.downloadAll(in: playlist)
-                    }
-                    .disabled(model.isDownloadingAll(in: playlist))
-                    Button(isEditingPlaylist ? "Done" : "Edit") {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            isEditingPlaylist.toggle()
+                    if !usesListeningSpread {
+                        Button(
+                            model.isDownloadingAll(in: playlist) ? "Downloading" : "Download all",
+                            systemImage: "arrow.down.circle"
+                        ) {
+                            model.downloadAll(in: playlist)
+                        }
+                        .disabled(model.isDownloadingAll(in: playlist))
+                        Button(isEditingPlaylist ? "Done" : "Edit") {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                isEditingPlaylist.toggle()
+                            }
                         }
                     }
-                    if !isEditingPlaylist {
+                    if !isEditingPlaylist || usesListeningSpread {
                         Menu("Playlist actions", systemImage: "ellipsis.circle") {
+                            if usesListeningSpread {
+                                Button("Download all", systemImage: "arrow.down.circle") {
+                                    model.downloadAll(in: playlist)
+                                }
+                                .disabled(model.isDownloadingAll(in: playlist))
+                                Button(isEditingPlaylist ? "Done" : "Edit", systemImage: "pencil") {
+                                    isEditingPlaylist.toggle()
+                                }
+                            }
                             Button("Refresh", systemImage: "arrow.clockwise") {
                                 Task { await model.search() }
                             }
@@ -520,6 +597,14 @@ struct LibraryView: View {
         #endif
     }
 
+    private var usesListeningSpread: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .regular && model.showNowPlaying
+        #else
+        false
+        #endif
+    }
+
     private var selectedPlaylist: MusicChat? {
         guard let chat = model.selectedChat else { return nil }
         return model.playlists.first { $0.id == chat.id }
@@ -541,11 +626,11 @@ struct LibraryView: View {
 
     #if os(iOS)
     private var usesCompactBackButton: Bool {
-        horizontalSizeClass == .compact && model.selected != nil
+        (horizontalSizeClass == .compact || model.showNowPlaying) && model.selected != nil
     }
 
     private var canSwipeBackFromDetail: Bool {
-        horizontalSizeClass == .compact && model.selected != nil
+        (horizontalSizeClass == .compact || model.showNowPlaying) && model.selected != nil
     }
 
     private var detailBackGesture: some Gesture {

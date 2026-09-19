@@ -6,6 +6,7 @@ struct PlayerBar: View {
     @Binding var showsLyrics: Bool
     #endif
     var bottomSafeArea: CGFloat = 0
+    var usesWideLayout = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -35,7 +36,26 @@ struct PlayerBar: View {
                         .contentShape(Rectangle())
                     }
                     .accessibilityLabel("Show Now Playing: \(track.displayTitle) by \(track.displayArtist)")
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: usesWideLayout ? 240 : .infinity, alignment: .leading)
+                }
+                if usesWideLayout {
+                    Group {
+                        if let lyricPreview {
+                            Button { model.showNowPlaying = true } label: {
+                                VStack(spacing: 3) {
+                                    Text(lyricPreview[0]).font(.callout.weight(.semibold))
+                                    Text(lyricPreview[1]).font(.footnote).foregroundStyle(.secondary)
+                                }
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity)
+                                .contentShape(Rectangle())
+                            }
+                            .accessibilityLabel("Show lyrics")
+                        } else {
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
                 }
                 HStack(spacing: 13) {
                     #if os(macOS)
@@ -80,7 +100,7 @@ struct PlayerBar: View {
             .padding(.vertical, 7)
         }
         .overlay(alignment: .bottom) {
-            if let lyricPreview, bottomSafeArea > 0 {
+            if let lyricPreview, bottomSafeArea > 0, !usesWideLayout {
                 VStack(alignment: .center, spacing: 0) {
                     ForEach(Array(lyricPreview.enumerated()), id: \.offset) { index, line in
                         Text(line)
