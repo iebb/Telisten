@@ -564,6 +564,7 @@ import org.drinkless.tdlib.TdApi as T
         itemsIndexed(model.bots) { index, bot -> Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("@${bot.username.removePrefix("@")}"); Text("${bot.prefix}<query>${bot.suffix}", style = MaterialTheme.typography.bodySmall) }; IconButton({ model.moveBot(index, -1) }, enabled = index > 0) { Icon(Icons.Rounded.KeyboardArrowUp, "Move bot up") }; IconButton({ model.removeBot(bot) }) { Icon(Icons.Rounded.DeleteOutline, "Remove bot") } } }
         item { TextButton({ signOut = true }, enabled = !model.busy) { Text(if (model.demo) "Leave demo" else "Sign out of this account", color = MaterialTheme.colorScheme.error) } }
         item { TextButton({ uriHandler.openUri("https://docs.kitta.co/telisten/") }) { Text("Privacy policy & data controls") } }
+        item { TextButton({ uriHandler.openUri("https://t.me/telisten") }) { Text("Telisten on Telegram") } }
         item { Text("Telisten for Android · ${ad.neko.telisten.BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
     if (addBot) {

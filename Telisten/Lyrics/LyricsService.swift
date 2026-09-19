@@ -1,4 +1,36 @@
 import Foundation
+import AVFoundation
+
+enum EmbeddedLyricsReader {
+    // Inspect local files only; metadata lookup must never start another download.
+    static func read(from url: URL) async -> String? {
+        guard url.isFileURL else { return nil }
+        let asset = AVURLAsset(url: url)
+        var candidates: [String] = []
+        if let text = try? await asset.load(.lyrics), !text.isEmpty {
+            candidates.append(text)
+        }
+        // .lyrics alone misses Vorbis comments and user-defined ID3 lyric tags.
+        for format in (try? await asset.load(.availableMetadataFormats)) ?? [] {
+            for item in (try? await asset.loadMetadata(for: format)) ?? [] {
+                let key = (item.key as? String)?.uppercased() ?? ""
+                var isLyrics = isLyricsKey(key)
+                if key == "TXXX" || key == "TXX" {
+                    let attributes = try? await item.load(.extraAttributes)
+                    isLyrics = (attributes?[.info] as? String).map { isLyricsKey($0.uppercased()) } ?? false
+                }
+                if isLyrics, let text = try? await item.load(.stringValue) { candidates.append(text) }
+            }
+        }
+        return candidates.filter { !LRCParser.lines(from: $0).lines.isEmpty }
+            .sorted { LRCParser.lines(from: $0).isSynced && !LRCParser.lines(from: $1).isSynced }
+            .first
+    }
+
+    private static func isLyricsKey(_ key: String) -> Bool {
+        ["USLT", "ULT", "LYRICS", "UNSYNCEDLYRICS", "UNSYNCED LYRICS", "SYNCEDLYRICS"].contains(key)
+    }
+}
 
 protocol LyricsProviding: Sendable {
     func lyricsCandidates(for track: Track) async throws -> [TrackLyrics]
@@ -451,6 +483,7 @@ actor LyricsService {
     private var cached: [String: TrackLyrics] = [:]
     private var fetchedMatches: [String: [TrackLyrics]] = [:]
     private var selectedMatchKeys: [String: String] = [:]
+    private var inspectedAudio: Set<String> = []
 
     init(provider: any LyricsProviding = LRCLIBProvider(), directory: URL? = nil) {
         self.provider = provider
@@ -494,6 +527,34 @@ actor LyricsService {
         return result(for: track.id, matches: matches)
     }
 
+    func embeddedLyrics(for track: Track, fileURL: URL) async -> LyricsResult? {
+        if !inspectedAudio.contains(track.id) {
+            let contents = await EmbeddedLyricsReader.read(from: fileURL)
+            guard !Task.isCancelled else { return nil }
+            inspectedAudio.insert(track.id)
+            if let contents { _ = storeEmbeddedLyrics(contents, for: track) }
+        }
+        guard fetchedMatches[track.id]?.contains(where: { $0.source == "Embedded lyrics" }) == true else { return nil }
+        return cachedLyrics(for: track)
+    }
+
+    @discardableResult
+    func storeEmbeddedLyrics(_ contents: String, for track: Track) -> LyricsResult? {
+        let parsed = LRCParser.lines(from: contents)
+        guard !parsed.lines.isEmpty else { return nil }
+        let embedded = TrackLyrics(
+            trackID: track.id, source: "Embedded lyrics", lines: parsed.lines,
+            isSynced: parsed.isSynced, matchedTitle: track.displayTitle,
+            matchedArtist: track.artist, matchedDuration: track.duration
+        )
+        let matches = merged([embedded], with: cachedLyrics(for: track)?.matches ?? [])
+        fetchedMatches[track.id] = matches
+        guard let value = result(for: track.id, matches: matches) else { return nil }
+        cached[track.id] = value.selected
+        persist()
+        return value
+    }
+
     func lyrics(for track: Track, attachedLRC: [AttachedLRC] = []) async throws -> LyricsResult? {
         if attachedLRC.isEmpty, let saved = cachedLyrics(for: track) { return saved }
         let attachedMatches = attachedLRC.compactMap { attachedLyrics($0, for: track) }
@@ -511,8 +572,12 @@ actor LyricsService {
         do {
             matches = merged(matches, with: try await provider.lyricsCandidates(for: track))
         } catch {
-            guard !matches.isEmpty || fallback != nil else { throw error }
+            guard !matches.isEmpty || fallback != nil || cached[track.id] != nil else { throw error }
         }
+
+        // A streaming download may finish (and supply embedded lyrics) while the
+        // server request is suspended. Do not overwrite that newer local result.
+        matches = merged(cachedLyrics(for: track)?.matches ?? [], with: matches)
 
         if let fallback,
            !matches.contains(where: { $0.matchKey == fallback.matchKey }),
@@ -557,6 +622,9 @@ actor LyricsService {
         return (preferred + fallback)
             .filter { seen.insert($0.matchKey).inserted }
             .sorted { lhs, rhs in
+                let lhsEmbedded = lhs.source == "Embedded lyrics"
+                let rhsEmbedded = rhs.source == "Embedded lyrics"
+                if lhsEmbedded != rhsEmbedded { return lhsEmbedded }
                 if lhs.isSynced != rhs.isSynced { return lhs.isSynced }
                 let lhsAttached = lhs.source.hasPrefix("Telegram ·")
                 let rhsAttached = rhs.source.hasPrefix("Telegram ·")

@@ -104,6 +104,11 @@ struct SettingsView: View {
                     Text("Search bot configurations are stored in iCloud Keychain. No bot is included by default.")
                 }
                 Section {
+                    Link(destination: URL(string: "https://t.me/telisten")!) {
+                        Label("Telisten on Telegram", systemImage: "paperplane")
+                    }
+                }
+                Section {
                     Button("Sign out of this account", role: .destructive) {
                         Task {
                             await model.logOut()

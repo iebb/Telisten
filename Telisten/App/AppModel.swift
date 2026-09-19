@@ -1307,6 +1307,8 @@ final class AppModel {
             return
         }
         #endif
+        if let url = await cache.localURL(for: track),
+           await useEmbeddedLyrics(for: track, at: url) { return }
         if case let .loaded(value) = lyricsState, value.trackID == track.id { return }
         if let saved = await lyrics.cachedLyrics(for: track) {
             guard !Task.isCancelled, player.track?.id == track.id else { return }
@@ -1344,6 +1346,15 @@ final class AppModel {
               lyricsCandidates.contains(where: { $0.matchKey == value.matchKey }) else { return }
         lyricsState = .loaded(value)
         Task { await lyrics.select(value) }
+    }
+
+    @discardableResult
+    private func useEmbeddedLyrics(for track: Track, at url: URL) async -> Bool {
+        guard let result = await lyrics.embeddedLyrics(for: track, fileURL: url) else { return false }
+        guard !Task.isCancelled, player.track?.id == track.id else { return true }
+        lyricsCandidates = result.matches
+        lyricsState = .loaded(result.selected)
+        return true
     }
 
     func loadComments(for track: Track) async {
@@ -1830,6 +1841,9 @@ final class AppModel {
             knownTracks[track.id] = track
             await refreshCacheUsage()
             persistLibrary()
+            // Persist embedded lyrics for Download All, and replace provisional
+            // server lyrics immediately when the currently streaming file finishes.
+            await useEmbeddedLyrics(for: track, at: url)
             return url
         } catch {
             cacheBytes = await cache.totalBytes()
