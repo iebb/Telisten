@@ -171,6 +171,7 @@ final class AppModel {
         cachedIDs = cache.initialCachedTrackIDs
         cacheBytes = cache.initialByteCount
         sharedDownloadedTracks = localLibrary.downloadedTracks
+        sharedDownloadedTracks.merge(cache.initialDownloadedTracks, uniquingKeysWith: { _, recovered in recovered })
         restoreSearchBots()
         restoreAccounts()
         restoreLibrary()
@@ -185,6 +186,12 @@ final class AppModel {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--offline") {
             phase = canOpenLibrary ? .ready : .signedOut
+            if ProcessInfo.processInfo.arguments.contains("--offline-downloads") {
+                await select(.downloads)
+                if ProcessInfo.processInfo.arguments.contains("--offline-play-first"), let first = tracks.first {
+                    play(first, from: tracks)
+                }
+            }
             return
         }
         if ProcessInfo.processInfo.arguments.contains("--demo") {
@@ -1791,8 +1798,10 @@ final class AppModel {
         )
         persistLibrary()
         let cache = cache
-        let transfer = await progressiveTransfer(for: track)
         let task = Task<URL, Error> {
+            // Register the task before suspending to resolve its Telegram source.
+            // Playback and Download All must share one transfer/commit per file.
+            let transfer = await progressiveTransfer(for: track)
             let temporary = await cache.partialLocation(for: track).dataURL
             try await transfer.downloadAll { [weak self] value in
                 let bytes = await cache.totalBytes()
@@ -1838,6 +1847,9 @@ final class AppModel {
         let location = await cache.partialLocation(for: track)
         let telegram = telegram
         let sourceChat = await musicSource(for: track)
+        // Another caller may have created the transfer while source lookup was
+        // suspended. Two actors must never write to the same partial file.
+        if let transfer = activeTransfers[track.id] { return transfer }
         let transfer = ProgressiveAudioTransfer(
             trackID: track.id,
             fileSize: track.size,
@@ -3136,9 +3148,9 @@ final class AppModel {
                 sharedDownloadedTracks[trackID] = track
             }
         }
-        sharedDownloadedTracks = sharedDownloadedTracks.filter {
-            actualCachedIDs.contains($0.key)
-        }
+        // A temporarily unavailable file/index must not erase the only copy of
+        // its title and Telegram reference. Only cachedIDs determines whether
+        // a track appears in Downloads; retain metadata for recovery/re-download.
         for (trackID, track) in sharedDownloadedTracks where knownTracks[trackID] == nil {
             knownTracks[trackID] = track
         }

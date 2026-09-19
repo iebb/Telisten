@@ -237,6 +237,7 @@ actor CacheStore {
         var fileName: String
         var byteCount: Int64
         var lastAccess: Date
+        var track: Track? = nil
     }
 
     private let root: URL
@@ -245,35 +246,124 @@ actor CacheStore {
     private var limit: Int64
     nonisolated let initialCachedTrackIDs: Set<String>
     nonisolated let initialByteCount: Int64
+    nonisolated let initialDownloadedTracks: [String: Track]
 
-    init(limit: Int64 = CacheLimits.defaultValue) {
+    init(limit: Int64 = CacheLimits.defaultValue, rootURL: URL? = nil, legacyURL: URL? = nil) {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        root = caches.appending(path: "Telisten", directoryHint: .isDirectory)
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        // Offline audio is user-requested data, not disposable OS cache. Keep
+        // it out of backups because it can be downloaded again after restore.
+        root = rootURL ?? support.appending(path: "Telisten/Audio", directoryHint: .isDirectory)
         indexURL = root.appending(path: "cache-index.json")
         self.limit = min(max(limit, CacheLimits.minimum), CacheLimits.maximum)
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let restoredEntries: [String: Entry]
-        if let data = try? Data(contentsOf: indexURL),
-           let values = try? JSONDecoder().decode([Entry].self, from: data) {
-            restoredEntries = Dictionary(uniqueKeysWithValues: values.map { ($0.trackID, $0) })
-        } else {
-            restoredEntries = [:]
+        var durableRoot = root
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = true
+        try? durableRoot.setResourceValues(resourceValues)
+        let legacy = legacyURL ?? (rootURL == nil ? caches.appending(path: "Telisten") : nil)
+        var restoredEntries = Self.readIndex(at: indexURL)
+        if let legacy, legacy.standardizedFileURL != root.standardizedFileURL {
+            Self.migrateAudio(from: legacy, to: root)
+            for (id, entry) in Self.readIndex(at: legacy.appending(path: "cache-index.json"))
+                where restoredEntries[id] == nil {
+                restoredEntries[id] = entry
+            }
         }
+        restoredEntries = Self.recoverEntries(in: root, indexed: restoredEntries)
         entries = restoredEntries
         initialCachedTrackIDs = Set(restoredEntries.keys)
         initialByteCount = restoredEntries.values.reduce(0) { $0 + $1.byteCount }
+        initialDownloadedTracks = restoredEntries.compactMapValues(\.track)
+        if let data = try? JSONEncoder().encode(Array(restoredEntries.values)) {
+            try? data.write(to: indexURL, options: .atomic)
+        }
+    }
+
+    private static func readIndex(at url: URL) -> [String: Entry] {
+        guard let data = try? Data(contentsOf: url),
+              let values = try? JSONDecoder().decode([Entry].self, from: data) else { return [:] }
+        return Dictionary(values.map { ($0.trackID, $0) }, uniquingKeysWith: { _, last in last })
+    }
+
+    private static func audioID(for fileName: String) -> String? {
+        let stem = (fileName as NSString).deletingPathExtension
+        let parts = stem.split(separator: "-", maxSplits: 1)
+        guard parts.count == 2, Int32(parts[0]) != nil, Int64(parts[1]) != nil else { return nil }
+        return "\(parts[0]):\(parts[1])"
+    }
+
+    private static func migrateAudio(from legacy: URL, to root: URL) {
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: legacy, includingPropertiesForKeys: [.isRegularFileKey]
+        )) ?? []
+        for file in files {
+            guard (try? file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
+                  audioID(for: file.lastPathComponent) != nil else { continue }
+            let destination = root.appending(path: file.lastPathComponent)
+            guard !FileManager.default.fileExists(atPath: destination.path) else { continue }
+            // Rename on the same volume; a failed migration leaves the source
+            // intact so the next launch can retry. Never touch artwork caches.
+            try? FileManager.default.moveItem(at: file, to: destination)
+        }
+        for stateURL in files where stateURL.lastPathComponent.hasSuffix(".partial.json") {
+            guard let data = try? Data(contentsOf: stateURL),
+                  let state = try? JSONDecoder().decode(PartialDownloadState.self, from: data),
+                  state.fileName == (state.fileName as NSString).lastPathComponent else { continue }
+            let source = legacy.appending(path: state.fileName)
+            let destination = root.appending(path: state.fileName)
+            let destinationState = root.appending(path: stateURL.lastPathComponent)
+            // Never combine an old offset map with a newer partial file.
+            guard !FileManager.default.fileExists(atPath: destination.path),
+                  !FileManager.default.fileExists(atPath: destinationState.path) else { continue }
+            do {
+                try FileManager.default.moveItem(at: source, to: destination)
+                try data.write(to: destinationState, options: .atomic)
+                try? FileManager.default.removeItem(at: stateURL)
+            } catch {
+                // With no offset map the transfer will safely fetch bytes again.
+            }
+        }
+    }
+
+    private static func recoverEntries(in root: URL, indexed: [String: Entry]) -> [String: Entry] {
+        var candidates = indexed
+        let files = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
+        for file in files where file.lastPathComponent.hasSuffix(".audio.json") {
+            guard let data = try? Data(contentsOf: file),
+                  let entry = try? JSONDecoder().decode(Entry.self, from: data) else { continue }
+            candidates[entry.trackID] = entry
+        }
+        // Recover legacy completed files even if the old index was lost.
+        // Partial transfers have hidden .download names and are never promoted.
+        for file in files {
+            guard let id = audioID(for: file.lastPathComponent), candidates[id] == nil,
+                  let values = try? file.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey]),
+                  values.isRegularFile == true, let size = values.fileSize, size > 0 else { continue }
+            candidates[id] = Entry(trackID: id, fileName: file.lastPathComponent,
+                                   byteCount: Int64(size), lastAccess: values.contentModificationDate ?? .now)
+        }
+        return candidates.filter { _, entry in
+            guard entry.fileName == (entry.fileName as NSString).lastPathComponent,
+                  let values = try? root.appending(path: entry.fileName).resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+                  values.isRegularFile == true, let size = values.fileSize else { return false }
+            return size > 0 && Int64(size) == entry.byteCount
+        }
     }
 
     func localURL(for track: Track) -> URL? {
         guard var entry = entries[track.id] else { return nil }
         let url = root.appending(path: entry.fileName)
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        guard let size = fileSize(at: url), size > 0, size == entry.byteCount,
+              track.size <= 0 || size == track.size else {
             entries.removeValue(forKey: track.id)
             persist()
             return nil
         }
         entry.lastAccess = .now
+        entry.track = track
         entries[track.id] = entry
+        try? persistRecord(entry)
         persist()
         return url
     }
@@ -287,6 +377,11 @@ actor CacheStore {
     }
 
     func commit(_ temporaryURL: URL, track: Track) throws -> URL {
+        if let existing = localURL(for: track) { return existing }
+        guard let actualSize = fileSize(at: temporaryURL), actualSize > 0,
+              track.size <= 0 || actualSize == track.size else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
         let ext = (track.fileName as NSString).pathExtension
         let name = ext.isEmpty ? track.id.replacingOccurrences(of: ":", with: "-") : "\(track.id.replacingOccurrences(of: ":", with: "-")).\(ext)"
         let destination = root.appending(path: name)
@@ -296,7 +391,11 @@ actor CacheStore {
         try FileManager.default.moveItem(at: temporaryURL, to: destination)
         try? FileManager.default.removeItem(at: partialLocation(for: track).stateURL)
         let size = fileSize(at: destination) ?? track.size
-        entries[track.id] = Entry(trackID: track.id, fileName: name, byteCount: size, lastAccess: .now)
+        let entry = Entry(trackID: track.id, fileName: name, byteCount: size, lastAccess: .now, track: track)
+        // Commit metadata before advertising a completed download. Per-file
+        // records recover both the index and the library after an interrupted save.
+        try persistRecord(entry)
+        entries[track.id] = entry
         evictIfNeeded(preserving: [track.id])
         persist()
         return destination
@@ -309,6 +408,7 @@ actor CacheStore {
                 try FileManager.default.removeItem(at: url)
             }
         }
+        try? FileManager.default.removeItem(at: recordURL(for: track.id))
         let partial = partialLocation(for: track)
         try? FileManager.default.removeItem(at: partial.dataURL)
         try? FileManager.default.removeItem(at: partial.stateURL)
@@ -321,6 +421,7 @@ actor CacheStore {
             if FileManager.default.fileExists(atPath: url.path) {
                 try FileManager.default.removeItem(at: url)
             }
+            try? FileManager.default.removeItem(at: recordURL(for: entry.trackID))
         }
         for partial in partialRecords() {
             try? FileManager.default.removeItem(at: partial.dataURL)
@@ -360,6 +461,7 @@ actor CacheStore {
         for entry in entries.values.sorted(by: { $0.lastAccess < $1.lastAccess }) where total > limit {
             guard !protectedIDs.contains(entry.trackID) else { continue }
             try? FileManager.default.removeItem(at: root.appending(path: entry.fileName))
+            try? FileManager.default.removeItem(at: recordURL(for: entry.trackID))
             entries.removeValue(forKey: entry.trackID)
             total -= entry.byteCount
         }
@@ -374,8 +476,9 @@ actor CacheStore {
                 changed = true
                 continue
             }
-            if size != entry.byteCount {
-                entries[trackID]?.byteCount = size
+            if size != entry.byteCount || size <= 0 {
+                // A truncated file is not a valid completed download.
+                entries.removeValue(forKey: trackID)
                 changed = true
             }
         }
@@ -423,6 +526,14 @@ actor CacheStore {
 
     private func safeName(for value: String) -> String {
         value.replacingOccurrences(of: ":", with: "-")
+    }
+
+    private func recordURL(for trackID: String) -> URL {
+        root.appending(path: "\(safeName(for: trackID)).audio.json")
+    }
+
+    private func persistRecord(_ entry: Entry) throws {
+        try JSONEncoder().encode(entry).write(to: recordURL(for: entry.trackID), options: .atomic)
     }
 
     private struct PartialRecord {

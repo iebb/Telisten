@@ -79,7 +79,6 @@ struct PlayerBar: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
         }
-        .background(.regularMaterial)
         .overlay(alignment: .bottom) {
             if let lyricPreview, bottomSafeArea > 0 {
                 VStack(alignment: .center, spacing: 0) {
@@ -95,13 +94,20 @@ struct PlayerBar: View {
                 }
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, minHeight: bottomSafeArea, alignment: .center)
-                .background(.regularMaterial)
                 .offset(y: max(bottomSafeArea - 6, 0))
                 .contentShape(Rectangle())
                 .onTapGesture { model.showNowPlaying = true }
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Lyrics preview")
             }
+        }
+        // A single surface covers both controls and safe-area lyrics. Separate
+        // materials sample different backgrounds and create a seam in dark mode.
+        .background {
+            Rectangle()
+                .fill(.regularMaterial)
+                .padding(.bottom, -bottomSafeArea)
+                .ignoresSafeArea(edges: .bottom)
         }
     }
 
