@@ -285,88 +285,22 @@ struct NowPlayingView: View {
     }
 
     private var timeline: some View {
-        VStack(spacing: 6) {
-            Slider(
-                value: Binding(get: { model.player.currentTime }, set: { model.player.seek(to: $0) }),
-                in: 0...max(model.player.duration, 1)
-            )
-            HStack {
-                Text(DisplayFormat.duration(model.player.currentTime))
-                Spacer()
-                Text("−\(DisplayFormat.duration(max(0, model.player.duration - model.player.currentTime)))")
-            }
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 26)
+        PlaybackTimeline(model: model)
     }
 
     private var controls: some View {
-        HStack(spacing: 0) {
-            Button {
-                model.player.toggleMute()
-            } label: {
-                Image(systemName: model.player.volumeSymbolName)
-                    .frame(width: 44, height: 44)
-            }
-            .foregroundStyle(model.player.isMuted ? Color.telistenAccent : .secondary)
-            .accessibilityLabel(model.player.isMuted ? "Unmute" : "Mute")
-
-            Spacer(minLength: isEmbedded ? 6 : 12)
-
-            HStack(spacing: isEmbedded ? 16 : 30) {
-                Button("Previous", systemImage: "backward.fill") { model.previous() }
-                    .labelStyle(.iconOnly)
-                if model.player.isLoading {
-                    ProgressView()
-                        .controlSize(.large)
-                        .frame(width: 52, height: 52)
-                        .accessibilityLabel("Loading track")
-                } else {
-                    Button(
-                        model.player.isPlaying ? "Pause" : "Play",
-                        systemImage: model.player.isPlaying ? "pause.circle.fill" : "play.circle.fill"
-                    ) { model.player.toggle() }
-                        .labelStyle(.iconOnly)
-                        .font(.system(size: 52))
-                }
-                Button("Next", systemImage: "forward.fill") { model.next() }
-                    .labelStyle(.iconOnly)
-            }
-
-            Spacer(minLength: isEmbedded ? 6 : 12)
-
-            playbackModeMenu
-        }
-        .buttonStyle(.plain)
-        .font(.title2)
-        .padding(.horizontal, isEmbedded ? 12 : 24)
-    }
-
-    private var playbackModeMenu: some View {
-        Menu {
-            ForEach(PlaybackMode.allCases, id: \.rawValue) { mode in
-                Button {
-                    model.setPlaybackMode(mode)
-                } label: {
-                    Label(
-                        mode.title,
-                        systemImage: mode == model.playbackMode ? "checkmark" : mode.symbolName
-                    )
-                }
-            }
-        } label: {
-            Image(systemName: model.playbackMode.symbolName)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 44, height: 44)
-        }
-        .menuIndicator(.hidden)
-        .foregroundStyle(model.playbackMode == .order ? .secondary : Color.telistenAccent)
-        .accessibilityLabel("Play mode")
-        .accessibilityValue(model.playbackMode.title)
+        PlaybackControls(model: model, compact: isEmbedded)
     }
 
     private var queue: some View {
+        PlaybackQueue(model: model)
+    }
+}
+
+private struct PlaybackQueue: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(Array(model.queue.enumerated()), id: \.element.id) { index, track in
@@ -400,6 +334,226 @@ struct NowPlayingView: View {
     }
 }
 
+private struct PlaybackTimeline: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Slider(
+                value: Binding(get: { model.player.currentTime }, set: { model.player.seek(to: $0) }),
+                in: 0...max(model.player.duration, 1)
+            )
+            HStack {
+                Text(DisplayFormat.duration(model.player.currentTime))
+                Spacer()
+                Text("−\(DisplayFormat.duration(max(0, model.player.duration - model.player.currentTime)))")
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 26)
+    }
+}
+
+private struct PlaybackControls: View {
+    @Bindable var model: AppModel
+    var compact = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button {
+                model.player.toggleMute()
+            } label: {
+                Image(systemName: model.player.volumeSymbolName)
+                    .frame(width: 44, height: 44)
+            }
+            .foregroundStyle(model.player.isMuted ? Color.telistenAccent : .secondary)
+            .accessibilityLabel(model.player.isMuted ? "Unmute" : "Mute")
+
+            Spacer(minLength: compact ? 6 : 12)
+
+            HStack(spacing: compact ? 16 : 30) {
+                Button("Previous", systemImage: "backward.fill") { model.previous() }
+                    .labelStyle(.iconOnly)
+                if model.player.isLoading {
+                    ProgressView()
+                        .controlSize(.large)
+                        .frame(width: 52, height: 52)
+                        .accessibilityLabel("Loading track")
+                } else {
+                    Button(
+                        model.player.isPlaying ? "Pause" : "Play",
+                        systemImage: model.player.isPlaying ? "pause.circle.fill" : "play.circle.fill"
+                    ) { model.player.toggle() }
+                        .labelStyle(.iconOnly)
+                        .font(.system(size: 52))
+                }
+                Button("Next", systemImage: "forward.fill") { model.next() }
+                    .labelStyle(.iconOnly)
+            }
+
+            Spacer(minLength: compact ? 6 : 12)
+
+            playbackModeMenu
+        }
+        .buttonStyle(.plain)
+        .font(.title2)
+        .padding(.horizontal, compact ? 12 : 24)
+    }
+
+    private var playbackModeMenu: some View {
+        Menu {
+            ForEach(PlaybackMode.allCases, id: \.rawValue) { mode in
+                Button {
+                    model.setPlaybackMode(mode)
+                } label: {
+                    Label(
+                        mode.title,
+                        systemImage: mode == model.playbackMode ? "checkmark" : mode.symbolName
+                    )
+                }
+            }
+        } label: {
+            Image(systemName: model.playbackMode.symbolName)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 44, height: 44)
+        }
+        .menuIndicator(.hidden)
+        .foregroundStyle(model.playbackMode == .order ? .secondary : Color.telistenAccent)
+        .accessibilityLabel("Play mode")
+        .accessibilityValue(model.playbackMode.title)
+    }
+
+}
+
+#if os(iOS)
+/// A tabletop separates content for viewing from controls for touching. Both
+/// regions share the existing player; changing the layout never restarts audio.
+struct TabletopPlayerView<Collection: View>: View {
+    @Bindable var model: AppModel
+    let upperRegionHeight: CGFloat
+    @ViewBuilder var collection: () -> Collection
+    @State private var showsQueue = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            stage
+                .frame(height: max(0, upperRegionHeight - 16))
+                .clipped()
+
+            // Leave the screen midpoint free of text, sliders and tap targets.
+            Color.clear.frame(height: 32).accessibilityHidden(true)
+
+            VStack(spacing: 8) {
+                PlaybackTimeline(model: model)
+                    .frame(maxWidth: 580)
+                PlaybackControls(model: model)
+                    .frame(maxWidth: 480)
+            }
+            .padding(.bottom, 10)
+            .frame(maxWidth: .infinity)
+
+            Divider().padding(.horizontal, 24)
+            Group {
+                if showsQueue {
+                    NavigationStack {
+                        PlaybackQueue(model: model)
+                            .navigationTitle("Up Next")
+                            .navigationBarTitleDisplayMode(.inline)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button("Browse", systemImage: "chevron.left") { showsQueue = false }
+                                }
+                            }
+                    }
+                } else {
+                    collection()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipped()
+        }
+        .background(Color.telistenBackground)
+        .task(id: model.player.track?.id) {
+            guard let track = model.player.track else { return }
+            await model.loadLyrics(for: track)
+        }
+    }
+
+    private var stage: some View {
+        GeometryReader { geometry in
+            VStack(spacing: 8) {
+                HStack {
+                    Button("Listen Together", systemImage: "dot.radiowaves.left.and.right") {
+                        model.showListenTogetherSheet = true
+                    }
+                    Spacer()
+                    Button(showsQueue ? "Browse music" : "Up Next", systemImage: "list.bullet") {
+                        showsQueue.toggle()
+                    }
+                    .accessibilityValue(showsQueue ? "Shown" : "Hidden")
+                    if let track = model.player.track {
+                        Button("Save to playlist", systemImage: "text.badge.plus") {
+                            model.openPlaylistPicker(for: track)
+                        }
+                    }
+                    Button("Close", systemImage: "xmark") { model.showNowPlaying = false }
+                        .accessibilityIdentifier("tabletop.close")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(TabletopActionStyle())
+
+                HStack(spacing: 20) {
+                    if let track = model.player.track {
+                        VStack(alignment: .leading, spacing: 12) {
+                            if geometry.size.height >= 240 {
+                                TrackArtwork(
+                                    model: model, track: track,
+                                    size: min(180, max(72, geometry.size.height - 158))
+                                )
+                                .shadow(color: .black.opacity(0.12), radius: 14, y: 8)
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(track.displayTitle)
+                                    .font(.title2.bold())
+                                    .lineLimit(2)
+                                Text(track.displayArtist)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                if case let .live(session) = model.listenTogetherState {
+                                    Text("Live in \(session.chat.title)")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.telistenAccent)
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                        .frame(width: min(230, geometry.size.width * 0.34), alignment: .leading)
+                    }
+                    LyricsPanel(model: model, style: .tabletop)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 12)
+        }
+    }
+}
+
+private struct TabletopActionStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 20, weight: .medium))
+            .foregroundStyle(Color.telistenAccent)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.5 : 1)
+    }
+}
+#endif
+
 struct DesktopLyricsView: View {
     @Bindable var model: AppModel
 
@@ -419,6 +573,7 @@ struct LyricsPanel: View {
     enum Style: Equatable {
         case player
         case spread
+        case tabletop
         case desktop
     }
 
@@ -457,9 +612,9 @@ struct LyricsPanel: View {
                 )
             }
         }
-        .padding(.horizontal, style == .desktop ? 42 : 18)
+        .padding(.horizontal, style == .desktop ? 42 : (style == .tabletop ? 0 : 18))
         .padding(.top, style == .desktop ? 10 : 0)
-        .padding(.bottom, style == .desktop ? 0 : 18)
+        .padding(.bottom, style == .desktop || style == .tabletop ? 0 : 18)
     }
 
     private func lyricsChooser(selected: TrackLyrics) -> some View {
@@ -607,12 +762,12 @@ struct LyricsPanel: View {
                         .foregroundStyle(Color.telistenAccent)
                         .padding(.top, 12)
                 }
-                .padding(style == .desktop ? 28 : 20)
+                .padding(style == .desktop ? 28 : (style == .tabletop ? 12 : 20))
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .contentMargins(
                 .vertical,
-                style == .desktop ? 150 : (lyrics.isSynced ? (style == .spread ? 40 : 90) : 0),
+                style == .desktop ? 150 : (lyrics.isSynced ? (style == .player ? 90 : 40) : 0),
                 for: .scrollContent
             )
             .background(
@@ -632,6 +787,9 @@ struct LyricsPanel: View {
     private func lyricFont(isSynced: Bool, isActive: Bool) -> Font {
         if style == .desktop {
             return .system(size: isActive ? 34 : 27, weight: isActive ? .bold : .semibold)
+        }
+        if style == .tabletop {
+            return .system(size: isActive ? 28 : 22, weight: isActive ? .bold : .medium)
         }
         return isSynced ? (isActive ? .title2.bold() : .title3.weight(.semibold)) : .body
     }

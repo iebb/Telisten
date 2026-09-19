@@ -1,4 +1,59 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
+
+#if os(iOS)
+/// Window bounds stay stable when the keyboard appears, unlike the proposed
+/// SwiftUI content size. Read the hosting window, not UIScreen.main, for scenes.
+private struct PlayerWindowSizeReader: UIViewRepresentable {
+    @Binding var size: CGSize
+    @Binding var displayMidpoint: CGFloat?
+
+    func makeUIView(context: Context) -> ObserverView { ObserverView() }
+
+    func updateUIView(_ view: ObserverView, context: Context) {
+        view.onSizeChange = { newSize, midpoint in
+            size = newSize
+            displayMidpoint = midpoint
+        }
+        view.reportSize()
+    }
+
+    final class ObserverView: UIView {
+        var onSizeChange: ((CGSize, CGFloat) -> Void)?
+        private var lastSize: CGSize = .zero
+        private var lastMidpoint: CGFloat?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            reportSize()
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            reportSize()
+        }
+
+        func reportSize() {
+            guard let window else { return }
+            let size = window.bounds.size
+            let screen = window.screen
+            let midpoint = convert(
+                CGPoint(x: screen.bounds.midX, y: screen.bounds.midY),
+                from: screen.coordinateSpace
+            ).y
+            guard size != lastSize || midpoint != lastMidpoint else { return }
+            lastSize = size
+            lastMidpoint = midpoint
+            Task { @MainActor [weak self] in
+                guard let self, self.window?.bounds.size == size else { return }
+                self.onSizeChange?(size, midpoint)
+            }
+        }
+    }
+}
+#endif
 
 struct LibraryView: View {
     @Bindable var model: AppModel
@@ -15,6 +70,8 @@ struct LibraryView: View {
     @FocusState private var playlistTitleFocused: Bool
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var windowSize: CGSize = .zero
+    @State private var displayMidpoint: CGFloat?
     #elseif os(macOS)
     @State private var showsDesktopLyrics = false
     #endif
@@ -26,7 +83,7 @@ struct LibraryView: View {
             #else
             let wideLayout = true
             #endif
-            libraryColumns(wideLayout: wideLayout, width: geometry.size.width)
+            libraryColumns(wideLayout: wideLayout, geometry: geometry)
             .onChange(of: model.selected) { _, value in
                 Task { await model.select(value) }
             }
@@ -95,12 +152,36 @@ struct LibraryView: View {
                 Text("This permanently deletes \(playlist.title) from Telegram. This cannot be undone.")
             }
         }
+        #if os(iOS)
+        .background { PlayerWindowSizeReader(size: $windowSize, displayMidpoint: $displayMidpoint) }
+        #endif
     }
 
     @ViewBuilder
-    private func libraryColumns(wideLayout: Bool, width: CGFloat) -> some View {
+    private func libraryColumns(wideLayout: Bool, geometry: GeometryProxy) -> some View {
         #if os(iOS)
-        if wideLayout {
+        if wideLayout, model.showNowPlaying, model.player.track != nil,
+           (windowSize == .zero ? geometry.size.height > geometry.size.width : windowSize.height > windowSize.width) {
+            // A tall inner display works as a tabletop: a viewing surface above
+            // a touch surface. This is an aspect-ratio fallback, not hinge sensing.
+            // Account for asymmetric system bars when locating the screen midpoint.
+            let screenHeight = windowSize == .zero
+                ? geometry.frame(in: .global).maxY + geometry.safeAreaInsets.bottom
+                : windowSize.height
+            let midpoint = displayMidpoint ?? (screenHeight / 2 - geometry.frame(in: .global).minY)
+            // Keyboard avoidance can reduce the available height without changing
+            // the device's arrangement. Give browsing room instead of switching panes.
+            let upperHeight = min(midpoint, geometry.size.height * 0.48)
+            TabletopPlayerView(model: model, upperRegionHeight: upperHeight) {
+                NavigationStack {
+                    if model.selected != nil {
+                        trackBrowser
+                    } else {
+                        sidebar
+                    }
+                }
+            }
+        } else if wideLayout {
             // Two independent navigation roots keep both panes interactive. A
             // NavigationSplitView may overlay its sidebar at this aspect ratio.
             HStack(spacing: 0) {
@@ -111,7 +192,7 @@ struct LibraryView: View {
                         sidebar
                     }
                 }
-                .frame(width: model.showNowPlaying ? width / 2 : min(260, width * 0.36))
+                .frame(width: model.showNowPlaying ? geometry.size.width / 2 : min(260, geometry.size.width * 0.36))
                 Divider()
                 NavigationStack {
                     if model.showNowPlaying, model.player.track != nil {
