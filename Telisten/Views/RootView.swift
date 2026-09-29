@@ -2,6 +2,9 @@ import SwiftUI
 
 struct RootView: View {
     @Bindable var model: AppModel
+    #if DEBUG && (os(macOS) || os(visionOS))
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     var body: some View {
         Group {
@@ -12,6 +15,13 @@ struct RootView: View {
             }
         }
         .tint(.telistenAccent)
+        #if DEBUG && (os(macOS) || os(visionOS))
+        .task {
+            if ProcessInfo.processInfo.arguments.contains("--demo-floating-lyrics") {
+                openWindow(id: LyricsWindow.id, value: LyricsWindow.currentPlayback)
+            }
+        }
+        #endif
         .alert("Error", isPresented: errorIsPresented) {
             Button("OK") { model.errorMessage = nil }
         } message: {

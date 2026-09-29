@@ -217,11 +217,15 @@ struct LibraryView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar.navigationSplitViewColumnWidth(min: 210, ideal: 250, max: 320)
         } detail: {
+            #if os(macOS)
             if showsDesktopLyrics, model.player.track != nil {
                 DesktopLyricsView(model: model)
             } else {
                 trackBrowser
             }
+            #else
+            trackBrowser
+            #endif
         }
         #endif
     }
@@ -328,7 +332,7 @@ struct LibraryView: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
-            #if os(iOS)
+            #if os(iOS) || os(visionOS)
             ToolbarItem(placement: .topBarLeading) { accountMenu }
             #else
             ToolbarItem(placement: .navigation) { accountMenu }

@@ -1,5 +1,5 @@
 import SwiftUI
-#if os(iOS)
+#if os(iOS) || os(visionOS)
 import UIKit
 #elseif os(macOS)
 import AppKit
@@ -63,7 +63,7 @@ struct TrackArtwork: View {
 
     private var platformImage: Image? {
         guard let data = model.artworkData[track.id] else { return nil }
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         guard let image = UIImage(data: data) else { return nil }
         return Image(uiImage: image)
         #elseif os(macOS)
@@ -111,7 +111,7 @@ struct ChatAvatar: View {
 
     private var platformImage: Image? {
         guard let data = model.chatAvatarData[chat.id] else { return nil }
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         guard let image = UIImage(data: data) else { return nil }
         return Image(uiImage: image)
         #elseif os(macOS)
@@ -161,7 +161,7 @@ struct AccountAvatar: View {
 
     private var platformImage: Image? {
         guard let data = model.accountAvatarData[account.id] else { return nil }
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         guard let image = UIImage(data: data) else { return nil }
         return Image(uiImage: image)
         #elseif os(macOS)

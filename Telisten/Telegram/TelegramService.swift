@@ -2524,6 +2524,8 @@ actor TelegramService {
     private var deviceModel: String {
         #if os(macOS)
         "Mac"
+        #elseif os(visionOS)
+        "Apple Vision Pro"
         #else
         "iPhone"
         #endif

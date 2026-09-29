@@ -1,5 +1,5 @@
 import SwiftUI
-#if os(iOS)
+#if os(iOS) || os(visionOS)
 import UIKit
 #elseif os(macOS)
 import AppKit
@@ -40,7 +40,9 @@ struct LoginView: View {
                 .padding(.vertical, 28)
                 .frame(maxWidth: .infinity)
             }
+            #if !os(visionOS)
             .scrollDismissesKeyboard(.interactively)
+            #endif
         }
         .background(Color.telistenBackground)
     }
@@ -102,7 +104,7 @@ struct LoginView: View {
                         TextField("+81 90 1234 5678", text: $phone)
                             .font(.title3.weight(.medium))
                             .focused($focusedField, equals: .phone)
-                            #if os(iOS)
+                            #if os(iOS) || os(visionOS)
                             .keyboardType(.phonePad)
                             .textContentType(.telephoneNumber)
                             #endif
@@ -130,7 +132,7 @@ struct LoginView: View {
                     TextField("Code", text: $code)
                         .font(.title3.weight(.medium))
                         .focused($focusedField, equals: .code)
-                        #if os(iOS)
+                        #if os(iOS) || os(visionOS)
                         .keyboardType(.asciiCapable)
                         .textContentType(.oneTimeCode)
                         #endif
@@ -146,7 +148,7 @@ struct LoginView: View {
                     TextField("name@example.com", text: $email)
                         .font(.title3.weight(.medium))
                         .focused($focusedField, equals: .email)
-                        #if os(iOS)
+                        #if os(iOS) || os(visionOS)
                         .keyboardType(.emailAddress)
                         .textContentType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -163,7 +165,7 @@ struct LoginView: View {
                     TextField("Code", text: $emailCode)
                         .font(.title3.weight(.medium))
                         .focused($focusedField, equals: .emailCode)
-                        #if os(iOS)
+                        #if os(iOS) || os(visionOS)
                         .keyboardType(.asciiCapable)
                         .textContentType(.oneTimeCode)
                         #endif
@@ -357,7 +359,9 @@ struct ApplicationIconView: View {
     }
 
     private var applicationIcon: Image {
-        #if os(iOS)
+        #if os(visionOS)
+        return Image("BrandMark")
+        #elseif os(iOS)
         let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any]
         let primaryIcon = icons?["CFBundlePrimaryIcon"] as? [String: Any]
         let iconName = (primaryIcon?["CFBundleIconFiles"] as? [String])?.last ?? "Appicon60x60"

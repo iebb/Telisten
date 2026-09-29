@@ -40,7 +40,7 @@ struct ListenTogetherContactPicker: View {
             .listStyle(.plain)
             .searchable(text: $query, prompt: "Find Telegram contacts")
             .navigationTitle("Invite Contacts")
-            #if os(iOS)
+            #if os(iOS) || os(visionOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {

@@ -1,0 +1,13 @@
+{
+  "info": {
+    "author": "xcode",
+    "version": 1
+  },
+  "images": [
+    {
+      "filename": "Foreground.png",
+      "idiom": "universal",
+      "scale": "2x"
+    }
+  ]
+}

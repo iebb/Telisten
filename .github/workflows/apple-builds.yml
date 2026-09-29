@@ -37,6 +37,7 @@ jobs:
         run: |
           bash Scripts/test-playlist-mirror.sh
           bash Scripts/test-offline-lyrics.sh
+          bash Scripts/test-floating-lyrics.sh
           bash Scripts/test-audio-documents.sh
           bash Scripts/test-playback.sh
           bash Scripts/test-cache-store.sh
@@ -50,6 +51,12 @@ jobs:
         run: >-
           xcodebuild -quiet -project Telisten.xcodeproj -scheme Telisten-macOS
           -configuration Debug -destination 'platform=macOS'
+          -derivedDataPath "$RUNNER_TEMP/TelistenBuild" -skipMacroValidation
+          -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO build
+      - name: Build visionOS Simulator
+        run: >-
+          xcodebuild -quiet -project Telisten.xcodeproj -scheme Telisten-visionOS
+          -configuration Debug -destination 'generic/platform=visionOS Simulator'
           -derivedDataPath "$RUNNER_TEMP/TelistenBuild" -skipMacroValidation
           -onlyUsePackageVersionsFromResolvedFile CODE_SIGNING_ALLOWED=NO build
       - name: Remove generated credential file

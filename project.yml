@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     iOS: "18.0"
     macOS: "15.0"
+    visionOS: "2.0"
   xcodeVersion: "26.0"
   groupSortPosition: top
   generateEmptyDirectories: true
@@ -40,9 +41,9 @@ targetTemplates:
         excludes:
           - Info-iOS.plist
           - Info-macOS.plist
+          - Info-visionOS.plist
+          - VisionAssets.xcassets
       - path: Generated/TelegramAPI
-      - path: Appicon.icon
-        buildPhase: resources
     dependencies:
       - package: SwiftMTProto
         product: TLCoding
@@ -69,6 +70,9 @@ targets:
   Telisten-iOS:
     templates: [TelistenApp]
     platform: iOS
+    sources:
+      - path: Appicon.icon
+        buildPhase: resources
     info:
       path: Telisten/Info-iOS.plist
       properties:
@@ -102,6 +106,9 @@ targets:
   Telisten-macOS:
     templates: [TelistenApp]
     platform: macOS
+    sources:
+      - path: Appicon.icon
+        buildPhase: resources
     info:
       path: Telisten/Info-macOS.plist
       properties:
@@ -116,6 +123,32 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Telisten/Telisten-macOS.entitlements
         INFOPLIST_KEY_LSMinimumSystemVersion: "15.0"
         INFOPLIST_KEY_NSMainStoryboardFile: ""
+  Telisten-visionOS:
+    templates: [TelistenApp]
+    platform: visionOS
+    sources:
+      - path: Telisten/VisionAssets.xcassets
+    info:
+      path: Telisten/Info-visionOS.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        TelegramAPIID: $(TELEGRAM_API_ID)
+        TelegramAPIHash: $(TELEGRAM_API_HASH)
+        TelistenKeychainAccessGroupPrefix: $(AppIdentifierPrefix)
+        UIBackgroundModes:
+          - audio
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+          UIApplicationPreferredDefaultSceneSessionRole: UIWindowSceneSessionRoleApplication
+    settings:
+      base:
+        CODE_SIGN_ENTITLEMENTS: Telisten/Telisten-iOS.entitlements
+        TARGETED_DEVICE_FAMILY: "7"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
 schemes:
   Telisten-iOS:
     build:
@@ -131,6 +164,16 @@ schemes:
     build:
       targets:
         Telisten-macOS: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release
+  Telisten-visionOS:
+    build:
+      targets:
+        Telisten-visionOS: all
     run:
       config: Debug
     test:

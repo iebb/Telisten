@@ -33,7 +33,7 @@ struct SettingsView: View {
                 Section {
                     TextField("Playlist folder name", text: $playlistFolderDraft)
                         .autocorrectionDisabled()
-                        #if os(iOS)
+                        #if os(iOS) || os(visionOS)
                         .textInputAutocapitalization(.never)
                         #endif
                         .onSubmit { applyPlaylistFolder() }
@@ -55,7 +55,7 @@ struct SettingsView: View {
                 Section {
                     TextField("https://lrclib.net", text: $lyricsServerDraft)
                         .autocorrectionDisabled()
-                        #if os(iOS)
+                        #if os(iOS) || os(visionOS)
                         .textContentType(.URL)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
@@ -122,7 +122,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .navigationTitle("Settings")
             .toolbar {
-                #if os(iOS)
+                #if os(iOS) || os(visionOS)
                 if model.searchBots.count > 1 {
                     ToolbarItem(placement: .primaryAction) { EditButton() }
                 }
@@ -254,7 +254,7 @@ private struct SearchBotEditorView: View {
                 Section {
                     TextField("@your_search_bot", text: $botName)
                         .autocorrectionDisabled()
-                        #if os(iOS)
+                        #if os(iOS) || os(visionOS)
                         .textInputAutocapitalization(.never)
                         .textContentType(.username)
                         #endif

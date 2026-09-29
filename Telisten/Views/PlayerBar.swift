@@ -69,6 +69,10 @@ struct PlayerBar: View {
                     .accessibilityValue(showsLyrics ? "Shown" : "Hidden")
                     .keyboardShortcut("l", modifiers: .command)
                     #endif
+                    #if os(macOS) || os(visionOS)
+                    OpenLyricsWindowButton()
+                        .labelStyle(.iconOnly)
+                    #endif
                     Button("Previous", systemImage: "backward.fill") { model.previous() }
                         .labelStyle(.iconOnly)
                     if model.player.isLoading {
@@ -95,7 +99,12 @@ struct PlayerBar: View {
                 }
                 .font(.callout)
             }
+            #if os(visionOS)
+            .buttonStyle(.borderless)
+            .controlSize(.large)
+            #else
             .buttonStyle(.plain)
+            #endif
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
         }

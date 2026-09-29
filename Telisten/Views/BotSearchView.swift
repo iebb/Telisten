@@ -170,7 +170,7 @@ struct BotSearchConversationView: View {
                 }
             }
             .navigationTitle(model.activeBotSearchConfig?.displayBotName ?? "Search bot")
-            #if os(iOS)
+            #if os(iOS) || os(visionOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {

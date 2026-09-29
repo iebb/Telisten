@@ -264,7 +264,7 @@ final class AudioPlayer {
     }
 
     private func configureAudioSession() {
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default)
@@ -276,7 +276,7 @@ final class AudioPlayer {
     }
 
     private func activateAudioSession() {
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         try? AVAudioSession.sharedInstance().setActive(true)
         #endif
     }

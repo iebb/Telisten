@@ -83,6 +83,8 @@ struct NowPlayingView: View {
             #if os(macOS)
             .overlay(alignment: .topTrailing) {
                 HStack(spacing: 8) {
+                    OpenLyricsWindowButton()
+                        .labelStyle(.iconOnly)
                     Button("Listen Together", systemImage: "dot.radiowaves.left.and.right") {
                         model.showListenTogetherSheet = true
                     }
@@ -107,6 +109,20 @@ struct NowPlayingView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
+                #if os(visionOS)
+                ToolbarItemGroup(placement: .primaryAction) {
+                    OpenLyricsWindowButton()
+                    Button("Listen Together", systemImage: "dot.radiowaves.left.and.right") {
+                        model.showListenTogetherSheet = true
+                    }
+                    if let track = model.player.track {
+                        Button("Save to playlist", systemImage: "text.badge.plus") {
+                            model.openPlaylistPicker(for: track)
+                        }
+                    }
+                    Button("Close", systemImage: "xmark") { dismiss() }
+                }
+                #endif
                 #if os(iOS)
                 ToolbarItemGroup(placement: .primaryAction) {
                     if let track = model.player.track {
@@ -746,16 +762,12 @@ struct LyricsPanel: View {
                         let isPast = activeID.flatMap { active in
                             lyrics.lines.firstIndex(where: { $0.id == active })
                         }.map { index < $0 } ?? false
-                        Text(line.text.isEmpty ? " " : line.text)
+                        lyricLine(line)
                             .font(lyricFont(isSynced: lyrics.isSynced, isActive: isActive))
                             .foregroundStyle(isActive || !lyrics.isSynced ? Color.primary : Color.secondary)
                             .opacity(lyricOpacity(isSynced: lyrics.isSynced, isActive: isActive, isPast: isPast))
                             .scaleEffect(isActive ? (style == .desktop ? 1.035 : 1.02) : 1, anchor: .leading)
                             .id(line.id)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                if let time = line.time { model.player.seek(to: time) }
-                            }
                     }
                     Link("Lyrics by \(lyrics.source)", destination: model.lyricsServerURL)
                         .font(.caption.weight(.semibold))
@@ -781,6 +793,26 @@ struct LyricsPanel: View {
                 }
             }
             .animation(.easeInOut(duration: 0.22), value: activeID)
+        }
+    }
+
+    @ViewBuilder
+    private func lyricLine(_ line: LyricLine) -> some View {
+        if let time = line.time {
+            Button {
+                model.player.seek(to: time)
+            } label: {
+                Text(line.text.isEmpty ? " " : line.text)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Seek to \(DisplayFormat.duration(time))")
+            #if os(visionOS)
+            .hoverEffect(.highlight)
+            #endif
+        } else {
+            Text(line.text.isEmpty ? " " : line.text)
         }
     }
 

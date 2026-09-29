@@ -49,7 +49,7 @@ struct ListenTogetherView: View {
             .listStyle(.plain)
             .searchable(text: $query, prompt: "Find a group or channel")
             .navigationTitle("Listen Together")
-            #if os(iOS)
+            #if os(iOS) || os(visionOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
