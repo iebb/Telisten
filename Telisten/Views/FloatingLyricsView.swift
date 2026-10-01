@@ -36,6 +36,10 @@ struct FloatingLyricsView: View {
     @State private var windowController = LyricsOverlayWindowController()
     #endif
 
+    init(model: AppModel) {
+        self.model = model
+    }
+
     private var lyrics: TrackLyrics? {
         guard let track = model.player.track, case let .loaded(value) = model.lyricsState,
               value.trackID == track.id else { return nil }
