@@ -1,33 +1,26 @@
 # Xcode Cloud release workflow
 
-App Store Connect contains one enabled workflow named `Default` for `Telisten.xcodeproj`.
-
-## Start condition
-
-- Repository: `iebb/Telisten`
-- Branch: exact match `master`
-- Automatically cancel superseded builds: enabled
+App Store Connect has an enabled `Default` workflow for `Telisten.xcodeproj`. It runs on changes to `master` and automatically cancels superseded builds.
 
 ## Archive actions
 
-1. `Archive - iOS`: scheme `Telisten-iOS`, platform iOS, App Store-eligible archive
-2. `Archive - macOS`: scheme `Telisten-macOS`, destination Any Mac, App Store-eligible archive
+| Platform | Scheme | Distribution preparation |
+| --- | --- | --- |
+| iOS | `Telisten-iOS` | App Store Connect |
+| macOS | `Telisten-macOS` (Any Mac) | App Store Connect |
+| visionOS | `Telisten-visionOS` | App Store Connect |
 
-## Required secret environment variables
+Each platform has its own target and shared archive scheme. The visionOS app record uses the existing `ad.neko.player` bundle ID in App Store Connect.
 
-Add these two workflow environment variables in App Store Connect and mark both **Secret**:
+## TestFlight post-actions
 
-- `TELEGRAM_API_ID`
-- `TELEGRAM_API_HASH`
+- iOS and macOS archives go to the existing `Internal` and `External` groups.
+- visionOS archives go to the existing `Internal` group for initial validation. Add an external post-action after a visionOS build has passed testing and its external TestFlight requirements are ready.
 
-`ci_scripts/ci_post_clone.sh` passes them to `Scripts/generate-local-config.sh`, which writes the ignored `.local/Telegram.xcconfig`. Never put either value in a tracked file.
+Xcode Cloud uploads an archive after its archive action succeeds. App Store Connect processes the build before it becomes available in TestFlight. Check the build and post-action status in Xcode Cloud after pushing to `master`.
 
-The post-clone script also enables Xcode's noninteractive macro validation bypass for `TLCodingMacros`, the sole compiler macro and one pinned by `Package.resolved`. Local developers should continue reviewing and explicitly trusting the package in Xcode.
+## Build environment
 
-## TestFlight
+The workflow uses the latest release of Xcode and macOS. It supplies `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` through shared workflow environment variables. `ci_scripts/ci_post_clone.sh` passes them to `Scripts/generate-local-config.sh`, which writes the ignored `.local/Telegram.xcconfig`. Do not put either value in a tracked file.
 
-Distribute only through the internal `Admins` group. Do not create an external group or public link for Telisten. Apple requires Xcode Cloud builds to be added to the internal group after the build finishes processing; the group must contain only eligible App Store Connect users with the Account Holder or Admin role.
-
-## Verification
-
-Xcode Cloud run 4 completed successfully on 2026-08-24 from commit `a660fb9`. Both archive actions and both internal TestFlight distribution actions succeeded.
+The post-clone script also enables Xcode's noninteractive macro validation bypass for the pinned `TLCodingMacros` package. Local developers should continue reviewing and explicitly trusting the package in Xcode.
