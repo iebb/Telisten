@@ -23,7 +23,7 @@ struct ListenTogetherView: View {
                     }
                 case let .failed(message):
                     Section {
-                        Label(message, systemImage: "exclamationmark.triangle")
+                        Label(localizedUI(message), systemImage: "exclamationmark.triangle")
                             .foregroundStyle(.secondary)
                     }
                 case let .live(session):
@@ -105,7 +105,7 @@ struct ListenTogetherView: View {
                     Text(session.chat.title)
                         .font(.headline)
                         .lineLimit(1)
-                    Text(session.role == .host ? "Broadcasting from this device" : "Listening in sync")
+                    Text(localizedUI(session.role == .host ? "Broadcasting from this device" : "Listening in sync"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -147,7 +147,7 @@ struct ListenTogetherView: View {
                 Button {
                     Task { await loadInviteLink(for: session.chat, reload: true) }
                 } label: {
-                    Label(inviteLinkError, systemImage: "arrow.clockwise")
+                    Label(localizedUI(inviteLinkError), systemImage: "arrow.clockwise")
                         .foregroundStyle(.secondary)
                 }
             }

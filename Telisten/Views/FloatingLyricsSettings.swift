@@ -165,13 +165,13 @@ struct FloatingLyricsSettingsView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(title)
+                Text(localizedUI(title))
                 Spacer()
                 Text("\(Int((value.wrappedValue * (percent ? 100 : 1)).rounded()))\(percent ? "%" : suffix)")
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
-            Slider(value: value, in: range, step: step) { Text(title) }
+            Slider(value: value, in: range, step: step) { Text(localizedUI(title)) }
                 .labelsHidden()
                 .accessibilityIdentifier("lyrics.setting.\(title)")
         }

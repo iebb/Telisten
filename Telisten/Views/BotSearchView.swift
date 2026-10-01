@@ -341,7 +341,7 @@ struct BotSearchConversationView: View {
     }
 
     private func errorRow(_ error: String) -> some View {
-        Label(error, systemImage: "exclamationmark.circle.fill")
+        Label(localizedUI(error), systemImage: "exclamationmark.circle.fill")
             .font(.caption)
             .foregroundStyle(.red)
             .frame(maxWidth: .infinity, alignment: .leading)

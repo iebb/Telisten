@@ -40,6 +40,8 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import ad.neko.telisten.tr
+import ad.neko.telisten.countLabel
 import ad.neko.telisten.data.*
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
@@ -53,8 +55,9 @@ import org.drinkless.tdlib.TdApi as T
     var playlistPicker by remember { mutableStateOf(false) }
     var together by remember { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
-    LaunchedEffect(model.notice) {
-        model.notice?.let { snackbar.showSnackbar(it, withDismissAction = true); model.notice = null }
+    val notice = model.notice?.let { tr(it) }
+    LaunchedEffect(notice) {
+        notice?.let { snackbar.showSnackbar(it, withDismissAction = true); model.notice = null }
     }
     BackHandler(model.selectedChat != null && !model.nowPlaying && !settings) { model.select(null) }
     Scaffold(
@@ -78,7 +81,7 @@ import org.drinkless.tdlib.TdApi as T
                                 NavigationBarItem(
                                     selected = model.page == page, onClick = { model.page = page },
                                     icon = { Icon(icon, null, Modifier.size(22.dp)) },
-                                    label = { Text(page) },
+                                    label = { Text(tr(page)) },
                                 )
                             }
                         }
@@ -108,8 +111,8 @@ import org.drinkless.tdlib.TdApi as T
     if (model.activeBot != null) BotSheet(model)
     if (together) TogetherSheet(model) { together = false }
     model.error?.let { message ->
-        AlertDialog(onDismissRequest = { model.error = null }, title = { Text("Couldn't finish that") },
-            text = { Text(message) }, confirmButton = { TextButton({ model.error = null }) { Text("OK") } })
+        AlertDialog(onDismissRequest = { model.error = null }, title = { Text(tr("Couldn't finish that")) },
+            text = { Text(tr(message)) }, confirmButton = { TextButton({ model.error = null }) { Text(tr("OK")) } })
     }
 }
 
@@ -122,32 +125,32 @@ import org.drinkless.tdlib.TdApi as T
             Icon(Icons.Rounded.GraphicEq, null, tint = MaterialTheme.colorScheme.primary)
             Text("Telisten", style = MaterialTheme.typography.titleLarge)
         }
-        Text("Sign in to Telegram", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 12.dp))
-        Text("Browse your chats, play music, and save songs offline.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("Sign in to Telegram"), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 12.dp))
+        Text(tr("Browse your chats, play music, and save songs offline."), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(when (step) {
+                Text(tr(when (step) {
                     "password" -> "Two-step verification"
                     "code", "emailCode" -> "Verification code"
                     "email" -> "Login email"
                     "qr" -> "Scan with Telegram"
                     else -> "Your account"
-                }, style = MaterialTheme.typography.titleMedium)
-                Text(model.auth.hint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }), style = MaterialTheme.typography.titleMedium)
+                Text(tr(model.auth.hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (step == "connecting") LoadingIndicator(Modifier.size(32.dp))
                 if (step in listOf("phone", "code", "emailCode", "email", "password")) {
                     OutlinedTextField(
                         input, { input = it }, Modifier.fillMaxWidth(),
-                        label = { Text(when (step) { "phone" -> "Phone number (+81 …)"; "email" -> "Email address"; "password" -> "Password"; else -> "Verification code" }) },
+                        label = { Text(tr(when (step) { "phone" -> "Phone number (+81 …)"; "email" -> "Email address"; "password" -> "Password"; else -> "Verification code" })) },
                         singleLine = true, shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (step == "password") PasswordVisualTransformation() else VisualTransformation.None,
                         keyboardOptions = KeyboardOptions(keyboardType = when (step) { "phone" -> KeyboardType.Phone; "email" -> KeyboardType.Email; "password" -> KeyboardType.Password; else -> KeyboardType.Number }, imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { model.authenticate(input) }),
                     )
-                    Button({ model.authenticate(input) }, Modifier.fillMaxWidth().height(48.dp), enabled = input.isNotBlank() && !model.busy) { Text("Continue") }
+                    Button({ model.authenticate(input) }, Modifier.fillMaxWidth().height(48.dp), enabled = input.isNotBlank() && !model.busy) { Text(tr("Continue")) }
                 }
                 if (step == "phone") TextButton(model::qrLogin) {
-                    Icon(Icons.Rounded.QrCode, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("Sign in with QR code")
+                    Icon(Icons.Rounded.QrCode, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text(tr("Sign in with QR code"))
                 }
                 if (step == "qr") {
                     val bitmap = remember(model.auth.link) {
@@ -156,35 +159,36 @@ import org.drinkless.tdlib.TdApi as T
                             for (x in 0 until 480) for (y in 0 until 480) setPixel(x, y, if (bits[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
                         }
                     }
-                    Image(bitmap.asImageBitmap(), "Telegram sign-in QR code", Modifier.size(220.dp).align(Alignment.CenterHorizontally))
-                    TextButton(model::qrLogin) { Text("Refresh QR code") }
+                    Image(bitmap.asImageBitmap(), tr("Telegram sign-in QR code"), Modifier.size(220.dp).align(Alignment.CenterHorizontally))
+                    TextButton(model::qrLogin) { Text(tr("Refresh QR code")) }
                 }
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(model::enableDemo) { Text("Explore demo") }
-            TextButton({ model.page = "Downloads" }) { Text("Listen offline") }
+            TextButton(model::enableDemo) { Text(tr("Explore demo")) }
+            TextButton({ model.page = "Downloads" }) { Text(tr("Listen offline")) }
         }
-        Text("Connects directly to Telegram. No Telisten server.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton({ uriHandler.openUri("https://docs.kitta.co/telisten/") }) { Text("Privacy policy") }
+        Text(tr("Connects directly to Telegram. No Telisten server."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        TextButton({ uriHandler.openUri("https://docs.kitta.co/telisten/") }) { Text(tr("Privacy policy")) }
     }
 }
 
 @Composable private fun CompactSearch(value: String, onChange: (String) -> Unit, placeholder: String, onSearch: () -> Unit) {
     val focus = LocalFocusManager.current
+    val searchDescription = tr("Search library")
     fun submit() { focus.clearFocus(); onSearch() }
     Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
         Row(Modifier.heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Search, null, Modifier.padding(start = 12.dp, end = 10.dp).size(20.dp), MaterialTheme.colorScheme.onSurfaceVariant)
             BasicTextField(
-                value, onChange, Modifier.weight(1f).heightIn(min = 48.dp).padding(vertical = 12.dp).semantics { contentDescription = "Search library" },
+                value, onChange, Modifier.weight(1f).heightIn(min = 48.dp).padding(vertical = 12.dp).semantics { contentDescription = searchDescription },
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                 singleLine = true, cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { submit() }),
-                decorationBox = { field -> Box { if (value.isEmpty()) Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant); field() } },
+                decorationBox = { field -> Box { if (value.isEmpty()) Text(tr(placeholder), color = MaterialTheme.colorScheme.onSurfaceVariant); field() } },
             )
-            if (value.isNotEmpty()) IconButton({ onChange(""); onSearch() }) { Icon(Icons.Rounded.Close, "Clear search", Modifier.size(20.dp)) }
-            IconButton(::submit) { Icon(Icons.AutoMirrored.Rounded.ArrowForward, "Search", Modifier.size(20.dp)) }
+            if (value.isNotEmpty()) IconButton({ onChange(""); onSearch() }) { Icon(Icons.Rounded.Close, tr("Clear search"), Modifier.size(20.dp)) }
+            IconButton(::submit) { Icon(Icons.AutoMirrored.Rounded.ArrowForward, tr("Search"), Modifier.size(20.dp)) }
         }
     }
 }
@@ -202,11 +206,11 @@ import org.drinkless.tdlib.TdApi as T
     LaunchedEffect(model.showChats) { if (!model.showChats && category == "Chats") category = "Songs" }
     Column(modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = if (model.selectedChat != null && model.page == "Library") 4.dp else 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (model.selectedChat != null && model.page == "Library") IconButton({ model.select(null) }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back to library") }
-            Text(if (model.page == "Library") model.selectedChat?.title ?: "Telisten" else model.page, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (model.demo) Text("DEMO", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
-            IconButton(onTogether) { Icon(Icons.Rounded.SpatialAudioOff, "Listen together", Modifier.size(22.dp)) }
-            IconButton(onSettings) { Icon(Icons.Rounded.Tune, "Settings", Modifier.size(22.dp)) }
+            if (model.selectedChat != null && model.page == "Library") IconButton({ model.select(null) }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, tr("Back to library")) }
+            Text(if (model.page == "Library") model.selectedChat?.title ?: "Telisten" else tr(model.page), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (model.demo) Text(tr("DEMO"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+            IconButton(onTogether) { Icon(Icons.Rounded.SpatialAudioOff, tr("Listen together"), Modifier.size(22.dp)) }
+            IconButton(onSettings) { Icon(Icons.Rounded.Tune, tr("Settings"), Modifier.size(22.dp)) }
         }
         CompactSearch(searchText, {
             searchText = it
@@ -217,24 +221,24 @@ import org.drinkless.tdlib.TdApi as T
         if (root) {
             val tabs = listOf("Songs", "Playlists") + if (model.showChats) listOf("Chats") else emptyList()
             SecondaryTabRow(tabs.indexOf(category).coerceAtLeast(0), containerColor = Color.Transparent) {
-                tabs.forEach { name -> Tab(category == name, { category = name }, text = { Text(name, style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false) }) }
+                tabs.forEach { name -> Tab(category == name, { category = name }, text = { Text(tr(name), style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false) }) }
             }
         }
         when (section) {
             "Playlists" -> {
                 val playlists = model.playlists.filter { it.title.contains(searchText, true) }
-                CompactToolbar("${playlists.size} playlists") { TextButton({ onPlaylist(null) }) { Icon(Icons.Rounded.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("New playlist") } }
+                CompactToolbar(countLabel("playlists", playlists.size)) { TextButton({ onPlaylist(null) }) { Icon(Icons.Rounded.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text(tr("New playlist")) } }
                 LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
                     if (playlists.isEmpty()) item { EmptyState(Icons.AutoMirrored.Rounded.PlaylistAdd, "No playlists", "Create a playlist to collect songs from your chats.") }
                     items(playlists, key = { it.id }) { chat ->
                         var menu by remember { mutableStateOf(false) }
                         CollectionRow(chat, "Private Telegram playlist", { model.select(chat) }) {
                             Box {
-                                IconButton({ menu = true }) { Icon(Icons.Rounded.MoreVert, "Options for ${chat.title}") }
+                                IconButton({ menu = true }) { Icon(Icons.Rounded.MoreVert, tr("Options for %s", chat.title)) }
                                 DropdownMenu(menu, { menu = false }) {
-                                    DropdownMenuItem({ Text("Download all") }, { menu = false; model.downloadAll(chat) })
-                                    DropdownMenuItem({ Text("Rename") }, { menu = false; rename = chat })
-                                    DropdownMenuItem({ Text("Delete playlist") }, { menu = false; deleting = chat })
+                                    DropdownMenuItem({ Text(tr("Download all")) }, { menu = false; model.downloadAll(chat) })
+                                    DropdownMenuItem({ Text(tr("Rename")) }, { menu = false; rename = chat })
+                                    DropdownMenuItem({ Text(tr("Delete playlist")) }, { menu = false; deleting = chat })
                                 }
                             }
                         }
@@ -243,31 +247,31 @@ import org.drinkless.tdlib.TdApi as T
             }
             "Chats" -> {
                 val chats = model.chats.filter { it.title.contains(searchText, true) && (!savedOnly || it.id.toString() in model.savedChats) }.sortedByDescending { it.id.toString() in model.savedChats }
-                CompactToolbar("${chats.size} chats") {
-                    FilterChip(savedOnly, { savedOnly = !savedOnly }, label = { Text("Saved") }, leadingIcon = { Icon(Icons.Rounded.BookmarkBorder, null, Modifier.size(16.dp)) })
+                CompactToolbar(countLabel("chats", chats.size)) {
+                    FilterChip(savedOnly, { savedOnly = !savedOnly }, label = { Text(tr("Saved")) }, leadingIcon = { Icon(Icons.Rounded.BookmarkBorder, null, Modifier.size(16.dp)) })
                 }
                 LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 12.dp)) {
                     if (chats.isEmpty()) item { EmptyState(Icons.Rounded.Forum, "No chats found", "Try a different name or turn off the saved filter.") }
                     items(chats, key = { it.id }) { chat -> CollectionRow(chat, if (chat.channel) "Channel" else "Chat", { model.select(chat) }) {
-                        IconButton({ model.saveChat(chat) }) { Icon(if (chat.id.toString() in model.savedChats) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, "Save ${chat.title}", tint = MaterialTheme.colorScheme.primary) }
+                        IconButton({ model.saveChat(chat) }) { Icon(if (chat.id.toString() in model.savedChats) Icons.Rounded.Bookmark else Icons.Rounded.BookmarkBorder, tr("Save %s", chat.title), tint = MaterialTheme.colorScheme.primary) }
                     } }
                 }
             }
             else -> {
                 if (model.selectedChat != null && model.page == "Library") Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    FilterChip(model.globalSearch, { model.globalSearch = !model.globalSearch; model.search() }, label = { Text("Search all Telegram") })
+                    FilterChip(model.globalSearch, { model.globalSearch = !model.globalSearch; model.search() }, label = { Text(tr("Search all Telegram")) })
                 }
-                CompactToolbar(if (model.loading) "Loading music…" else "${tracks.size} songs") {
+                CompactToolbar(if (model.loading) tr("Loading music…") else countLabel("songs", tracks.size)) {
                     if (model.bots.isNotEmpty() && model.page == "Library") {
                         var bots by remember { mutableStateOf(false) }
                         Box {
-                            IconButton({ bots = true }) { Icon(Icons.Rounded.SmartToy, "Search with a bot", Modifier.size(20.dp)) }
+                            IconButton({ bots = true }) { Icon(Icons.Rounded.SmartToy, tr("Search with a bot"), Modifier.size(20.dp)) }
                             DropdownMenu(bots, { bots = false }) { model.bots.forEach { bot -> DropdownMenuItem({ Text("@${bot.username.removePrefix("@")}") }, { bots = false; model.openBot(bot) }) } }
                         }
                     }
-                    IconButton({ model.changeMode(PlaybackMode.SHUFFLE); model.play(tracks.random(), tracks) }, enabled = tracks.isNotEmpty()) { Icon(Icons.Rounded.Shuffle, "Shuffle all", Modifier.size(20.dp)) }
+                    IconButton({ model.changeMode(PlaybackMode.SHUFFLE); model.play(tracks.random(), tracks) }, enabled = tracks.isNotEmpty()) { Icon(Icons.Rounded.Shuffle, tr("Shuffle all"), Modifier.size(20.dp)) }
                     FilledTonalButton({ model.changeMode(PlaybackMode.ORDER); model.play(tracks.first(), tracks) }, enabled = tracks.isNotEmpty(), contentPadding = PaddingValues(horizontal = 12.dp)) {
-                        Icon(Icons.Rounded.PlayArrow, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("Play")
+                        Icon(Icons.Rounded.PlayArrow, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text(tr("Play"))
                     }
                 }
                 LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
@@ -276,18 +280,18 @@ import org.drinkless.tdlib.TdApi as T
                     itemsIndexed(tracks, key = { _, track -> "${track.chatId}:${track.messageId}" }) { _, track ->
                         TrackRow(model, track, model.tracks.indexOf(track), { model.play(track, tracks) }, { onPlaylist(track) })
                     }
-                    if (model.hasMore && model.page == "Library") item { TextButton(model::loadMore, Modifier.fillMaxWidth(), enabled = !model.loading) { Text(if (model.loading) "Loading…" else "Load more") } }
+                    if (model.hasMore && model.page == "Library") item { TextButton(model::loadMore, Modifier.fillMaxWidth(), enabled = !model.loading) { Text(tr(if (model.loading) "Loading…" else "Load more")) } }
                 }
             }
         }
     }
     rename?.let { chat -> NameDialog("Rename playlist", chat.title, { rename = null }) { model.renamePlaylist(chat, it); rename = null } }
-    deleting?.let { chat -> AlertDialog(onDismissRequest = { deleting = null }, title = { Text("Delete ${chat.title}?") }, text = { Text("This deletes the playlist channel on Telegram. This cannot be undone.") }, confirmButton = { TextButton({ model.deletePlaylist(chat); deleting = null }) { Text("Delete") } }, dismissButton = { TextButton({ deleting = null }) { Text("Cancel") } }) }
+    deleting?.let { chat -> AlertDialog(onDismissRequest = { deleting = null }, title = { Text(tr("Delete %s?", chat.title)) }, text = { Text(tr("This deletes the playlist channel on Telegram. This cannot be undone.")) }, confirmButton = { TextButton({ model.deletePlaylist(chat); deleting = null }) { Text(tr("Delete")) } }, dismissButton = { TextButton({ deleting = null }) { Text(tr("Cancel")) } }) }
 }
 
 @Composable private fun CompactToolbar(title: String, actions: @Composable RowScope.() -> Unit) {
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 16.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr(title), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         actions()
     }
 }
@@ -299,7 +303,7 @@ import org.drinkless.tdlib.TdApi as T
         }
         Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(chat.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr(subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         action()
     }
@@ -308,8 +312,8 @@ import org.drinkless.tdlib.TdApi as T
 @Composable private fun SectionTitle(title: String, subtitle: String, action: @Composable (() -> Unit)? = null) {
     Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-            if (subtitle.isNotBlank()) Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text(tr(title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            if (subtitle.isNotBlank()) Text(tr(subtitle), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
         action?.invoke()
     }
@@ -318,8 +322,8 @@ import org.drinkless.tdlib.TdApi as T
 @Composable private fun EmptyState(icon: ImageVector, title: String, description: String) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 28.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(icon, null, Modifier.size(28.dp), MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr(title), style = MaterialTheme.typography.titleMedium)
+        Text(tr(description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -340,31 +344,31 @@ import org.drinkless.tdlib.TdApi as T
             Column(Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(track.title, style = MaterialTheme.typography.titleMedium, color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (track.id in model.downloads) { Icon(Icons.Rounded.OfflinePin, "Downloaded", Modifier.size(12.dp), MaterialTheme.colorScheme.primary); Spacer(Modifier.width(4.dp)) }
+                    if (track.id in model.downloads) { Icon(Icons.Rounded.OfflinePin, tr("Downloaded"), Modifier.size(12.dp), MaterialTheme.colorScheme.primary); Spacer(Modifier.width(4.dp)) }
                     Text(track.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 model.progress[track.fileId]?.takeIf { it > 0 && it < 1 }?.let { LinearProgressIndicator({ it }, Modifier.fillMaxWidth().height(2.dp)) }
             }
             Text(timeLabel(track.duration.toLong()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             IconButton({ model.favorite(track) }) {
-                Icon(if (track.id in model.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Favorite ${track.title}", Modifier.size(18.dp), if (track.id in model.favorites) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(if (track.id in model.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, tr("Favorite %s", track.title), Modifier.size(18.dp), if (track.id in model.favorites) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Box {
-                IconButton({ menu = true }) { Icon(Icons.Rounded.MoreVert, "Options for ${track.title}", Modifier.size(20.dp)) }
+                IconButton({ menu = true }) { Icon(Icons.Rounded.MoreVert, tr("Options for %s", track.title), Modifier.size(20.dp)) }
                 DropdownMenu(menu, { menu = false }) {
-                    DropdownMenuItem({ Text("Save to playlist") }, { menu = false; onPlaylist() }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null) })
-                    DropdownMenuItem({ Text(if (track.id in model.downloads) "Remove download" else "Download") }, { menu = false; if (track.id in model.downloads) model.removeDownload(track) else model.download(track) })
-                    DropdownMenuItem({ Text("${if (track.voted) "Remove" else "Add"} 👍 vote (${track.votes})") }, { menu = false; model.vote(track) })
+                    DropdownMenuItem({ Text(tr("Save to playlist")) }, { menu = false; onPlaylist() }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null) })
+                    DropdownMenuItem({ Text(tr(if (track.id in model.downloads) "Remove download" else "Download")) }, { menu = false; if (track.id in model.downloads) model.removeDownload(track) else model.download(track) })
+                    DropdownMenuItem({ Text(tr(if (track.voted) "Remove vote" else "Add vote") + " 👍 (${track.votes})") }, { menu = false; model.vote(track) })
                     if (model.selectedChat?.id == track.chatId && model.playlists.any { it.id == track.chatId }) {
-                        DropdownMenuItem({ Text("Move up") }, { menu = false; model.movePlaylistTrack(index, -1) }, enabled = index > 0)
-                        DropdownMenuItem({ Text("Move down") }, { menu = false; model.movePlaylistTrack(index, 1) }, enabled = index < model.tracks.lastIndex)
+                        DropdownMenuItem({ Text(tr("Move up")) }, { menu = false; model.movePlaylistTrack(index, -1) }, enabled = index > 0)
+                        DropdownMenuItem({ Text(tr("Move down")) }, { menu = false; model.movePlaylistTrack(index, 1) }, enabled = index < model.tracks.lastIndex)
                     }
-                    if (model.playlists.any { it.id == track.chatId }) DropdownMenuItem({ Text("Remove from playlist") }, { menu = false; deleting = true })
+                    if (model.playlists.any { it.id == track.chatId }) DropdownMenuItem({ Text(tr("Remove from playlist")) }, { menu = false; deleting = true })
                 }
             }
         }
     }
-    if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text("Remove this song?") }, text = { Text("The message will be deleted from this Telegram playlist.") }, confirmButton = { TextButton({ model.deleteTrack(track); deleting = false }) { Text("Remove") } }, dismissButton = { TextButton({ deleting = false }) { Text("Cancel") } })
+    if (deleting) AlertDialog(onDismissRequest = { deleting = false }, title = { Text(tr("Remove this song?")) }, text = { Text(tr("The message will be deleted from this Telegram playlist.")) }, confirmButton = { TextButton({ model.deleteTrack(track); deleting = false }) { Text(tr("Remove")) } }, dismissButton = { TextButton({ deleting = false }) { Text(tr("Cancel")) } })
 }
 
 @Composable private fun MiniPlayer(model: AppModel) {
@@ -377,8 +381,8 @@ import org.drinkless.tdlib.TdApi as T
                     Text(track.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(track.artist, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                IconButton(model::togglePlayback) { Icon(if (model.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (model.playing) "Pause" else "Play") }
-                IconButton(model::next) { Icon(Icons.Rounded.SkipNext, "Next") }
+                IconButton(model::togglePlayback) { Icon(if (model.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, tr(if (model.playing) "Pause" else "Play")) }
+                IconButton(model::next) { Icon(Icons.Rounded.SkipNext, tr("Next")) }
             }
             LinearProgressIndicator({ if (model.duration > 0) (model.position.toFloat() / model.duration).coerceIn(0f, 1f) else 0f }, Modifier.fillMaxWidth().height(2.dp), trackColor = Color.Transparent)
         }
@@ -396,9 +400,9 @@ import org.drinkless.tdlib.TdApi as T
     ) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(.94f).imePadding()) {
             Row(Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton({ model.nowPlaying = false }) { Icon(Icons.Rounded.KeyboardArrowDown, "Minimize player") }
-                Text("Now playing", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                IconButton(onTogether) { Icon(Icons.Rounded.SpatialAudioOff, "Listen together") }
+                IconButton({ model.nowPlaying = false }) { Icon(Icons.Rounded.KeyboardArrowDown, tr("Minimize player")) }
+                Text(tr("Now playing"), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                IconButton(onTogether) { Icon(Icons.Rounded.SpatialAudioOff, tr("Listen together")) }
             }
             // Only the controls scroll on very short/landscape windows; lyrics and queue remain independently scrollable.
             BoxWithConstraints(Modifier.weight(1f)) {
@@ -431,7 +435,7 @@ import org.drinkless.tdlib.TdApi as T
                 Text(track.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(track.artist, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            IconButton({ model.favorite(track) }) { Icon(if (track.id in model.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, "Toggle favorite", tint = MaterialTheme.colorScheme.primary) }
+            IconButton({ model.favorite(track) }) { Icon(if (track.id in model.favorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, tr("Toggle favorite"), tint = MaterialTheme.colorScheme.primary) }
         }
         Slider(
             value = drag ?: model.position.toFloat(), onValueChange = { drag = it },
@@ -445,21 +449,21 @@ import org.drinkless.tdlib.TdApi as T
         Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
             Box {
                 IconButton({ modeMenu = true }) {
-                    Icon(when (model.mode) { PlaybackMode.SHUFFLE -> Icons.Rounded.Shuffle; PlaybackMode.REPEAT_ONE -> Icons.Rounded.RepeatOne; PlaybackMode.REVERSE -> Icons.Rounded.SwapVert; else -> Icons.AutoMirrored.Rounded.QueueMusic }, model.mode.label, Modifier.size(22.dp))
+                    Icon(when (model.mode) { PlaybackMode.SHUFFLE -> Icons.Rounded.Shuffle; PlaybackMode.REPEAT_ONE -> Icons.Rounded.RepeatOne; PlaybackMode.REVERSE -> Icons.Rounded.SwapVert; else -> Icons.AutoMirrored.Rounded.QueueMusic }, tr(model.mode.label), Modifier.size(22.dp))
                 }
-                DropdownMenu(modeMenu, { modeMenu = false }) { PlaybackMode.entries.forEach { mode -> DropdownMenuItem({ Text(mode.label) }, { model.changeMode(mode); modeMenu = false }) } }
+                DropdownMenu(modeMenu, { modeMenu = false }) { PlaybackMode.entries.forEach { mode -> DropdownMenuItem({ Text(tr(mode.label)) }, { model.changeMode(mode); modeMenu = false }) } }
             }
-            IconButton(model::previous) { Icon(Icons.Rounded.SkipPrevious, "Previous", Modifier.size(28.dp)) }
+            IconButton(model::previous) { Icon(Icons.Rounded.SkipPrevious, tr("Previous"), Modifier.size(28.dp)) }
             Button(model::togglePlayback, Modifier.size(width = 72.dp, height = 56.dp), shape = RoundedCornerShape(18.dp), contentPadding = PaddingValues(0.dp)) {
                 if (model.buffering) LoadingIndicator(Modifier.size(28.dp), color = MaterialTheme.colorScheme.onPrimary)
-                else Icon(if (model.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (model.playing) "Pause" else "Play", Modifier.size(30.dp))
+                else Icon(if (model.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, tr(if (model.playing) "Pause" else "Play"), Modifier.size(30.dp))
             }
-            IconButton(model::next) { Icon(Icons.Rounded.SkipNext, "Next", Modifier.size(28.dp)) }
-            IconButton({ if (track.id in model.downloads) model.removeDownload(track) else model.download(track) }) { Icon(if (track.id in model.downloads) Icons.Rounded.OfflinePin else Icons.Rounded.Download, if (track.id in model.downloads) "Remove download" else "Download", Modifier.size(22.dp)) }
+            IconButton(model::next) { Icon(Icons.Rounded.SkipNext, tr("Next"), Modifier.size(28.dp)) }
+            IconButton({ if (track.id in model.downloads) model.removeDownload(track) else model.download(track) }) { Icon(if (track.id in model.downloads) Icons.Rounded.OfflinePin else Icons.Rounded.Download, tr(if (track.id in model.downloads) "Remove download" else "Download"), Modifier.size(22.dp)) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            FilterChip(track.voted, { model.vote(track) }, label = { Text("${track.votes}") }, leadingIcon = { Icon(Icons.Rounded.ThumbUpOffAlt, "Vote", Modifier.size(16.dp)) })
-            AssistChip({ onPlaylist(track) }, label = { Text("Save to playlist") }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null, Modifier.size(18.dp)) })
+            FilterChip(track.voted, { model.vote(track) }, label = { Text("${track.votes}") }, leadingIcon = { Icon(Icons.Rounded.ThumbUpOffAlt, tr("Vote"), Modifier.size(16.dp)) })
+            AssistChip({ onPlaylist(track) }, label = { Text(tr("Save to playlist")) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null, Modifier.size(18.dp)) })
         }
     }
 }
@@ -467,7 +471,7 @@ import org.drinkless.tdlib.TdApi as T
 @Composable private fun PlayerDetails(model: AppModel, tab: String, selectTab: (String) -> Unit) {
     val tabs = listOf("Lyrics", "Queue", "Comments")
     SecondaryTabRow(tabs.indexOf(tab), containerColor = Color.Transparent) {
-        tabs.forEach { label -> Tab(tab == label, { selectTab(label); if (label == "Comments") model.loadComments() }, text = { Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false) }) }
+        tabs.forEach { label -> Tab(tab == label, { selectTab(label); if (label == "Comments") model.loadComments() }, text = { Text(tr(label), style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false) }) }
     }
     when (tab) {
         "Lyrics" -> LyricsPanel(model)
@@ -478,8 +482,8 @@ import org.drinkless.tdlib.TdApi as T
                         Text(track.title, style = MaterialTheme.typography.titleMedium, color = if (track.id == model.current?.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(track.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    IconButton({ model.moveQueue(index, index - 1) }, enabled = index > 0) { Icon(Icons.Rounded.KeyboardArrowUp, "Move ${track.title} up") }
-                    IconButton({ model.moveQueue(index, index + 1) }, enabled = index < model.queue.lastIndex) { Icon(Icons.Rounded.KeyboardArrowDown, "Move ${track.title} down") }
+                    IconButton({ model.moveQueue(index, index - 1) }, enabled = index > 0) { Icon(Icons.Rounded.KeyboardArrowUp, tr("Move %s up", track.title)) }
+                    IconButton({ model.moveQueue(index, index + 1) }, enabled = index < model.queue.lastIndex) { Icon(Icons.Rounded.KeyboardArrowDown, tr("Move %s down", track.title)) }
                 }
             }
         }
@@ -487,13 +491,13 @@ import org.drinkless.tdlib.TdApi as T
             LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (model.commentsLoading) item { LoadingIndicator(Modifier.size(32.dp)) }
                 model.commentError?.let { message -> item { Text(message, color = MaterialTheme.colorScheme.error) } }
-                if (model.comments.isEmpty() && !model.commentsLoading && model.commentError == null) item { Text("No comments yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                if (model.comments.isEmpty() && !model.commentsLoading && model.commentError == null) item { Text(tr("No comments yet."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 items(model.comments, key = { it.id }) { comment -> Column { Text(comment.author, style = MaterialTheme.typography.labelLarge); Text(comment.text, style = MaterialTheme.typography.bodyMedium) } }
             }
             var text by rememberSaveable(model.current?.id) { mutableStateOf("") }
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(text, { text = it }, Modifier.weight(1f), placeholder = { Text("Reply on Telegram") }, shape = RoundedCornerShape(12.dp), maxLines = 3)
-                IconButton({ model.sendComment(text); text = "" }, enabled = text.isNotBlank()) { Icon(Icons.AutoMirrored.Rounded.Send, "Send comment") }
+                OutlinedTextField(text, { text = it }, Modifier.weight(1f), placeholder = { Text(tr("Reply on Telegram")) }, shape = RoundedCornerShape(12.dp), maxLines = 3)
+                IconButton({ model.sendComment(text); text = "" }, enabled = text.isNotBlank()) { Icon(Icons.AutoMirrored.Rounded.Send, tr("Send comment")) }
             }
         }
     }
@@ -516,9 +520,9 @@ import org.drinkless.tdlib.TdApi as T
     }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp).heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(lyrics?.source?.removePrefix("https://") ?: "Lyrics", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            TextButton({ model.loadLyrics(true) }) { Text("Find match") }
-            IconButton({ import.launch(arrayOf("text/*", "application/octet-stream")) }) { Icon(Icons.Rounded.UploadFile, "Import LRC", Modifier.size(20.dp)) }
+            Text(lyrics?.source?.removePrefix("https://") ?: tr("Lyrics"), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            TextButton({ model.loadLyrics(true) }) { Text(tr("Find match")) }
+            IconButton({ import.launch(arrayOf("text/*", "application/octet-stream")) }) { Icon(Icons.Rounded.UploadFile, tr("Import LRC"), Modifier.size(20.dp)) }
         }
         if (model.lyrics.size > 1) LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             itemsIndexed(model.lyrics) { index, match -> FilterChip(model.selectedLyrics == index, { model.chooseLyrics(index) }, label = { Text("${match.title} · ${match.artist}") }) }
@@ -543,58 +547,58 @@ import org.drinkless.tdlib.TdApi as T
     var addBot by remember { mutableStateOf(false) }
     var signOut by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxHeight(.9f), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { Text("Settings", style = MaterialTheme.typography.titleLarge) }
+        item { Text(tr("Settings"), style = MaterialTheme.typography.titleLarge) }
         item { SectionTitle("Accounts", "") }
         items(model.accounts, key = { it.id }) { account ->
             FilledTonalButton({ model.switchAccount(account.id) }, Modifier.fillMaxWidth(), enabled = !model.busy && account.id != model.app.activeId) { Icon(Icons.Rounded.AccountCircle, null); Spacer(Modifier.width(12.dp)); Text(account.name); if (account.id == model.app.activeId) { Spacer(Modifier.width(8.dp)); Icon(Icons.Rounded.Check, null) } }
         }
-        item { TextButton(model::addAccount, enabled = !model.busy) { Icon(Icons.Rounded.Add, null); Text("Add account") } }
+        item { TextButton(model::addAccount, enabled = !model.busy) { Icon(Icons.Rounded.Add, null); Text(tr("Add account")) } }
         item { SectionTitle("Library", "") }
-        item { Row(verticalAlignment = Alignment.CenterVertically) { Text("Show Chats tab", Modifier.weight(1f)); Switch(model.showChats, { model.showChats = it }) } }
-        item { OutlinedTextField(folderName, { folderName = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text("Playlist folder name") }, isError = PlaylistFolderConfiguration.normalizedName(folderName) == null, supportingText = { Text("1–12 characters. Uses this exact Telegram folder name for this account. Existing folders are not renamed.") }) }
-        item { TextButton({ folderName = PlaylistFolderConfiguration.DEFAULT_NAME }) { Text("Use _Playlist default") } }
-        item { SectionTitle("Offline storage", "${"%.1f".format(model.cacheBytes / (1024.0 * 1024))} MB used") }
+        item { Row(verticalAlignment = Alignment.CenterVertically) { Text(tr("Show Chats tab"), Modifier.weight(1f)); Switch(model.showChats, { model.showChats = it }) } }
+        item { OutlinedTextField(folderName, { folderName = it }, Modifier.fillMaxWidth(), singleLine = true, label = { Text(tr("Playlist folder name")) }, isError = PlaylistFolderConfiguration.normalizedName(folderName) == null, supportingText = { Text(tr("1–12 characters. Uses this exact Telegram folder name for this account. Existing folders are not renamed.")) }) }
+        item { TextButton({ folderName = PlaylistFolderConfiguration.DEFAULT_NAME }) { Text(tr("Use _Playlist default")) } }
+        item { SectionTitle("Offline storage", tr("%s used", "${"%.1f".format(model.cacheBytes / (1024.0 * 1024))} MB")) }
         item { Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(512L, 1024L, 2048L, 5120L).forEach { mb -> FilterChip(limit == mb * 1024 * 1024, { limit = mb * 1024 * 1024 }, label = { Text(if (mb < 1024) "$mb MB" else "${mb / 1024} GB") }) } } }
-        item { Text("Oldest downloaded music is removed when the cache reaches this limit.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { Text(tr("Oldest downloaded music is removed when the cache reaches this limit."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         item { SectionTitle("Lyrics", "LRCLIB or your own compatible server") }
-        item { OutlinedTextField(server, { server = it }, Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(18.dp), label = { Text("HTTPS server URL") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)) }
-        item { Text("Song title, artist, and duration are sent to this server. Matched lyrics are saved for offline listening.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        item { Button({ model.setSettings(limit, server, folderName) }, Modifier.fillMaxWidth().height(48.dp), enabled = PlaylistFolderConfiguration.normalizedName(folderName) != null && !model.busy) { Text("Save preferences") } }
-        item { SectionTitle("Search bots", "Send searches to bots you choose", action = { IconButton({ addBot = true }) { Icon(Icons.Rounded.Add, "Add bot") } }) }
-        itemsIndexed(model.bots) { index, bot -> Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("@${bot.username.removePrefix("@")}"); Text("${bot.prefix}<query>${bot.suffix}", style = MaterialTheme.typography.bodySmall) }; IconButton({ model.moveBot(index, -1) }, enabled = index > 0) { Icon(Icons.Rounded.KeyboardArrowUp, "Move bot up") }; IconButton({ model.removeBot(bot) }) { Icon(Icons.Rounded.DeleteOutline, "Remove bot") } } }
-        item { TextButton({ signOut = true }, enabled = !model.busy) { Text(if (model.demo) "Leave demo" else "Sign out of this account", color = MaterialTheme.colorScheme.error) } }
-        item { TextButton({ uriHandler.openUri("https://docs.kitta.co/telisten/") }) { Text("Privacy policy & data controls") } }
-        item { TextButton({ uriHandler.openUri("https://t.me/telisten") }) { Text("Telisten on Telegram") } }
-        item { Text("Telisten for Android · ${ad.neko.telisten.BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { OutlinedTextField(server, { server = it }, Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(18.dp), label = { Text(tr("HTTPS server URL")) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)) }
+        item { Text(tr("Song title, artist, and duration are sent to this server. Matched lyrics are saved for offline listening."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item { Button({ model.setSettings(limit, server, folderName) }, Modifier.fillMaxWidth().height(48.dp), enabled = PlaylistFolderConfiguration.normalizedName(folderName) != null && !model.busy) { Text(tr("Save preferences")) } }
+        item { SectionTitle("Search bots", "Send searches to bots you choose", action = { IconButton({ addBot = true }) { Icon(Icons.Rounded.Add, tr("Add bot")) } }) }
+        itemsIndexed(model.bots) { index, bot -> Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text("@${bot.username.removePrefix("@")}"); Text("${bot.prefix}<query>${bot.suffix}", style = MaterialTheme.typography.bodySmall) }; IconButton({ model.moveBot(index, -1) }, enabled = index > 0) { Icon(Icons.Rounded.KeyboardArrowUp, tr("Move bot up")) }; IconButton({ model.removeBot(bot) }) { Icon(Icons.Rounded.DeleteOutline, tr("Remove bot")) } } }
+        item { TextButton({ signOut = true }, enabled = !model.busy) { Text(tr(if (model.demo) "Leave demo" else "Sign out of this account"), color = MaterialTheme.colorScheme.error) } }
+        item { TextButton({ uriHandler.openUri("https://docs.kitta.co/telisten/") }) { Text(tr("Privacy policy & data controls")) } }
+        item { TextButton({ uriHandler.openUri("https://t.me/telisten") }) { Text(tr("Telisten on Telegram")) } }
+        item { Text(tr("Telisten for Android · %s", ad.neko.telisten.BuildConfig.VERSION_NAME), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
     if (addBot) {
         var username by remember { mutableStateOf("") }; var prefix by remember { mutableStateOf("") }; var suffix by remember { mutableStateOf("") }
-        AlertDialog(onDismissRequest = { addBot = false }, title = { Text("Add a search bot") }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        AlertDialog(onDismissRequest = { addBot = false }, title = { Text(tr("Add a search bot")) }, text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedTextField(username, { username = it }, label = { Text("@username") }, singleLine = true)
-            OutlinedTextField(prefix, { prefix = it }, label = { Text("Before query (optional)") })
-            OutlinedTextField(suffix, { suffix = it }, label = { Text("After query (optional)") })
-            Text("Searches send real messages to this bot.", style = MaterialTheme.typography.bodySmall)
-        } }, confirmButton = { TextButton({ model.saveBot(SearchBot(username, prefix, suffix)); addBot = false }, enabled = username.removePrefix("@").matches(Regex("[A-Za-z0-9_]{5,32}"))) { Text("Add") } }, dismissButton = { TextButton({ addBot = false }) { Text("Cancel") } })
+            OutlinedTextField(prefix, { prefix = it }, label = { Text(tr("Before query (optional)")) })
+            OutlinedTextField(suffix, { suffix = it }, label = { Text(tr("After query (optional)")) })
+            Text(tr("Searches send real messages to this bot."), style = MaterialTheme.typography.bodySmall)
+        } }, confirmButton = { TextButton({ model.saveBot(SearchBot(username, prefix, suffix)); addBot = false }, enabled = username.removePrefix("@").matches(Regex("[A-Za-z0-9_]{5,32}"))) { Text(tr("Add")) } }, dismissButton = { TextButton({ addBot = false }) { Text(tr("Cancel")) } })
     }
-    if (signOut) AlertDialog(onDismissRequest = { signOut = false }, title = { Text(if (model.demo) "Leave demo?" else "Sign out?") }, text = { Text("Your downloaded music remains available on this device.") }, confirmButton = { TextButton({ model.signOut(); signOut = false }) { Text("Continue") } }, dismissButton = { TextButton({ signOut = false }) { Text("Cancel") } })
+    if (signOut) AlertDialog(onDismissRequest = { signOut = false }, title = { Text(tr(if (model.demo) "Leave demo?" else "Sign out?")) }, text = { Text(tr("Your downloaded music remains available on this device.")) }, confirmButton = { TextButton({ model.signOut(); signOut = false }) { Text(tr("Continue")) } }, dismissButton = { TextButton({ signOut = false }) { Text(tr("Cancel")) } })
 }
 @Composable private fun NameDialog(title: String, initial: String = "", dismiss: () -> Unit, submit: (String) -> Unit) {
     var text by rememberSaveable { mutableStateOf(initial) }
-    AlertDialog(onDismissRequest = dismiss, title = { Text(title) }, text = { OutlinedTextField(text, { text = it }, label = { Text("Playlist name") }, singleLine = true, shape = RoundedCornerShape(18.dp)) }, confirmButton = { TextButton({ submit(text.trim()) }, enabled = text.isNotBlank()) { Text("Save") } }, dismissButton = { TextButton(dismiss) { Text("Cancel") } })
+    AlertDialog(onDismissRequest = dismiss, title = { Text(tr(title)) }, text = { OutlinedTextField(text, { text = it }, label = { Text(tr("Playlist name")) }, singleLine = true, shape = RoundedCornerShape(18.dp)) }, confirmButton = { TextButton({ submit(text.trim()) }, enabled = text.isNotBlank()) { Text(tr("Save")) } }, dismissButton = { TextButton(dismiss) { Text(tr("Cancel")) } })
 }
 @Composable private fun PlaylistDialog(model: AppModel, track: Track?, dismiss: () -> Unit) {
     var create by remember { mutableStateOf(track == null) }
     if (create) NameDialog("New playlist", dismiss = dismiss) { model.savePlaylist(track, null, it); dismiss() }
-    else AlertDialog(onDismissRequest = dismiss, title = { Text("Save to playlist") }, text = {
+    else AlertDialog(onDismissRequest = dismiss, title = { Text(tr("Save to playlist")) }, text = {
         LazyColumn { item { Text(track?.title.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant) }; items(model.playlists) { chat -> TextButton({ model.savePlaylist(track, chat, ""); dismiss() }, Modifier.fillMaxWidth()) { Text(chat.title) } } }
-    }, confirmButton = { TextButton({ create = true }) { Text("New playlist") } }, dismissButton = { TextButton(dismiss) { Text("Cancel") } })
+    }, confirmButton = { TextButton({ create = true }) { Text(tr("New playlist")) } }, dismissButton = { TextButton(dismiss) { Text(tr("Cancel")) } })
 }
 @Composable private fun BotSheet(model: AppModel) {
     val handler = LocalUriHandler.current
     ModalBottomSheet(onDismissRequest = model::closeBot, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().fillMaxHeight(.88f).padding(horizontal = 24.dp)) {
             Text("@${model.activeBot?.username?.removePrefix("@")}", style = MaterialTheme.typography.headlineMedium)
-            Text("Messages are sent through your Telegram account.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
+            Text(tr("Messages are sent through your Telegram account."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
             LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(model.botMessages, key = { it.id }) { message ->
                     Surface(shape = RoundedCornerShape(20.dp), color = if (message.isOutgoing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh) {
@@ -619,8 +623,8 @@ import org.drinkless.tdlib.TdApi as T
             }
             var query by rememberSaveable { mutableStateOf("") }
             Row(Modifier.padding(vertical = 14.dp).imePadding(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(query, { query = it }, Modifier.weight(1f), label = { Text("Search for music") }, shape = RoundedCornerShape(22.dp), singleLine = true)
-                IconButton({ model.botSend(query); query = "" }, enabled = query.isNotBlank()) { Icon(Icons.AutoMirrored.Rounded.Send, "Send search") }
+                OutlinedTextField(query, { query = it }, Modifier.weight(1f), label = { Text(tr("Search for music")) }, shape = RoundedCornerShape(22.dp), singleLine = true)
+                IconButton({ model.botSend(query); query = "" }, enabled = query.isNotBlank()) { Icon(Icons.AutoMirrored.Rounded.Send, tr("Send search")) }
             }
         }
     }
@@ -628,26 +632,27 @@ import org.drinkless.tdlib.TdApi as T
 
 @Composable private fun TogetherSheet(model: AppModel, dismiss: () -> Unit) {
     val context = LocalContext.current
+    val shareTitle = tr("Share listening session")
     var invite by remember { mutableStateOf(false) }
     var chosen by remember { mutableStateOf<Set<Long>>(emptySet()) }
     ModalBottomSheet(onDismissRequest = dismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         LazyColumn(Modifier.fillMaxHeight(.9f), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item { Text("Listen together", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp)); Text(model.togetherStatus, Modifier.padding(top = 10.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            item { Text(tr("Listen together"), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp)); Text(tr(model.togetherStatus), Modifier.padding(top = 10.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (model.togetherChat != null) {
                 item { Text(model.togetherChat!!.title, style = MaterialTheme.typography.titleLarge) }
-                if (model.togetherLink.isNotBlank()) item { Button({ context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, model.togetherLink), "Share listening session")) }, Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Share, null); Spacer(Modifier.width(8.dp)); Text("Share invite link") } }
-                if (model.togetherHost) item { OutlinedButton({ invite = !invite; if (invite) model.loadTogetherContacts() }, Modifier.fillMaxWidth()) { Text("Invite contacts") } }
+                if (model.togetherLink.isNotBlank()) item { Button({ context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, model.togetherLink), shareTitle)) }, Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Share, null); Spacer(Modifier.width(8.dp)); Text(tr("Share invite link")) } }
+                if (model.togetherHost) item { OutlinedButton({ invite = !invite; if (invite) model.loadTogetherContacts() }, Modifier.fillMaxWidth()) { Text(tr("Invite contacts")) } }
                 if (invite) {
                     items(model.togetherContacts, key = { it.first }) { (id, name) -> Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(id in chosen, { chosen = if (id in chosen) chosen - id else chosen + id }); Text(name) } }
-                    item { Button({ model.inviteTogether(chosen); invite = false }, enabled = chosen.isNotEmpty()) { Text("Invite ${chosen.size} contacts") } }
+                    item { Button({ model.inviteTogether(chosen); invite = false }, enabled = chosen.isNotEmpty()) { Text(countLabel("contacts", chosen.size)) } }
                 }
-                item { TextButton(model::stopTogether) { Text(if (model.togetherHost) "End session for everyone" else "Leave session") } }
+                item { TextButton(model::stopTogether) { Text(tr(if (model.togetherHost) "End session for everyone" else "Leave session")) } }
             } else {
-                item { Text("Host in a chat you manage, or join a Telisten session. Hosts broadcast app audio to Telegram. Telisten listeners sync matching songs from their own library.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item { Text(tr("Host in a chat you manage, or join a Telisten session. Hosts broadcast app audio to Telegram. Telisten listeners sync matching songs from their own library."), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 items(model.chats, key = { it.id }) { chat ->
                     Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = RoundedCornerShape(22.dp)) { Column(Modifier.fillMaxWidth().padding(16.dp)) {
                         Text(chat.title, style = MaterialTheme.typography.titleMedium)
-                        Row { TextButton({ model.startTogether(chat, true) }) { Text("Host here") }; TextButton({ model.startTogether(chat, false) }) { Text("Join session") } }
+                        Row { TextButton({ model.startTogether(chat, true) }) { Text(tr("Host here")) }; TextButton({ model.startTogether(chat, false) }) { Text(tr("Join session")) } }
                     } }
                 }
             }

@@ -11,6 +11,7 @@ import androidx.media3.common.*
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import ad.neko.telisten.TelistenApplication
+import ad.neko.telisten.localize
 import ad.neko.telisten.data.*
 import ad.neko.telisten.player.PlaybackService
 import kotlinx.coroutines.*
@@ -115,7 +116,7 @@ class AppModel(application: Application) : AndroidViewModel(application) {
                     override fun onPlayerError(error: PlaybackException) { this@AppModel.error = error.cause?.message ?: error.message }
                 })
                 syncPlayer()
-            }.onFailure { error = "Media controls could not connect: ${it.message}" }
+            }.onFailure { error = localize(app, "Media controls could not connect: %s", it.message ?: "") }
         }, Executor { runnable -> android.os.Handler(android.os.Looper.getMainLooper()).post(runnable) })
         playerJob?.cancel(); playerJob = viewModelScope.launch { while (isActive) { syncPlayer(); delay(400) } }
     }
@@ -227,7 +228,7 @@ class AppModel(application: Application) : AndroidViewModel(application) {
     fun savePlaylist(track: Track?, chat: MusicChat?, title: String) { action {
         if (demo) { if (chat == null) playlists = playlists + MusicChat(-System.currentTimeMillis(), title, true); notice = "Saved in demo"; return@action }
         busy = true
-        try { val target = chat ?: repository.createPlaylist(title); if (track != null) repository.save(track, target); notice = "Saved to ${target.title}" } finally { busy = false }
+        try { val target = chat ?: repository.createPlaylist(title); if (track != null) repository.save(track, target); notice = localize(app, "Saved to %s", target.title) } finally { busy = false }
     } }
     fun renamePlaylist(chat: MusicChat, title: String) { action { if (demo) playlists = playlists.map { if (it.id == chat.id) it.copy(title = title) else it } else repository.rename(chat, title) } }
     fun deletePlaylist(chat: MusicChat) { action { if (demo) playlists = playlists - chat else repository.deletePlaylist(chat); if (selectedChat?.id == chat.id) select(null) } }
@@ -345,7 +346,7 @@ class AppModel(application: Application) : AndroidViewModel(application) {
                             }
                             if (kotlin.math.abs(position / 1000 - elapsed) > 2) seek(elapsed * 1000)
                             controller?.playWhenReady = presence.playing
-                            togetherStatus = "In sync with ${chat.title}"
+                            togetherStatus = localize(app, "In sync with %s", chat.title)
                         }
                     } catch (e: CancellationException) { throw e } catch (e: Exception) { togetherStatus = e.message ?: "Connection interrupted" }
                     delay(5000)
@@ -366,7 +367,7 @@ class AppModel(application: Application) : AndroidViewModel(application) {
     fun loadTogetherContacts() { action {
         togetherContacts = repository.call(T.GetContacts()).userIds.map { id -> val user = repository.call(T.GetUser(id)); id to "${user.firstName} ${user.lastName}".trim() }
     } }
-    fun inviteTogether(ids: Set<Long>) { action { repository.call(T.InviteVideoChatParticipants(togetherCall, ids.toLongArray())); notice = "Invited ${ids.size} contacts" } }
+    fun inviteTogether(ids: Set<Long>) { action { repository.call(T.InviteVideoChatParticipants(togetherCall, ids.toLongArray())); notice = localize(app, "Invited %d contacts", ids.size) } }
     fun enableDemo() {
         if (demo) return
         searchJob?.cancel(); lyricsJob?.cancel(); demo = true; auth = AuthState("ready", "Demo"); tracks = demoTracks()

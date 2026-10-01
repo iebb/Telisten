@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="l10n_s_used_ea8ce9d">%s 사용됨</string>
+    <string name="l10n_1_12_characters_uses_this_exact_telegram_6a9c019" formatted="false">1~12자. 이 계정에 대해 정확한 텔레그램 폴더 이름을 사용합니다. 기존 폴더의 이름은 바뀌지 않습니다.</string>
+    <string name="l10n_accounts_36bae31" formatted="false">계정</string>
+    <string name="l10n_add_61cc55a" formatted="false">추가</string>
+    <string name="l10n_add_telegram_api_id_and_telegram_api_has_112d17f" formatted="false">../.env에 TELEGRAM_API_ID 및 TELEGRAM_API_HASH를 추가한 후 다시 빌드하세요. 지금 데모를 탐색할 수 있습니다.</string>
+    <string name="l10n_add_a_search_bot_24843e6" formatted="false">검색봇 추가</string>
+    <string name="l10n_add_account_98b0ed8" formatted="false">계정 추가</string>
+    <string name="l10n_add_bot_f3d8867" formatted="false">봇 추가</string>
+    <string name="l10n_add_vote_ac9453f" formatted="false">투표 추가</string>
+    <string name="l10n_after_query_optional_8798de4" formatted="false">쿼리 후(선택사항)</string>
+    <string name="l10n_already_broadcasting_92a5053" formatted="false">이미 방송 중</string>
+    <string name="l10n_audio_format_changed_restart_listen_toge_aa6cf3a" formatted="false">오디오 형식이 변경되었습니다. 이 트랙에 대해 함께 듣기를 다시 시작하세요.</string>
+    <string name="l10n_audio_service_is_connecting_please_try_a_fd6e5bb" formatted="false">오디오 서비스가 연결 중입니다. 다시 시도해 주세요.</string>
+    <string name="l10n_audio_service_is_unavailable_e8ca884" formatted="false">오디오 서비스를 사용할 수 없습니다.</string>
+    <string name="l10n_back_to_library_f0926a5" formatted="false">도서관으로 돌아가기</string>
+    <string name="l10n_before_query_optional_88b769f" formatted="false">쿼리 전(선택사항)</string>
+    <string name="l10n_broadcast_connection_failed_2dece2a" formatted="false">브로드캐스트 연결 실패</string>
+    <string name="l10n_broadcast_could_not_keep_up_stop_and_ret_6c01762" formatted="false">방송이 따라가지 못했습니다. 중지하고 다시 시도하십시오.</string>
+    <string name="l10n_broadcast_disconnected_b424860" formatted="false">방송 연결 끊김</string>
+    <string name="l10n_broadcast_stopped_4f217ce" formatted="false">방송이 중지되었습니다</string>
+    <string name="l10n_browse_your_chats_play_music_and_save_so_a636226" formatted="false">채팅을 탐색하고, 음악을 재생하고, 노래를 오프라인으로 저장하세요.</string>
+    <string name="l10n_cancel_77dfd21" formatted="false">취소</string>
+    <string name="l10n_channel_879f0b1" formatted="false">채널</string>
+    <string name="l10n_chat_2ced57f" formatted="false">채팅</string>
+    <string name="l10n_chats_6c9e84c" formatted="false">채팅</string>
+    <string name="l10n_chats_could_not_load_7597e6d" formatted="false">채팅을 로드할 수 없습니다.</string>
+    <string name="l10n_choose_a_chat_to_share_the_moment_21d374a" formatted="false">순간을 공유하려면 채팅을 선택하세요.</string>
+    <string name="l10n_clear_search_67300d0" formatted="false">검색 지우기</string>
+    <string name="l10n_comments_fce06e2" formatted="false">댓글</string>
+    <string name="l10n_connected_c2f9b7b" formatted="false">연결됨</string>
+    <string name="l10n_connecting_broadcast_862bb91" formatted="false">방송 연결 중…</string>
+    <string name="l10n_connecting_to_telegram_c0da91e" formatted="false">텔레그램에 연결하기</string>
+    <string name="l10n_connecting_fd3e796" formatted="false">연결 중…</string>
+    <string name="l10n_connection_interrupted_f8d01ab" formatted="false">연결이 중단되었습니다.</string>
+    <string name="l10n_connects_directly_to_telegram_no_teliste_9cf4d6b" formatted="false">텔레그램에 직접 연결됩니다. Telisten 서버가 없습니다.</string>
+    <string name="l10n_continue_2e02623" formatted="false">계속</string>
+    <string name="l10n_could_not_connect_9ed243a" formatted="false">연결할 수 없습니다</string>
+    <string name="l10n_could_not_find_the_host_s_song_in_your_m_25b3903" formatted="false">귀하의 음악에서 호스트의 노래를 찾을 수 없습니다.</string>
+    <string name="l10n_could_not_join_4937397" formatted="false">가입할 수 없습니다.</string>
+    <string name="l10n_could_not_save_download_88cd019" formatted="false">다운로드를 저장할 수 없습니다.</string>
+    <string name="l10n_couldn_t_finish_that_70aa8f3" formatted="false">완료할 수 없습니다.</string>
+    <string name="l10n_create_a_playlist_to_collect_songs_from_efba065" formatted="false">채팅에서 노래를 수집하려면 재생목록을 만드세요.</string>
+    <string name="l10n_create_your_telegram_account_in_the_offi_1406b70" formatted="false">공식 앱에서 텔레그램 계정을 만든 후 여기에서 로그인하세요.</string>
+    <string name="l10n_demo_038bc41" formatted="false">데모</string>
+    <string name="l10n_delete_f6fdbe4" formatted="false">삭제</string>
+    <string name="l10n_delete_s_2b61858">%s을(를) 삭제하시겠습니까?</string>
+    <string name="l10n_delete_playlist_b55b186" formatted="false">재생목록 삭제</string>
+    <string name="l10n_demo_e52c854" formatted="false">데모</string>
+    <string name="l10n_download_a479c9c" formatted="false">다운로드</string>
+    <string name="l10n_download_a_song_from_its_menu_to_listen_959da35" formatted="false">메뉴에서 노래를 다운로드하여 오프라인으로 들어보세요.</string>
+    <string name="l10n_download_all_d69edf7" formatted="false">모두 다운로드</string>
+    <string name="l10n_download_interrupted_tap_download_to_ret_35aa5d3" formatted="false">다운로드가 중단되었습니다. 다시 시도하려면 다운로드를 탭하세요.</string>
+    <string name="l10n_downloaded_c619702" formatted="false">다운로드됨</string>
+    <string name="l10n_downloads_a862c2b" formatted="false">다운로드</string>
+    <string name="l10n_email_address_c94d317" formatted="false">이메일 주소</string>
+    <string name="l10n_end_session_for_everyone_9ea3044" formatted="false">모든 사람을 위한 세션 종료</string>
+    <string name="l10n_end_the_current_session_first_0276d05" formatted="false">현재 세션을 먼저 종료하세요.</string>
+    <string name="l10n_enter_a_playlist_name_d28e2b6" formatted="false">재생목록 이름을 입력하세요.</string>
+    <string name="l10n_enter_a_valid_https_lyrics_server_url_9bde803" formatted="false">유효한 HTTPS 가사 서버 URL을 입력하세요.</string>
+    <string name="l10n_enter_the_code_telegram_sent_to_s_13cface">%s에게 전송된 텔레그램 코드를 입력하세요.</string>
+    <string name="l10n_enter_the_code_sent_to_s_811aac6">%s에게 전송된 코드를 입력하세요.</string>
+    <string name="l10n_explore_demo_39d369e" formatted="false">데모 살펴보기</string>
+    <string name="l10n_favorite_s_6952fe8">즐겨찾는 %s</string>
+    <string name="l10n_favorites_07b3e44" formatted="false">즐겨찾기</string>
+    <string name="l10n_find_match_8b02192" formatted="false">가사 찾기</string>
+    <string name="l10n_https_server_url_a8d514a" formatted="false">HTTPS 서버 URL</string>
+    <string name="l10n_host_here_5a9851e" formatted="false">여기 호스트</string>
+    <string name="l10n_host_in_a_chat_you_manage_or_join_a_teli_b3a6b9c" formatted="false">귀하가 관리하는 채팅을 주최하거나 Telisten 세션에 참여하세요. Telegram에 브로드캐스트 앱 오디오를 호스팅합니다. Telisten 청취자는 자신의 라이브러리에서 일치하는 노래를 동기화합니다.</string>
+    <string name="l10n_import_lrc_b16601f" formatted="false">LRC 가져오기</string>
+    <string name="l10n_in_order_32a183d" formatted="false">순서대로 재생</string>
+    <string name="l10n_in_sync_with_s_5bb7736">%s과(와) 동기화 중</string>
+    <string name="l10n_invite_contacts_43f0bde" formatted="false">연락처 초대</string>
+    <string name="l10n_invited_d_contacts_ffea7c3">%d개의 연락처를 초대했습니다.</string>
+    <string name="l10n_join_session_8941a56" formatted="false">세션에 참여</string>
+    <string name="l10n_lrclib_or_your_own_compatible_server_1a1ee9e" formatted="false">LRCLIB 또는 자체 호환 서버</string>
+    <string name="l10n_leave_demo_4b15613" formatted="false">데모 나가기</string>
+    <string name="l10n_leave_demo_3dc5161" formatted="false">데모를 종료하시겠습니까?</string>
+    <string name="l10n_leave_session_8e22241" formatted="false">세션 나가기</string>
+    <string name="l10n_library_b8100f5" formatted="false">음악 보관함</string>
+    <string name="l10n_listen_together_needs_a_signed_in_telegr_d27a273" formatted="false">함께 듣기에는 로그인된 텔레그램 계정이 필요합니다.</string>
+    <string name="l10n_listen_offline_486cd6f" formatted="false">오프라인으로 듣기</string>
+    <string name="l10n_listen_together_7c4268d" formatted="false">함께 듣기</string>
+    <string name="l10n_live_65c821a" formatted="false">라이브</string>
+    <string name="l10n_load_more_dfe60ca" formatted="false">더 로드하기</string>
+    <string name="l10n_loading_music_c8a22d9" formatted="false">음악 로드 중…</string>
+    <string name="l10n_loading_33ce417" formatted="false">로드 중…</string>
+    <string name="l10n_login_email_5887f63" formatted="false">로그인 이메일</string>
+    <string name="l10n_lyrics_8670cb1" formatted="false">가사</string>
+    <string name="l10n_media_controls_could_not_connect_s_16d9e33">미디어 컨트롤을 연결할 수 없습니다: %s</string>
+    <string name="l10n_messages_are_sent_through_your_telegram_5a02ec7" formatted="false">메시지는 텔레그램 계정을 통해 전송됩니다.</string>
+    <string name="l10n_minimize_player_a5a19fb" formatted="false">플레이어 최소화</string>
+    <string name="l10n_move_s_down_eaefe61">%s을(를) 아래로 이동</string>
+    <string name="l10n_move_s_up_79d0fb1">%s 위로 이동</string>
+    <string name="l10n_move_bot_up_9cb82d8" formatted="false">봇을 위로 이동</string>
+    <string name="l10n_move_down_260ff8a" formatted="false">아래로 이동</string>
+    <string name="l10n_move_up_b4f57cd" formatted="false">위로 이동</string>
+    <string name="l10n_new_account_d33d781" formatted="false">새 계정</string>
+    <string name="l10n_new_playlist_a5474a8" formatted="false">새 재생목록</string>
+    <string name="l10n_next_bc98198" formatted="false">다음 곡</string>
+    <string name="l10n_no_app_can_open_this_link_0ceb50b" formatted="false">이 링크를 열 수 있는 앱이 없습니다.</string>
+    <string name="l10n_no_chats_found_c6bd820" formatted="false">채팅을 찾을 수 없습니다.</string>
+    <string name="l10n_no_comments_yet_207b24f" formatted="false">아직 댓글이 없습니다.</string>
+    <string name="l10n_no_lyrics_found_75127a1" formatted="false">가사를 찾을 수 없습니다</string>
+    <string name="l10n_no_matching_songs_6642d8e" formatted="false">일치하는 노래가 없습니다.</string>
+    <string name="l10n_no_playlists_d1f610b" formatted="false">재생목록 없음</string>
+    <string name="l10n_no_songs_yet_70cd5c1" formatted="false">아직 노래가 없습니다.</string>
+    <string name="l10n_now_playing_1c388f1" formatted="false">재생 중</string>
+    <string name="l10n_ok_9ce3bd4" formatted="false">알았어</string>
+    <string name="l10n_offline_storage_c9f2f99" formatted="false">오프라인 저장</string>
+    <string name="l10n_oldest_downloaded_music_is_removed_when_0b6b875" formatted="false">캐시가 이 한도에 도달하면 가장 오래 다운로드된 음악이 제거됩니다.</string>
+    <string name="l10n_open_this_button_in_telegram_63a9a4e" formatted="false">텔레그램에서 이 버튼을 엽니다</string>
+    <string name="l10n_options_for_s_de37f37">%s에 대한 옵션</string>
+    <string name="l10n_password_8be3c94" formatted="false">비밀번호</string>
+    <string name="l10n_pause_781961b" formatted="false">일시중지</string>
+    <string name="l10n_phone_number_81_573327d" formatted="false">전화번호 (+81 …)</string>
+    <string name="l10n_play_5d12bd5" formatted="false">재생</string>
+    <string name="l10n_play_a_song_before_starting_a_broadcast_1411680" formatted="false">방송을 시작하기 전에 노래를 재생하세요.</string>
+    <string name="l10n_playlist_folder_name_13f2970" formatted="false">재생 목록 폴더 이름</string>
+    <string name="l10n_playlist_is_available_offline_54b7ee8" formatted="false">재생목록을 오프라인에서 사용할 수 있습니다.</string>
+    <string name="l10n_playlist_name_544f755" formatted="false">재생목록 이름</string>
+    <string name="l10n_playlists_77b69f3" formatted="false">재생목록</string>
+    <string name="l10n_previous_50f9428" formatted="false">이전 곡</string>
+    <string name="l10n_privacy_policy_7ceacdc" formatted="false">개인 정보 보호 정책</string>
+    <string name="l10n_privacy_policy_data_controls_33efbf8" formatted="false">개인정보 보호정책 및 데이터 관리</string>
+    <string name="l10n_private_telegram_playlist_9593287" formatted="false">비공개 텔레그램 재생목록</string>
+    <string name="l10n_queue_d325fcd" formatted="false">재생 대기열</string>
+    <string name="l10n_refresh_qr_code_0d87d27" formatted="false">QR 코드 새로 고침</string>
+    <string name="l10n_remove_e963907" formatted="false">제거</string>
+    <string name="l10n_remove_bot_4812ad0" formatted="false">봇 제거</string>
+    <string name="l10n_remove_download_1477425" formatted="false">다운로드 삭제</string>
+    <string name="l10n_remove_from_playlist_ad3e5d8" formatted="false">재생목록에서 삭제</string>
+    <string name="l10n_remove_this_song_2e0668e" formatted="false">이 노래를 삭제하시겠습니까?</string>
+    <string name="l10n_remove_vote_b212f50" formatted="false">투표 삭제</string>
+    <string name="l10n_rename_d3f4cb8" formatted="false">이름 바꾸기</string>
+    <string name="l10n_rename_playlist_279af0e" formatted="false">재생목록 이름 바꾸기</string>
+    <string name="l10n_repeat_one_05f3dda" formatted="false">한 곡 반복</string>
+    <string name="l10n_reply_on_telegram_2ab8656" formatted="false">텔레그램으로 답장하기</string>
+    <string name="l10n_reverse_order_eabc2f7" formatted="false">역순</string>
+    <string name="l10n_save_efc007a" formatted="false">저장</string>
+    <string name="l10n_save_s_3422946">%s 저장</string>
+    <string name="l10n_save_preferences_d8ab74e" formatted="false">환경설정 저장</string>
+    <string name="l10n_save_to_playlist_b97257e" formatted="false">재생목록에 저장</string>
+    <string name="l10n_saved_c0ae8f6" formatted="false">저장됨</string>
+    <string name="l10n_saved_in_demo_2a23a64" formatted="false">데모에 저장됨</string>
+    <string name="l10n_saved_to_s_1b18781">%s에 저장됨</string>
+    <string name="l10n_scan_with_telegram_c387872" formatted="false">텔레그램으로 스캔</string>
+    <string name="l10n_search_bce0641" formatted="false">검색</string>
+    <string name="l10n_search_telegram_or_choose_a_chat_to_find_ebea858" formatted="false">텔레그램을 검색하거나 채팅을 선택하여 음악을 찾으세요.</string>
+    <string name="l10n_search_all_telegram_b5b4582" formatted="false">텔레그램 전체 검색</string>
+    <string name="l10n_search_bots_aeb2b4e" formatted="false">봇 검색</string>
+    <string name="l10n_search_chats_9ad51de" formatted="false">채팅 검색</string>
+    <string name="l10n_search_for_music_5b96e02" formatted="false">음악 검색</string>
+    <string name="l10n_search_library_1c9edba" formatted="false">도서관 검색</string>
+    <string name="l10n_search_playlists_756ad7e" formatted="false">재생목록 검색</string>
+    <string name="l10n_search_songs_and_artists_c3c2b98" formatted="false">노래 및 아티스트 검색</string>
+    <string name="l10n_search_with_a_bot_4f4676b" formatted="false">봇으로 검색</string>
+    <string name="l10n_searches_send_real_messages_to_this_bot_1863c9e" formatted="false">검색을 통해 이 봇에 실제 메시지가 전송됩니다.</string>
+    <string name="l10n_send_comment_591e0e8" formatted="false">댓글 보내기</string>
+    <string name="l10n_send_search_8355677" formatted="false">검색 보내기</string>
+    <string name="l10n_send_searches_to_bots_you_choose_0cc525b" formatted="false">선택한 봇에게 검색어 보내기</string>
+    <string name="l10n_session_ended_8874019" formatted="false">세션이 종료되었습니다.</string>
+    <string name="l10n_settings_c7f73bb" formatted="false">설정</string>
+    <string name="l10n_settings_saved_aef97bb" formatted="false">설정이 저장되었습니다.</string>
+    <string name="l10n_share_invite_link_a0630b0" formatted="false">초대 링크 공유</string>
+    <string name="l10n_share_listening_session_81635bd" formatted="false">청취 세션 공유</string>
+    <string name="l10n_show_chats_tab_6273f93" formatted="false">채팅 탭 표시</string>
+    <string name="l10n_shuffle_5b772b7" formatted="false">셔플</string>
+    <string name="l10n_shuffle_all_7e388b3" formatted="false">모두 섞기</string>
+    <string name="l10n_sign_in_to_telegram_fec2628" formatted="false">텔레그램에 로그인</string>
+    <string name="l10n_sign_in_with_qr_code_ec732c6" formatted="false">QR 코드로 로그인</string>
+    <string name="l10n_sign_out_of_this_account_b4e6788" formatted="false">이 계정에서 로그아웃하세요</string>
+    <string name="l10n_sign_out_b115557" formatted="false">로그아웃하시겠습니까?</string>
+    <string name="l10n_signed_out_1b8337c" formatted="false">로그아웃됨</string>
+    <string name="l10n_something_went_wrong_please_try_again_9a3ea05" formatted="false">문제가 발생했습니다. 다시 시도해 주세요.</string>
+    <string name="l10n_song_title_artist_and_duration_are_sent_cf70a47" formatted="false">노래 제목, 아티스트, 길이가 이 서버로 전송됩니다. 일치하는 가사는 오프라인 청취를 위해 저장됩니다.</string>
+    <string name="l10n_songs_e1404b4" formatted="false">노래</string>
+    <string name="l10n_tap_a_song_s_heart_to_save_it_here_2b963e6" formatted="false">여기에 저장하려면 노래의 하트를 탭하세요.</string>
+    <string name="l10n_telegram_could_not_send_the_message_s_a49a252">텔레그램에서 메시지를 보낼 수 없습니다: %s</string>
+    <string name="l10n_telegram_did_not_allow_this_track_to_be_3ed619c" formatted="false">텔레그램에서는 이 트랙의 전달을 허용하지 않았습니다.</string>
+    <string name="l10n_telegram_error_6c18eb3" formatted="false">Telegram 오류</string>
+    <string name="l10n_telegram_must_provide_a_secure_rtmps_end_f4f3458" formatted="false">텔레그램은 방송을 위한 보안 RTMPS 엔드포인트를 제공해야 합니다.</string>
+    <string name="l10n_telegram_rejected_the_broadcast_b9113bf" formatted="false">텔레그램이 방송을 거부했습니다</string>
+    <string name="l10n_telegram_requires_a_login_email_address_2da6b68" formatted="false">텔레그램에는 로그인 이메일 주소가 필요합니다.</string>
+    <string name="l10n_telegram_sign_in_qr_code_2fbf268" formatted="false">텔레그램 로그인 QR 코드</string>
+    <string name="l10n_telegram_settings_devices_link_desktop_d_d910834" formatted="false">텔레그램 → 설정 → 장치 → 데스크톱 장치 연결</string>
+    <string name="l10n_telisten_for_android_s_a5374fd">Android용 Telisten · %s</string>
+    <string name="l10n_telisten_on_telegram_b81361a" formatted="false">텔레그램의 Telisten</string>
+    <string name="l10n_the_host_ended_this_session_8b94a82" formatted="false">호스트가 이 세션을 종료했습니다.</string>
+    <string name="l10n_the_message_will_be_deleted_from_this_te_f1d9a28" formatted="false">해당 메시지는 텔레그램 재생 목록에서 삭제됩니다.</string>
+    <string name="l10n_there_is_no_active_session_in_this_chat_2fe1fe0" formatted="false">이 채팅에는 활성 세션이 없습니다.</string>
+    <string name="l10n_this_call_is_not_sharing_telisten_playba_80a3ddf" formatted="false">이 통화는 Telisten 재생 메타데이터를 공유하지 않습니다.</string>
+    <string name="l10n_this_deletes_the_playlist_channel_on_tel_7984b9d" formatted="false">텔레그램의 재생 목록 채널이 삭제됩니다. 이 작업은 취소할 수 없습니다.</string>
+    <string name="l10n_this_song_is_not_available_in_your_teleg_12534df" formatted="false">이 노래는 텔레그램 음악에서 사용할 수 없습니다. 텔레그램 초대 링크를 통해 들으실 수 있습니다.</string>
+    <string name="l10n_this_track_exceeds_the_cache_limit_incre_8819ace" formatted="false">이 트랙은 캐시 한도를 초과합니다. 설정에서 늘리세요.</string>
+    <string name="l10n_toggle_favorite_48e9866" formatted="false">즐겨찾기 전환</string>
+    <string name="l10n_try_a_different_name_or_turn_off_the_sav_a72b093" formatted="false">다른 이름을 사용하거나 저장된 필터를 끄세요.</string>
+    <string name="l10n_try_another_match_or_import_an_lrc_file_cf73e1a" formatted="false">다른 일치 항목을 시도하거나 LRC 파일을 가져오세요.</string>
+    <string name="l10n_two_step_verification_2a0b5e8" formatted="false">2단계 인증</string>
+    <string name="l10n_unknown_artist_9566f8c" formatted="false">알 수 없는 아티스트</string>
+    <string name="l10n_use_playlist_default_316b1fd" formatted="false">_Playlist 기본값 사용</string>
+    <string name="l10n_use_the_phone_number_connected_to_telegr_6e6c9bb" formatted="false">텔레그램에 연결된 전화번호를 사용하세요.</string>
+    <string name="l10n_verification_code_80f2f29" formatted="false">인증코드</string>
+    <string name="l10n_vote_64f8729" formatted="false">투표</string>
+    <string name="l10n_your_account_4ab2910" formatted="false">귀하의 계정</string>
+    <string name="l10n_your_downloaded_music_remains_available_808d2df" formatted="false">다운로드한 음악은 이 기기에서 계속 사용할 수 있습니다.</string>
+    <string name="l10n_your_two_step_verification_password_e751dde" formatted="false">2단계 인증 비밀번호</string>
+    <plurals name="l10n_count_playlists">
+        <item quantity="one">%d개 재생목록</item>
+        <item quantity="other">%d개 재생목록</item>
+    </plurals>
+    <plurals name="l10n_count_chats">
+        <item quantity="one">%d개 채팅</item>
+        <item quantity="other">%d개 채팅</item>
+    </plurals>
+    <plurals name="l10n_count_songs">
+        <item quantity="one">%d곡</item>
+        <item quantity="other">%d곡</item>
+    </plurals>
+    <plurals name="l10n_count_contacts">
+        <item quantity="one">%d명 연락처</item>
+        <item quantity="other">%d명 연락처</item>
+    </plurals>
+</resources>

@@ -69,7 +69,7 @@ struct ListenTogetherContactPicker: View {
         .alert("Couldn’t invite contacts", isPresented: errorIsPresented) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(errorMessage ?? "Telegram could not complete the invitation.")
+            Text(localizedUI(errorMessage ?? "Telegram could not complete the invitation."))
         }
     }
 

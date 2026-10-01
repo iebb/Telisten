@@ -176,7 +176,7 @@ struct LoginView: View {
                 restartButton
 
             case let .password(hint):
-                sectionTitle("Two-step verification", detail: hint.isEmpty ? "Enter your Telegram password." : "Hint: \(hint)")
+                sectionTitle("Two-step verification", detail: hint.isEmpty ? "Enter your Telegram password." : String(format: localizedUI("Hint: %@"), hint))
                 underlinedField("PASSWORD", focused: focusedField == .password) {
                     SecureField("Password", text: $password)
                         .font(.title3.weight(.medium))
@@ -230,7 +230,13 @@ struct LoginView: View {
                 let seconds = max(0, Int(expiresAt.timeIntervalSince(context.date).rounded(.up)))
                 HStack(spacing: 7) {
                     Image(systemName: status == nil ? "lock.shield" : "wifi.exclamationmark")
-                    Text(status ?? (seconds > 0 ? "Refreshes in \(seconds)s" : "Refreshing…"))
+                    if let status {
+                        Text(localizedUI(status))
+                    } else if seconds > 0 {
+                        Text("Refreshes in \(seconds)s")
+                    } else {
+                        Text("Refreshing…")
+                    }
                 }
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
@@ -273,9 +279,9 @@ struct LoginView: View {
 
     private func sectionTitle(_ title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(localizedUI(title))
                 .font(.title2.bold())
-            Text(detail)
+            Text(localizedUI(detail))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -288,7 +294,7 @@ struct LoginView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 9) {
-            Text(label)
+            Text(localizedUI(label))
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(focused ? Color.telistenAccent : .secondary)
                 .tracking(1.2)
@@ -317,7 +323,7 @@ struct LoginView: View {
     }
 
     private func primaryButton(
-        _ title: String,
+        _ title: LocalizedStringKey,
         symbol: String,
         disabled: Bool,
         action: @escaping () async -> Void

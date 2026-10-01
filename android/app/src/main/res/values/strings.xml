@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="l10n_s_used_ea8ce9d">%s used</string>
+    <string name="l10n_1_12_characters_uses_this_exact_telegram_6a9c019" formatted="false">1–12 characters. Uses this exact Telegram folder name for this account. Existing folders are not renamed.</string>
+    <string name="l10n_accounts_36bae31" formatted="false">Accounts</string>
+    <string name="l10n_add_61cc55a" formatted="false">Add</string>
+    <string name="l10n_add_telegram_api_id_and_telegram_api_has_112d17f" formatted="false">Add TELEGRAM_API_ID and TELEGRAM_API_HASH to ../.env, then rebuild. You can explore the demo now.</string>
+    <string name="l10n_add_a_search_bot_24843e6" formatted="false">Add a search bot</string>
+    <string name="l10n_add_account_98b0ed8" formatted="false">Add account</string>
+    <string name="l10n_add_bot_f3d8867" formatted="false">Add bot</string>
+    <string name="l10n_add_vote_ac9453f" formatted="false">Add vote</string>
+    <string name="l10n_after_query_optional_8798de4" formatted="false">After query (optional)</string>
+    <string name="l10n_already_broadcasting_92a5053" formatted="false">Already broadcasting</string>
+    <string name="l10n_audio_format_changed_restart_listen_toge_aa6cf3a" formatted="false">Audio format changed. Restart Listen Together for this track.</string>
+    <string name="l10n_audio_service_is_connecting_please_try_a_fd6e5bb" formatted="false">Audio service is connecting. Please try again.</string>
+    <string name="l10n_audio_service_is_unavailable_e8ca884" formatted="false">Audio service is unavailable</string>
+    <string name="l10n_back_to_library_f0926a5" formatted="false">Back to library</string>
+    <string name="l10n_before_query_optional_88b769f" formatted="false">Before query (optional)</string>
+    <string name="l10n_broadcast_connection_failed_2dece2a" formatted="false">Broadcast connection failed</string>
+    <string name="l10n_broadcast_could_not_keep_up_stop_and_ret_6c01762" formatted="false">Broadcast could not keep up. Stop and retry.</string>
+    <string name="l10n_broadcast_disconnected_b424860" formatted="false">Broadcast disconnected</string>
+    <string name="l10n_broadcast_stopped_4f217ce" formatted="false">Broadcast stopped</string>
+    <string name="l10n_browse_your_chats_play_music_and_save_so_a636226" formatted="false">Browse your chats, play music, and save songs offline.</string>
+    <string name="l10n_cancel_77dfd21" formatted="false">Cancel</string>
+    <string name="l10n_channel_879f0b1" formatted="false">Channel</string>
+    <string name="l10n_chat_2ced57f" formatted="false">Chat</string>
+    <string name="l10n_chats_6c9e84c" formatted="false">Chats</string>
+    <string name="l10n_chats_could_not_load_7597e6d" formatted="false">Chats could not load</string>
+    <string name="l10n_choose_a_chat_to_share_the_moment_21d374a" formatted="false">Choose a chat to share the moment.</string>
+    <string name="l10n_clear_search_67300d0" formatted="false">Clear search</string>
+    <string name="l10n_comments_fce06e2" formatted="false">Comments</string>
+    <string name="l10n_connected_c2f9b7b" formatted="false">Connected</string>
+    <string name="l10n_connecting_broadcast_862bb91" formatted="false">Connecting broadcast…</string>
+    <string name="l10n_connecting_to_telegram_c0da91e" formatted="false">Connecting to Telegram</string>
+    <string name="l10n_connecting_fd3e796" formatted="false">Connecting…</string>
+    <string name="l10n_connection_interrupted_f8d01ab" formatted="false">Connection interrupted</string>
+    <string name="l10n_connects_directly_to_telegram_no_teliste_9cf4d6b" formatted="false">Connects directly to Telegram. No Telisten server.</string>
+    <string name="l10n_continue_2e02623" formatted="false">Continue</string>
+    <string name="l10n_could_not_connect_9ed243a" formatted="false">Could not connect</string>
+    <string name="l10n_could_not_find_the_host_s_song_in_your_m_25b3903" formatted="false">Could not find the host\'s song in your music.</string>
+    <string name="l10n_could_not_join_4937397" formatted="false">Could not join</string>
+    <string name="l10n_could_not_save_download_88cd019" formatted="false">Could not save download</string>
+    <string name="l10n_couldn_t_finish_that_70aa8f3" formatted="false">Couldn\'t finish that</string>
+    <string name="l10n_create_a_playlist_to_collect_songs_from_efba065" formatted="false">Create a playlist to collect songs from your chats.</string>
+    <string name="l10n_create_your_telegram_account_in_the_offi_1406b70" formatted="false">Create your Telegram account in the official app, then sign in here.</string>
+    <string name="l10n_demo_038bc41" formatted="false">DEMO</string>
+    <string name="l10n_delete_f6fdbe4" formatted="false">Delete</string>
+    <string name="l10n_delete_s_2b61858">Delete %s?</string>
+    <string name="l10n_delete_playlist_b55b186" formatted="false">Delete playlist</string>
+    <string name="l10n_demo_e52c854" formatted="false">Demo</string>
+    <string name="l10n_download_a479c9c" formatted="false">Download</string>
+    <string name="l10n_download_a_song_from_its_menu_to_listen_959da35" formatted="false">Download a song from its menu to listen offline.</string>
+    <string name="l10n_download_all_d69edf7" formatted="false">Download all</string>
+    <string name="l10n_download_interrupted_tap_download_to_ret_35aa5d3" formatted="false">Download interrupted; tap Download to retry.</string>
+    <string name="l10n_downloaded_c619702" formatted="false">Downloaded</string>
+    <string name="l10n_downloads_a862c2b" formatted="false">Downloads</string>
+    <string name="l10n_email_address_c94d317" formatted="false">Email address</string>
+    <string name="l10n_end_session_for_everyone_9ea3044" formatted="false">End session for everyone</string>
+    <string name="l10n_end_the_current_session_first_0276d05" formatted="false">End the current session first.</string>
+    <string name="l10n_enter_a_playlist_name_d28e2b6" formatted="false">Enter a playlist name</string>
+    <string name="l10n_enter_a_valid_https_lyrics_server_url_9bde803" formatted="false">Enter a valid HTTPS lyrics server URL</string>
+    <string name="l10n_enter_the_code_telegram_sent_to_s_13cface">Enter the code Telegram sent to %s.</string>
+    <string name="l10n_enter_the_code_sent_to_s_811aac6">Enter the code sent to %s.</string>
+    <string name="l10n_explore_demo_39d369e" formatted="false">Explore demo</string>
+    <string name="l10n_favorite_s_6952fe8">Favorite %s</string>
+    <string name="l10n_favorites_07b3e44" formatted="false">Favorites</string>
+    <string name="l10n_find_match_8b02192" formatted="false">Find match</string>
+    <string name="l10n_https_server_url_a8d514a" formatted="false">HTTPS server URL</string>
+    <string name="l10n_host_here_5a9851e" formatted="false">Host here</string>
+    <string name="l10n_host_in_a_chat_you_manage_or_join_a_teli_b3a6b9c" formatted="false">Host in a chat you manage, or join a Telisten session. Hosts broadcast app audio to Telegram. Telisten listeners sync matching songs from their own library.</string>
+    <string name="l10n_import_lrc_b16601f" formatted="false">Import LRC</string>
+    <string name="l10n_in_order_32a183d" formatted="false">In order</string>
+    <string name="l10n_in_sync_with_s_5bb7736">In sync with %s</string>
+    <string name="l10n_invite_contacts_43f0bde" formatted="false">Invite contacts</string>
+    <string name="l10n_invited_d_contacts_ffea7c3">Invited %d contacts</string>
+    <string name="l10n_join_session_8941a56" formatted="false">Join session</string>
+    <string name="l10n_lrclib_or_your_own_compatible_server_1a1ee9e" formatted="false">LRCLIB or your own compatible server</string>
+    <string name="l10n_leave_demo_4b15613" formatted="false">Leave demo</string>
+    <string name="l10n_leave_demo_3dc5161" formatted="false">Leave demo?</string>
+    <string name="l10n_leave_session_8e22241" formatted="false">Leave session</string>
+    <string name="l10n_library_b8100f5" formatted="false">Library</string>
+    <string name="l10n_listen_together_needs_a_signed_in_telegr_d27a273" formatted="false">Listen Together needs a signed-in Telegram account.</string>
+    <string name="l10n_listen_offline_486cd6f" formatted="false">Listen offline</string>
+    <string name="l10n_listen_together_7c4268d" formatted="false">Listen together</string>
+    <string name="l10n_live_65c821a" formatted="false">Live</string>
+    <string name="l10n_load_more_dfe60ca" formatted="false">Load more</string>
+    <string name="l10n_loading_music_c8a22d9" formatted="false">Loading music…</string>
+    <string name="l10n_loading_33ce417" formatted="false">Loading…</string>
+    <string name="l10n_login_email_5887f63" formatted="false">Login email</string>
+    <string name="l10n_lyrics_8670cb1" formatted="false">Lyrics</string>
+    <string name="l10n_media_controls_could_not_connect_s_16d9e33">Media controls could not connect: %s</string>
+    <string name="l10n_messages_are_sent_through_your_telegram_5a02ec7" formatted="false">Messages are sent through your Telegram account.</string>
+    <string name="l10n_minimize_player_a5a19fb" formatted="false">Minimize player</string>
+    <string name="l10n_move_s_down_eaefe61">Move %s down</string>
+    <string name="l10n_move_s_up_79d0fb1">Move %s up</string>
+    <string name="l10n_move_bot_up_9cb82d8" formatted="false">Move bot up</string>
+    <string name="l10n_move_down_260ff8a" formatted="false">Move down</string>
+    <string name="l10n_move_up_b4f57cd" formatted="false">Move up</string>
+    <string name="l10n_new_account_d33d781" formatted="false">New account</string>
+    <string name="l10n_new_playlist_a5474a8" formatted="false">New playlist</string>
+    <string name="l10n_next_bc98198" formatted="false">Next</string>
+    <string name="l10n_no_app_can_open_this_link_0ceb50b" formatted="false">No app can open this link</string>
+    <string name="l10n_no_chats_found_c6bd820" formatted="false">No chats found</string>
+    <string name="l10n_no_comments_yet_207b24f" formatted="false">No comments yet.</string>
+    <string name="l10n_no_lyrics_found_75127a1" formatted="false">No lyrics found</string>
+    <string name="l10n_no_matching_songs_6642d8e" formatted="false">No matching songs</string>
+    <string name="l10n_no_playlists_d1f610b" formatted="false">No playlists</string>
+    <string name="l10n_no_songs_yet_70cd5c1" formatted="false">No songs yet</string>
+    <string name="l10n_now_playing_1c388f1" formatted="false">Now playing</string>
+    <string name="l10n_ok_9ce3bd4" formatted="false">OK</string>
+    <string name="l10n_offline_storage_c9f2f99" formatted="false">Offline storage</string>
+    <string name="l10n_oldest_downloaded_music_is_removed_when_0b6b875" formatted="false">Oldest downloaded music is removed when the cache reaches this limit.</string>
+    <string name="l10n_open_this_button_in_telegram_63a9a4e" formatted="false">Open this button in Telegram</string>
+    <string name="l10n_options_for_s_de37f37">Options for %s</string>
+    <string name="l10n_password_8be3c94" formatted="false">Password</string>
+    <string name="l10n_pause_781961b" formatted="false">Pause</string>
+    <string name="l10n_phone_number_81_573327d" formatted="false">Phone number (+81 …)</string>
+    <string name="l10n_play_5d12bd5" formatted="false">Play</string>
+    <string name="l10n_play_a_song_before_starting_a_broadcast_1411680" formatted="false">Play a song before starting a broadcast.</string>
+    <string name="l10n_playlist_folder_name_13f2970" formatted="false">Playlist folder name</string>
+    <string name="l10n_playlist_is_available_offline_54b7ee8" formatted="false">Playlist is available offline</string>
+    <string name="l10n_playlist_name_544f755" formatted="false">Playlist name</string>
+    <string name="l10n_playlists_77b69f3" formatted="false">Playlists</string>
+    <string name="l10n_previous_50f9428" formatted="false">Previous</string>
+    <string name="l10n_privacy_policy_7ceacdc" formatted="false">Privacy policy</string>
+    <string name="l10n_privacy_policy_data_controls_33efbf8" formatted="false">Privacy policy &amp; data controls</string>
+    <string name="l10n_private_telegram_playlist_9593287" formatted="false">Private Telegram playlist</string>
+    <string name="l10n_queue_d325fcd" formatted="false">Queue</string>
+    <string name="l10n_refresh_qr_code_0d87d27" formatted="false">Refresh QR code</string>
+    <string name="l10n_remove_e963907" formatted="false">Remove</string>
+    <string name="l10n_remove_bot_4812ad0" formatted="false">Remove bot</string>
+    <string name="l10n_remove_download_1477425" formatted="false">Remove download</string>
+    <string name="l10n_remove_from_playlist_ad3e5d8" formatted="false">Remove from playlist</string>
+    <string name="l10n_remove_this_song_2e0668e" formatted="false">Remove this song?</string>
+    <string name="l10n_remove_vote_b212f50" formatted="false">Remove vote</string>
+    <string name="l10n_rename_d3f4cb8" formatted="false">Rename</string>
+    <string name="l10n_rename_playlist_279af0e" formatted="false">Rename playlist</string>
+    <string name="l10n_repeat_one_05f3dda" formatted="false">Repeat one</string>
+    <string name="l10n_reply_on_telegram_2ab8656" formatted="false">Reply on Telegram</string>
+    <string name="l10n_reverse_order_eabc2f7" formatted="false">Reverse order</string>
+    <string name="l10n_save_efc007a" formatted="false">Save</string>
+    <string name="l10n_save_s_3422946">Save %s</string>
+    <string name="l10n_save_preferences_d8ab74e" formatted="false">Save preferences</string>
+    <string name="l10n_save_to_playlist_b97257e" formatted="false">Save to playlist</string>
+    <string name="l10n_saved_c0ae8f6" formatted="false">Saved</string>
+    <string name="l10n_saved_in_demo_2a23a64" formatted="false">Saved in demo</string>
+    <string name="l10n_saved_to_s_1b18781">Saved to %s</string>
+    <string name="l10n_scan_with_telegram_c387872" formatted="false">Scan with Telegram</string>
+    <string name="l10n_search_bce0641" formatted="false">Search</string>
+    <string name="l10n_search_telegram_or_choose_a_chat_to_find_ebea858" formatted="false">Search Telegram or choose a chat to find music.</string>
+    <string name="l10n_search_all_telegram_b5b4582" formatted="false">Search all Telegram</string>
+    <string name="l10n_search_bots_aeb2b4e" formatted="false">Search bots</string>
+    <string name="l10n_search_chats_9ad51de" formatted="false">Search chats</string>
+    <string name="l10n_search_for_music_5b96e02" formatted="false">Search for music</string>
+    <string name="l10n_search_library_1c9edba" formatted="false">Search library</string>
+    <string name="l10n_search_playlists_756ad7e" formatted="false">Search playlists</string>
+    <string name="l10n_search_songs_and_artists_c3c2b98" formatted="false">Search songs and artists</string>
+    <string name="l10n_search_with_a_bot_4f4676b" formatted="false">Search with a bot</string>
+    <string name="l10n_searches_send_real_messages_to_this_bot_1863c9e" formatted="false">Searches send real messages to this bot.</string>
+    <string name="l10n_send_comment_591e0e8" formatted="false">Send comment</string>
+    <string name="l10n_send_search_8355677" formatted="false">Send search</string>
+    <string name="l10n_send_searches_to_bots_you_choose_0cc525b" formatted="false">Send searches to bots you choose</string>
+    <string name="l10n_session_ended_8874019" formatted="false">Session ended</string>
+    <string name="l10n_settings_c7f73bb" formatted="false">Settings</string>
+    <string name="l10n_settings_saved_aef97bb" formatted="false">Settings saved</string>
+    <string name="l10n_share_invite_link_a0630b0" formatted="false">Share invite link</string>
+    <string name="l10n_share_listening_session_81635bd" formatted="false">Share listening session</string>
+    <string name="l10n_show_chats_tab_6273f93" formatted="false">Show Chats tab</string>
+    <string name="l10n_shuffle_5b772b7" formatted="false">Shuffle</string>
+    <string name="l10n_shuffle_all_7e388b3" formatted="false">Shuffle all</string>
+    <string name="l10n_sign_in_to_telegram_fec2628" formatted="false">Sign in to Telegram</string>
+    <string name="l10n_sign_in_with_qr_code_ec732c6" formatted="false">Sign in with QR code</string>
+    <string name="l10n_sign_out_of_this_account_b4e6788" formatted="false">Sign out of this account</string>
+    <string name="l10n_sign_out_b115557" formatted="false">Sign out?</string>
+    <string name="l10n_signed_out_1b8337c" formatted="false">Signed out</string>
+    <string name="l10n_something_went_wrong_please_try_again_9a3ea05" formatted="false">Something went wrong. Please try again.</string>
+    <string name="l10n_song_title_artist_and_duration_are_sent_cf70a47" formatted="false">Song title, artist, and duration are sent to this server. Matched lyrics are saved for offline listening.</string>
+    <string name="l10n_songs_e1404b4" formatted="false">Songs</string>
+    <string name="l10n_tap_a_song_s_heart_to_save_it_here_2b963e6" formatted="false">Tap a song\'s heart to save it here.</string>
+    <string name="l10n_telegram_could_not_send_the_message_s_a49a252">Telegram could not send the message: %s</string>
+    <string name="l10n_telegram_did_not_allow_this_track_to_be_3ed619c" formatted="false">Telegram did not allow this track to be forwarded.</string>
+    <string name="l10n_telegram_error_6c18eb3" formatted="false">Telegram error</string>
+    <string name="l10n_telegram_must_provide_a_secure_rtmps_end_f4f3458" formatted="false">Telegram must provide a secure RTMPS endpoint for broadcasting.</string>
+    <string name="l10n_telegram_rejected_the_broadcast_b9113bf" formatted="false">Telegram rejected the broadcast</string>
+    <string name="l10n_telegram_requires_a_login_email_address_2da6b68" formatted="false">Telegram requires a login email address.</string>
+    <string name="l10n_telegram_sign_in_qr_code_2fbf268" formatted="false">Telegram sign-in QR code</string>
+    <string name="l10n_telegram_settings_devices_link_desktop_d_d910834" formatted="false">Telegram → Settings → Devices → Link Desktop Device</string>
+    <string name="l10n_telisten_for_android_s_a5374fd">Telisten for Android · %s</string>
+    <string name="l10n_telisten_on_telegram_b81361a" formatted="false">Telisten on Telegram</string>
+    <string name="l10n_the_host_ended_this_session_8b94a82" formatted="false">The host ended this session</string>
+    <string name="l10n_the_message_will_be_deleted_from_this_te_f1d9a28" formatted="false">The message will be deleted from this Telegram playlist.</string>
+    <string name="l10n_there_is_no_active_session_in_this_chat_2fe1fe0" formatted="false">There is no active session in this chat.</string>
+    <string name="l10n_this_call_is_not_sharing_telisten_playba_80a3ddf" formatted="false">This call is not sharing Telisten playback metadata.</string>
+    <string name="l10n_this_deletes_the_playlist_channel_on_tel_7984b9d" formatted="false">This deletes the playlist channel on Telegram. This cannot be undone.</string>
+    <string name="l10n_this_song_is_not_available_in_your_teleg_12534df" formatted="false">This song is not available in your Telegram music. You can listen using the Telegram invite link.</string>
+    <string name="l10n_this_track_exceeds_the_cache_limit_incre_8819ace" formatted="false">This track exceeds the cache limit. Increase it in Settings.</string>
+    <string name="l10n_toggle_favorite_48e9866" formatted="false">Toggle favorite</string>
+    <string name="l10n_try_a_different_name_or_turn_off_the_sav_a72b093" formatted="false">Try a different name or turn off the saved filter.</string>
+    <string name="l10n_try_another_match_or_import_an_lrc_file_cf73e1a" formatted="false">Try another match or import an LRC file.</string>
+    <string name="l10n_two_step_verification_2a0b5e8" formatted="false">Two-step verification</string>
+    <string name="l10n_unknown_artist_9566f8c" formatted="false">Unknown artist</string>
+    <string name="l10n_use_playlist_default_316b1fd" formatted="false">Use _Playlist default</string>
+    <string name="l10n_use_the_phone_number_connected_to_telegr_6e6c9bb" formatted="false">Use the phone number connected to Telegram.</string>
+    <string name="l10n_verification_code_80f2f29" formatted="false">Verification code</string>
+    <string name="l10n_vote_64f8729" formatted="false">Vote</string>
+    <string name="l10n_your_account_4ab2910" formatted="false">Your account</string>
+    <string name="l10n_your_downloaded_music_remains_available_808d2df" formatted="false">Your downloaded music remains available on this device.</string>
+    <string name="l10n_your_two_step_verification_password_e751dde" formatted="false">Your two-step verification password</string>
+    <plurals name="l10n_count_playlists">
+        <item quantity="one">%d playlist</item>
+        <item quantity="other">%d playlists</item>
+    </plurals>
+    <plurals name="l10n_count_chats">
+        <item quantity="one">%d chat</item>
+        <item quantity="other">%d chats</item>
+    </plurals>
+    <plurals name="l10n_count_songs">
+        <item quantity="one">%d song</item>
+        <item quantity="other">%d songs</item>
+    </plurals>
+    <plurals name="l10n_count_contacts">
+        <item quantity="one">%d contact</item>
+        <item quantity="other">%d contacts</item>
+    </plurals>
+</resources>

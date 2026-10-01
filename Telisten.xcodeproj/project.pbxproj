@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C2734E73E900A23D64312593 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AC1DF2E4E87F87D02041275E /* Localizable.xcstrings */; };
+		7F7768A01DF7C749D1FDB308 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AC1DF2E4E87F87D02041275E /* Localizable.xcstrings */; };
+		C0990789261CD19826E5AA1E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AC1DF2E4E87F87D02041275E /* Localizable.xcstrings */; };
 		0070A3D3570F6E5CDE416249 /* MessageAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0E541C790D72ECD081CC1C /* MessageAction.swift */; };
 		0080008EADA5493CFB019087 /* DraftMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086045A04AFC83D0F40D7318 /* DraftMessage.swift */; };
 		01658D1CE1C76EFF313D0482 /* Boost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13921A2D2458A055C30BFD79 /* Boost.swift */; };
@@ -946,6 +949,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AC1DF2E4E87F87D02041275E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		005C13257E3A6578EAD984BD /* PrivacyRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyRule.swift; sourceTree = "<group>"; };
 		01201539851E40FE4429DAEE /* JSONObjectValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONObjectValue.swift; sourceTree = "<group>"; };
 		01F4328C1B4FB69339D68CC9 /* ChatParticipant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatParticipant.swift; sourceTree = "<group>"; };
@@ -1597,6 +1601,7 @@
 				C1BEC674095514CB07A3DBB4 /* Storage */,
 				27385ED814DE06E09B62B246 /* Telegram */,
 				7165085D5C89935F74AE3CB3 /* Views */,
+				AC1DF2E4E87F87D02041275E /* Localizable.xcstrings */,
 				C3DAE2449C18219C395A0F26 /* Telisten-iOS.entitlements */,
 				B708864915D6F412BE934AEE /* Telisten-macOS.entitlements */,
 				BFE6955A199D0D0BC6CE3523 /* VisionAssets.xcassets */,
@@ -1851,6 +1856,13 @@
 			knownRegions = (
 				Base,
 				en,
+				"zh-Hans",
+				"zh-Hant",
+				ja,
+				vi,
+				fr,
+				es,
+				ko,
 			);
 			mainGroup = B8C393017F3ECCE98CE1B324;
 			minimizedProjectReferenceProxies = 1;
@@ -1876,6 +1888,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C2734E73E900A23D64312593 /* Localizable.xcstrings in Resources */,
 				565CC002E329273547B2CBCB /* Appicon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1884,6 +1897,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0990789261CD19826E5AA1E /* Localizable.xcstrings in Resources */,
 				46458C50A95FAD058B75A50E /* VisionAssets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1892,6 +1906,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7F7768A01DF7C749D1FDB308 /* Localizable.xcstrings in Resources */,
 				FF0A2DE712DC93536E35FA09 /* Appicon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

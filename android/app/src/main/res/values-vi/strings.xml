@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="l10n_s_used_ea8ce9d">%s đã được sử dụng</string>
+    <string name="l10n_1_12_characters_uses_this_exact_telegram_6a9c019" formatted="false">1–12 ký tự. Sử dụng tên thư mục Telegram chính xác này cho tài khoản này. Các thư mục hiện có không được đổi tên.</string>
+    <string name="l10n_accounts_36bae31" formatted="false">Tài khoản</string>
+    <string name="l10n_add_61cc55a" formatted="false">Thêm</string>
+    <string name="l10n_add_telegram_api_id_and_telegram_api_has_112d17f" formatted="false">Thêm TELEGRAM_API_ID và TELEGRAM_API_HASH vào ../.env, sau đó xây dựng lại. Bạn có thể khám phá bản demo ngay bây giờ.</string>
+    <string name="l10n_add_a_search_bot_24843e6" formatted="false">Thêm bot tìm kiếm</string>
+    <string name="l10n_add_account_98b0ed8" formatted="false">Thêm tài khoản</string>
+    <string name="l10n_add_bot_f3d8867" formatted="false">Thêm bot</string>
+    <string name="l10n_add_vote_ac9453f" formatted="false">Thêm phiếu bầu</string>
+    <string name="l10n_after_query_optional_8798de4" formatted="false">Sau khi truy vấn (tùy chọn)</string>
+    <string name="l10n_already_broadcasting_92a5053" formatted="false">Đã phát sóng</string>
+    <string name="l10n_audio_format_changed_restart_listen_toge_aa6cf3a" formatted="false">Định dạng âm thanh đã thay đổi. Khởi động lại Listen Together cho bản nhạc này.</string>
+    <string name="l10n_audio_service_is_connecting_please_try_a_fd6e5bb" formatted="false">Dịch vụ âm thanh đang kết nối. Vui lòng thử lại.</string>
+    <string name="l10n_audio_service_is_unavailable_e8ca884" formatted="false">Dịch vụ âm thanh không khả dụng</string>
+    <string name="l10n_back_to_library_f0926a5" formatted="false">Quay lại thư viện</string>
+    <string name="l10n_before_query_optional_88b769f" formatted="false">Trước khi truy vấn (tùy chọn)</string>
+    <string name="l10n_broadcast_connection_failed_2dece2a" formatted="false">Kết nối phát sóng không thành công</string>
+    <string name="l10n_broadcast_could_not_keep_up_stop_and_ret_6c01762" formatted="false">Phát sóng không thể theo kịp. Dừng lại và thử lại.</string>
+    <string name="l10n_broadcast_disconnected_b424860" formatted="false">Đã ngắt kết nối phát sóng</string>
+    <string name="l10n_broadcast_stopped_4f217ce" formatted="false">Đã dừng phát sóng</string>
+    <string name="l10n_browse_your_chats_play_music_and_save_so_a636226" formatted="false">Duyệt qua các cuộc trò chuyện của bạn, phát nhạc và lưu bài hát ngoại tuyến.</string>
+    <string name="l10n_cancel_77dfd21" formatted="false">Hủy bỏ</string>
+    <string name="l10n_channel_879f0b1" formatted="false">Kênh</string>
+    <string name="l10n_chat_2ced57f" formatted="false">Trò chuyện</string>
+    <string name="l10n_chats_6c9e84c" formatted="false">Trò chuyện</string>
+    <string name="l10n_chats_could_not_load_7597e6d" formatted="false">Không thể tải cuộc trò chuyện</string>
+    <string name="l10n_choose_a_chat_to_share_the_moment_21d374a" formatted="false">Chọn một cuộc trò chuyện để chia sẻ khoảnh khắc.</string>
+    <string name="l10n_clear_search_67300d0" formatted="false">Xóa tìm kiếm</string>
+    <string name="l10n_comments_fce06e2" formatted="false">Bình luận</string>
+    <string name="l10n_connected_c2f9b7b" formatted="false">Đã kết nối</string>
+    <string name="l10n_connecting_broadcast_862bb91" formatted="false">Đang kết nối chương trình phát sóng…</string>
+    <string name="l10n_connecting_to_telegram_c0da91e" formatted="false">Kết nối với Telegram</string>
+    <string name="l10n_connecting_fd3e796" formatted="false">Đang kết nối…</string>
+    <string name="l10n_connection_interrupted_f8d01ab" formatted="false">Kết nối bị gián đoạn</string>
+    <string name="l10n_connects_directly_to_telegram_no_teliste_9cf4d6b" formatted="false">Kết nối trực tiếp với Telegram. Không có máy chủ Telisten.</string>
+    <string name="l10n_continue_2e02623" formatted="false">Tiếp tục</string>
+    <string name="l10n_could_not_connect_9ed243a" formatted="false">Không thể kết nối</string>
+    <string name="l10n_could_not_find_the_host_s_song_in_your_m_25b3903" formatted="false">Không thể tìm thấy bài hát của người dẫn chương trình trong nhạc của bạn.</string>
+    <string name="l10n_could_not_join_4937397" formatted="false">Không thể tham gia</string>
+    <string name="l10n_could_not_save_download_88cd019" formatted="false">Không thể lưu tải xuống</string>
+    <string name="l10n_couldn_t_finish_that_70aa8f3" formatted="false">Không thể hoàn thành việc đó</string>
+    <string name="l10n_create_a_playlist_to_collect_songs_from_efba065" formatted="false">Tạo danh sách phát để thu thập các bài hát từ cuộc trò chuyện của bạn.</string>
+    <string name="l10n_create_your_telegram_account_in_the_offi_1406b70" formatted="false">Tạo tài khoản Telegram của bạn trong ứng dụng chính thức, sau đó đăng nhập tại đây.</string>
+    <string name="l10n_demo_038bc41" formatted="false">bản demo</string>
+    <string name="l10n_delete_f6fdbe4" formatted="false">Xóa</string>
+    <string name="l10n_delete_s_2b61858">Xóa %s?</string>
+    <string name="l10n_delete_playlist_b55b186" formatted="false">Xóa danh sách phát</string>
+    <string name="l10n_demo_e52c854" formatted="false">Bản trình diễn</string>
+    <string name="l10n_download_a479c9c" formatted="false">Tải xuống</string>
+    <string name="l10n_download_a_song_from_its_menu_to_listen_959da35" formatted="false">Tải xuống một bài hát từ menu của nó để nghe ngoại tuyến.</string>
+    <string name="l10n_download_all_d69edf7" formatted="false">Tải xuống tất cả</string>
+    <string name="l10n_download_interrupted_tap_download_to_ret_35aa5d3" formatted="false">Tải xuống bị gián đoạn; nhấn Tải xuống để thử lại.</string>
+    <string name="l10n_downloaded_c619702" formatted="false">Đã tải xuống</string>
+    <string name="l10n_downloads_a862c2b" formatted="false">Tải xuống</string>
+    <string name="l10n_email_address_c94d317" formatted="false">Địa chỉ email</string>
+    <string name="l10n_end_session_for_everyone_9ea3044" formatted="false">Kết thúc phiên họp cho mọi người</string>
+    <string name="l10n_end_the_current_session_first_0276d05" formatted="false">Kết thúc phiên hiện tại trước tiên.</string>
+    <string name="l10n_enter_a_playlist_name_d28e2b6" formatted="false">Nhập tên danh sách phát</string>
+    <string name="l10n_enter_a_valid_https_lyrics_server_url_9bde803" formatted="false">Nhập URL máy chủ lời bài hát HTTPS hợp lệ</string>
+    <string name="l10n_enter_the_code_telegram_sent_to_s_13cface">Nhập mã Telegram gửi tới %s.</string>
+    <string name="l10n_enter_the_code_sent_to_s_811aac6">Nhập mã được gửi tới %s.</string>
+    <string name="l10n_explore_demo_39d369e" formatted="false">Khám phá bản demo</string>
+    <string name="l10n_favorite_s_6952fe8">%s yêu thích</string>
+    <string name="l10n_favorites_07b3e44" formatted="false">Yêu thích</string>
+    <string name="l10n_find_match_8b02192" formatted="false">Tìm lời bài hát</string>
+    <string name="l10n_https_server_url_a8d514a" formatted="false">URL máy chủ HTTPS</string>
+    <string name="l10n_host_here_5a9851e" formatted="false">Lưu trữ tại đây</string>
+    <string name="l10n_host_in_a_chat_you_manage_or_join_a_teli_b3a6b9c" formatted="false">Tổ chức cuộc trò chuyện mà bạn quản lý hoặc tham gia phiên Telisten. Máy chủ phát âm thanh ứng dụng tới Telegram. Người nghe Telisten đồng bộ các bài hát phù hợp từ thư viện của riêng họ.</string>
+    <string name="l10n_import_lrc_b16601f" formatted="false">Nhập khẩu LRC</string>
+    <string name="l10n_in_order_32a183d" formatted="false">Phát theo thứ tự</string>
+    <string name="l10n_in_sync_with_s_5bb7736">Đồng bộ hóa với %s</string>
+    <string name="l10n_invite_contacts_43f0bde" formatted="false">Mời liên hệ</string>
+    <string name="l10n_invited_d_contacts_ffea7c3">%d liên hệ được mời</string>
+    <string name="l10n_join_session_8941a56" formatted="false">Tham gia phiên</string>
+    <string name="l10n_lrclib_or_your_own_compatible_server_1a1ee9e" formatted="false">LRCLIB hoặc máy chủ tương thích của riêng bạn</string>
+    <string name="l10n_leave_demo_4b15613" formatted="false">Để lại bản demo</string>
+    <string name="l10n_leave_demo_3dc5161" formatted="false">Rời khỏi bản demo?</string>
+    <string name="l10n_leave_session_8e22241" formatted="false">Rời khỏi phiên</string>
+    <string name="l10n_library_b8100f5" formatted="false">Thư viện nhạc</string>
+    <string name="l10n_listen_together_needs_a_signed_in_telegr_d27a273" formatted="false">Listen Together cần có tài khoản Telegram đã đăng nhập.</string>
+    <string name="l10n_listen_offline_486cd6f" formatted="false">Nghe ngoại tuyến</string>
+    <string name="l10n_listen_together_7c4268d" formatted="false">Nghe cùng nhau</string>
+    <string name="l10n_live_65c821a" formatted="false">Trực tiếp</string>
+    <string name="l10n_load_more_dfe60ca" formatted="false">Tải thêm</string>
+    <string name="l10n_loading_music_c8a22d9" formatted="false">Đang tải nhạc…</string>
+    <string name="l10n_loading_33ce417" formatted="false">Đang tải…</string>
+    <string name="l10n_login_email_5887f63" formatted="false">Email đăng nhập</string>
+    <string name="l10n_lyrics_8670cb1" formatted="false">Lời bài hát</string>
+    <string name="l10n_media_controls_could_not_connect_s_16d9e33">Điều khiển phương tiện không thể kết nối: %s</string>
+    <string name="l10n_messages_are_sent_through_your_telegram_5a02ec7" formatted="false">Tin nhắn được gửi qua tài khoản Telegram của bạn.</string>
+    <string name="l10n_minimize_player_a5a19fb" formatted="false">Thu nhỏ trình phát</string>
+    <string name="l10n_move_s_down_eaefe61">Di chuyển %s xuống</string>
+    <string name="l10n_move_s_up_79d0fb1">Di chuyển %s lên</string>
+    <string name="l10n_move_bot_up_9cb82d8" formatted="false">Di chuyển bot lên</string>
+    <string name="l10n_move_down_260ff8a" formatted="false">Di chuyển xuống</string>
+    <string name="l10n_move_up_b4f57cd" formatted="false">Di chuyển lên</string>
+    <string name="l10n_new_account_d33d781" formatted="false">Tài khoản mới</string>
+    <string name="l10n_new_playlist_a5474a8" formatted="false">Danh sách phát mới</string>
+    <string name="l10n_next_bc98198" formatted="false">Bài tiếp theo</string>
+    <string name="l10n_no_app_can_open_this_link_0ceb50b" formatted="false">Không có ứng dụng nào có thể mở liên kết này</string>
+    <string name="l10n_no_chats_found_c6bd820" formatted="false">Không tìm thấy cuộc trò chuyện nào</string>
+    <string name="l10n_no_comments_yet_207b24f" formatted="false">Chưa có bình luận nào</string>
+    <string name="l10n_no_lyrics_found_75127a1" formatted="false">Không tìm thấy lời bài hát</string>
+    <string name="l10n_no_matching_songs_6642d8e" formatted="false">Không có bài hát phù hợp</string>
+    <string name="l10n_no_playlists_d1f610b" formatted="false">Không có danh sách phát</string>
+    <string name="l10n_no_songs_yet_70cd5c1" formatted="false">Chưa có bài hát nào</string>
+    <string name="l10n_now_playing_1c388f1" formatted="false">Đang phát</string>
+    <string name="l10n_ok_9ce3bd4" formatted="false">được rồi</string>
+    <string name="l10n_offline_storage_c9f2f99" formatted="false">Lưu trữ ngoại tuyến</string>
+    <string name="l10n_oldest_downloaded_music_is_removed_when_0b6b875" formatted="false">Nhạc đã tải xuống cũ nhất sẽ bị xóa khi bộ đệm đạt đến giới hạn này.</string>
+    <string name="l10n_open_this_button_in_telegram_63a9a4e" formatted="false">Mở nút này trong Telegram</string>
+    <string name="l10n_options_for_s_de37f37">Tùy chọn cho %s</string>
+    <string name="l10n_password_8be3c94" formatted="false">Mật khẩu</string>
+    <string name="l10n_pause_781961b" formatted="false">Tạm dừng</string>
+    <string name="l10n_phone_number_81_573327d" formatted="false">Số điện thoại (+81…)</string>
+    <string name="l10n_play_5d12bd5" formatted="false">Phát</string>
+    <string name="l10n_play_a_song_before_starting_a_broadcast_1411680" formatted="false">Phát một bài hát trước khi bắt đầu phát sóng.</string>
+    <string name="l10n_playlist_folder_name_13f2970" formatted="false">Tên thư mục danh sách phát</string>
+    <string name="l10n_playlist_is_available_offline_54b7ee8" formatted="false">Danh sách phát có sẵn ngoại tuyến</string>
+    <string name="l10n_playlist_name_544f755" formatted="false">Tên danh sách phát</string>
+    <string name="l10n_playlists_77b69f3" formatted="false">Danh sách phát</string>
+    <string name="l10n_previous_50f9428" formatted="false">Bài trước</string>
+    <string name="l10n_privacy_policy_7ceacdc" formatted="false">Chính sách bảo mật</string>
+    <string name="l10n_privacy_policy_data_controls_33efbf8" formatted="false">Chính sách quyền riêng tư và kiểm soát dữ liệu</string>
+    <string name="l10n_private_telegram_playlist_9593287" formatted="false">Danh sách phát Telegram riêng tư</string>
+    <string name="l10n_queue_d325fcd" formatted="false">Hàng chờ phát</string>
+    <string name="l10n_refresh_qr_code_0d87d27" formatted="false">Làm mới mã QR</string>
+    <string name="l10n_remove_e963907" formatted="false">Xóa</string>
+    <string name="l10n_remove_bot_4812ad0" formatted="false">Xóa bot</string>
+    <string name="l10n_remove_download_1477425" formatted="false">Xóa tải xuống</string>
+    <string name="l10n_remove_from_playlist_ad3e5d8" formatted="false">Xóa khỏi danh sách phát</string>
+    <string name="l10n_remove_this_song_2e0668e" formatted="false">Xóa bài hát này?</string>
+    <string name="l10n_remove_vote_b212f50" formatted="false">Xóa phiếu bầu</string>
+    <string name="l10n_rename_d3f4cb8" formatted="false">Đổi tên</string>
+    <string name="l10n_rename_playlist_279af0e" formatted="false">Đổi tên danh sách phát</string>
+    <string name="l10n_repeat_one_05f3dda" formatted="false">Lặp lại một bài</string>
+    <string name="l10n_reply_on_telegram_2ab8656" formatted="false">Trả lời trên Telegram</string>
+    <string name="l10n_reverse_order_eabc2f7" formatted="false">Đảo ngược thứ tự</string>
+    <string name="l10n_save_efc007a" formatted="false">Lưu</string>
+    <string name="l10n_save_s_3422946">Lưu %s</string>
+    <string name="l10n_save_preferences_d8ab74e" formatted="false">Lưu tùy chọn</string>
+    <string name="l10n_save_to_playlist_b97257e" formatted="false">Lưu vào danh sách phát</string>
+    <string name="l10n_saved_c0ae8f6" formatted="false">Đã lưu</string>
+    <string name="l10n_saved_in_demo_2a23a64" formatted="false">Đã lưu trong bản demo</string>
+    <string name="l10n_saved_to_s_1b18781">Đã lưu vào %s</string>
+    <string name="l10n_scan_with_telegram_c387872" formatted="false">Quét bằng Telegram</string>
+    <string name="l10n_search_bce0641" formatted="false">Tìm kiếm</string>
+    <string name="l10n_search_telegram_or_choose_a_chat_to_find_ebea858" formatted="false">Tìm kiếm Telegram hoặc chọn cuộc trò chuyện để tìm nhạc.</string>
+    <string name="l10n_search_all_telegram_b5b4582" formatted="false">Tìm kiếm trên Telegram</string>
+    <string name="l10n_search_bots_aeb2b4e" formatted="false">Tìm kiếm bot</string>
+    <string name="l10n_search_chats_9ad51de" formatted="false">Tìm kiếm cuộc trò chuyện</string>
+    <string name="l10n_search_for_music_5b96e02" formatted="false">Tìm kiếm âm nhạc</string>
+    <string name="l10n_search_library_1c9edba" formatted="false">Tìm kiếm thư viện</string>
+    <string name="l10n_search_playlists_756ad7e" formatted="false">Tìm kiếm danh sách phát</string>
+    <string name="l10n_search_songs_and_artists_c3c2b98" formatted="false">Tìm kiếm bài hát và nghệ sĩ</string>
+    <string name="l10n_search_with_a_bot_4f4676b" formatted="false">Tìm kiếm bằng bot</string>
+    <string name="l10n_searches_send_real_messages_to_this_bot_1863c9e" formatted="false">Tìm kiếm gửi tin nhắn thực sự đến bot này.</string>
+    <string name="l10n_send_comment_591e0e8" formatted="false">Gửi bình luận</string>
+    <string name="l10n_send_search_8355677" formatted="false">Gửi tìm kiếm</string>
+    <string name="l10n_send_searches_to_bots_you_choose_0cc525b" formatted="false">Gửi tìm kiếm tới các bot bạn chọn</string>
+    <string name="l10n_session_ended_8874019" formatted="false">Phiên kết thúc</string>
+    <string name="l10n_settings_c7f73bb" formatted="false">Cài đặt</string>
+    <string name="l10n_settings_saved_aef97bb" formatted="false">Đã lưu cài đặt</string>
+    <string name="l10n_share_invite_link_a0630b0" formatted="false">Chia sẻ liên kết mời</string>
+    <string name="l10n_share_listening_session_81635bd" formatted="false">Chia sẻ phiên nghe</string>
+    <string name="l10n_show_chats_tab_6273f93" formatted="false">Hiển thị tab Trò chuyện</string>
+    <string name="l10n_shuffle_5b772b7" formatted="false">Phát ngẫu nhiên</string>
+    <string name="l10n_shuffle_all_7e388b3" formatted="false">Xáo trộn tất cả</string>
+    <string name="l10n_sign_in_to_telegram_fec2628" formatted="false">Đăng nhập vào Telegram</string>
+    <string name="l10n_sign_in_with_qr_code_ec732c6" formatted="false">Đăng nhập bằng mã QR</string>
+    <string name="l10n_sign_out_of_this_account_b4e6788" formatted="false">Đăng xuất khỏi tài khoản này</string>
+    <string name="l10n_sign_out_b115557" formatted="false">Đăng xuất?</string>
+    <string name="l10n_signed_out_1b8337c" formatted="false">Đã đăng xuất</string>
+    <string name="l10n_something_went_wrong_please_try_again_9a3ea05" formatted="false">Đã xảy ra lỗi. Vui lòng thử lại.</string>
+    <string name="l10n_song_title_artist_and_duration_are_sent_cf70a47" formatted="false">Tên bài hát, nghệ sĩ và thời lượng được gửi đến máy chủ này. Lời bài hát phù hợp được lưu để nghe ngoại tuyến.</string>
+    <string name="l10n_songs_e1404b4" formatted="false">Bài hát</string>
+    <string name="l10n_tap_a_song_s_heart_to_save_it_here_2b963e6" formatted="false">Nhấn vào trái tim của bài hát để lưu nó ở đây.</string>
+    <string name="l10n_telegram_could_not_send_the_message_s_a49a252">Telegram không thể gửi tin nhắn: %s</string>
+    <string name="l10n_telegram_did_not_allow_this_track_to_be_3ed619c" formatted="false">Telegram không cho phép chuyển tiếp bản nhạc này.</string>
+    <string name="l10n_telegram_error_6c18eb3" formatted="false">Lỗi Telegram</string>
+    <string name="l10n_telegram_must_provide_a_secure_rtmps_end_f4f3458" formatted="false">Telegram phải cung cấp điểm cuối RTMPS an toàn để phát sóng.</string>
+    <string name="l10n_telegram_rejected_the_broadcast_b9113bf" formatted="false">Telegram từ chối phát sóng</string>
+    <string name="l10n_telegram_requires_a_login_email_address_2da6b68" formatted="false">Telegram yêu cầu địa chỉ email đăng nhập.</string>
+    <string name="l10n_telegram_sign_in_qr_code_2fbf268" formatted="false">Mã QR đăng nhập Telegram</string>
+    <string name="l10n_telegram_settings_devices_link_desktop_d_d910834" formatted="false">Telegram → Cài đặt → Thiết bị → Liên kết thiết bị máy tính để bàn</string>
+    <string name="l10n_telisten_for_android_s_a5374fd">Telisten cho Android · %s</string>
+    <string name="l10n_telisten_on_telegram_b81361a" formatted="false">Telisten trên Telegram</string>
+    <string name="l10n_the_host_ended_this_session_8b94a82" formatted="false">Người chủ trì đã kết thúc phiên này</string>
+    <string name="l10n_the_message_will_be_deleted_from_this_te_f1d9a28" formatted="false">Tin nhắn sẽ bị xóa khỏi danh sách phát Telegram này.</string>
+    <string name="l10n_there_is_no_active_session_in_this_chat_2fe1fe0" formatted="false">Không có phiên hoạt động nào trong cuộc trò chuyện này.</string>
+    <string name="l10n_this_call_is_not_sharing_telisten_playba_80a3ddf" formatted="false">Cuộc gọi này không chia sẻ siêu dữ liệu phát lại Telisten.</string>
+    <string name="l10n_this_deletes_the_playlist_channel_on_tel_7984b9d" formatted="false">Việc này sẽ xóa kênh danh sách phát trên Telegram. Điều này không thể hoàn tác được.</string>
+    <string name="l10n_this_song_is_not_available_in_your_teleg_12534df" formatted="false">Bài hát này không có trong nhạc Telegram của bạn. Bạn có thể nghe bằng liên kết mời Telegram.</string>
+    <string name="l10n_this_track_exceeds_the_cache_limit_incre_8819ace" formatted="false">Bản nhạc này vượt quá giới hạn bộ nhớ đệm. Tăng nó trong Cài đặt.</string>
+    <string name="l10n_toggle_favorite_48e9866" formatted="false">Chuyển đổi yêu thích</string>
+    <string name="l10n_try_a_different_name_or_turn_off_the_sav_a72b093" formatted="false">Hãy thử tên khác hoặc tắt bộ lọc đã lưu.</string>
+    <string name="l10n_try_another_match_or_import_an_lrc_file_cf73e1a" formatted="false">Hãy thử kết quả khác hoặc nhập tệp LRC.</string>
+    <string name="l10n_two_step_verification_2a0b5e8" formatted="false">Xác minh hai bước</string>
+    <string name="l10n_unknown_artist_9566f8c" formatted="false">Nghệ sĩ vô danh</string>
+    <string name="l10n_use_playlist_default_316b1fd" formatted="false">Sử dụng _Playlist mặc định</string>
+    <string name="l10n_use_the_phone_number_connected_to_telegr_6e6c9bb" formatted="false">Sử dụng số điện thoại được kết nối với Telegram.</string>
+    <string name="l10n_verification_code_80f2f29" formatted="false">Mã xác minh</string>
+    <string name="l10n_vote_64f8729" formatted="false">Bình chọn</string>
+    <string name="l10n_your_account_4ab2910" formatted="false">Tài khoản của bạn</string>
+    <string name="l10n_your_downloaded_music_remains_available_808d2df" formatted="false">Nhạc đã tải xuống của bạn vẫn có sẵn trên thiết bị này.</string>
+    <string name="l10n_your_two_step_verification_password_e751dde" formatted="false">Mật khẩu xác minh hai bước của bạn</string>
+    <plurals name="l10n_count_playlists">
+        <item quantity="one">%d danh sách phát</item>
+        <item quantity="other">%d danh sách phát</item>
+    </plurals>
+    <plurals name="l10n_count_chats">
+        <item quantity="one">%d cuộc trò chuyện</item>
+        <item quantity="other">%d cuộc trò chuyện</item>
+    </plurals>
+    <plurals name="l10n_count_songs">
+        <item quantity="one">%d bài hát</item>
+        <item quantity="other">%d bài hát</item>
+    </plurals>
+    <plurals name="l10n_count_contacts">
+        <item quantity="one">%d liên hệ</item>
+        <item quantity="other">%d liên hệ</item>
+    </plurals>
+</resources>

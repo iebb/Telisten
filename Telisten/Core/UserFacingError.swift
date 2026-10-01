@@ -34,7 +34,7 @@ enum UserFacingError {
             case "USER_CHANNELS_TOO_MUCH":
                 return "A selected contact has joined Telegram’s maximum number of groups or channels."
             default:
-                return "Telegram error: \(rpc.message)"
+                return String(format: localizedUI("Telegram error: %@"), rpc.message)
             }
         }
         if let client = error as? MTProtoClientError {
@@ -44,7 +44,7 @@ enum UserFacingError {
             case .timeout:
                 return "Telegram did not respond in time. Check your connection and try again."
             case let .protocolError(code):
-                return "Telegram rejected the connection (protocol \(code)). Try again."
+                return String(format: localizedUI("Telegram rejected the connection (protocol %@). Try again."), String(code))
             case .fatalBadMessage:
                 return "Telegram rejected the encrypted session. Sign in again and retry."
             }

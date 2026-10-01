@@ -25,7 +25,7 @@ struct RootView: View {
         .alert("Error", isPresented: errorIsPresented) {
             Button("OK") { model.errorMessage = nil }
         } message: {
-            Text(model.errorMessage ?? "")
+            Text(localizedUI(model.errorMessage ?? ""))
         }
     }
 

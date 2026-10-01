@@ -438,7 +438,7 @@ final class AppModel {
     func submitLoginEmail(_ email: String) async {
         await performLoginWork {
             let hint = try await telegram.sendLoginEmailCode(to: email)
-            phase = .emailVerification(email: email, hint: "Verification code sent to \(hint)")
+            phase = .emailVerification(email: email, hint: String(format: localizedUI("Verification code sent to %@"), hint))
         }
     }
 
@@ -1553,7 +1553,7 @@ final class AppModel {
             if failedCount > 0 {
                 errorMessage = failedCount == 1
                     ? "One track could not be downloaded."
-                    : "\(failedCount) tracks could not be downloaded."
+                    : String(format: localizedUI("%lld tracks could not be downloaded."), Int64(failedCount))
             }
         }
     }

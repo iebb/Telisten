@@ -477,16 +477,16 @@ struct LibraryView: View {
                     ProgressView("Finding music…")
                 } else if model.tracks.isEmpty {
                     ContentUnavailableView(
-                        emptyTitle,
+                        localizedUI(emptyTitle),
                         systemImage: emptySymbol,
-                        description: Text(emptyDescription)
+                        description: Text(localizedUI(emptyDescription))
                     )
                 } else {
                     trackList(includeSearchBots: false)
                 }
             }
         }
-        .navigationTitle(isEditingPlaylist && selectedPlaylist != nil ? "" : browserTitle)
+        .navigationTitle(isEditingPlaylist && selectedPlaylist != nil ? "" : localizedUI(browserTitle))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(usesCompactBackButton)
@@ -626,7 +626,7 @@ struct LibraryView: View {
                 ContentUnavailableView(
                     emptyTitle,
                     systemImage: emptySymbol,
-                    description: Text(emptyDescription)
+                    description: Text(localizedUI(emptyDescription))
                 )
                 .frame(maxWidth: .infinity, minHeight: 240)
                 .listRowSeparator(.hidden)
@@ -652,7 +652,7 @@ struct LibraryView: View {
             if model.hasMoreTracks {
                 VStack(spacing: 8) {
                     if let error = model.loadMoreError {
-                        Text(error)
+                        Text(localizedUI(error))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Button("Retry loading songs") {
@@ -861,7 +861,7 @@ private struct TrackRow: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(model.favorites.contains(track.id) ? Color.telistenAccent : .secondary)
-        .accessibilityLabel(model.favorites.contains(track.id) ? "Unfavorite" : "Favorite")
+        .accessibilityLabel(localizedUI(model.favorites.contains(track.id) ? "Unfavorite" : "Favorite"))
     }
 
     @ViewBuilder private var downloadProgress: some View {

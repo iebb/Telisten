@@ -45,7 +45,7 @@ struct SettingsView: View {
                     }
                     .disabled(model.isSavingToPlaylist)
                     if let playlistFolderError {
-                        Text(playlistFolderError).font(.caption).foregroundStyle(.red)
+                        Text(localizedUI(playlistFolderError)).font(.caption).foregroundStyle(.red)
                     }
                 } header: {
                     Text("Playlist folder")
@@ -72,7 +72,7 @@ struct SettingsView: View {
                     .disabled(isApplyingLyricsServer || model.lyricsServerURL == LyricsServerConfiguration.defaultURL)
 
                     if let lyricsServerError {
-                        Label(lyricsServerError, systemImage: "exclamationmark.circle")
+                        Label(localizedUI(lyricsServerError), systemImage: "exclamationmark.circle")
                             .font(.caption)
                             .foregroundStyle(.red)
                     }
@@ -285,7 +285,7 @@ private struct SearchBotEditorView: View {
 
                 if let validationError {
                     Section {
-                        Label(validationError, systemImage: "exclamationmark.circle")
+                        Label(localizedUI(validationError), systemImage: "exclamationmark.circle")
                             .font(.caption)
                             .foregroundStyle(.red)
                     }

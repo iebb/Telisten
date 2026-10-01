@@ -384,7 +384,7 @@ private struct PlaybackControls: View {
                     .frame(width: 44, height: 44)
             }
             .foregroundStyle(model.player.isMuted ? Color.telistenAccent : .secondary)
-            .accessibilityLabel(model.player.isMuted ? "Unmute" : "Mute")
+            .accessibilityLabel(localizedUI(model.player.isMuted ? "Unmute" : "Mute"))
 
             Spacer(minLength: compact ? 6 : 12)
 
@@ -424,7 +424,7 @@ private struct PlaybackControls: View {
                     model.setPlaybackMode(mode)
                 } label: {
                     Label(
-                        mode.title,
+                        localizedUI(mode.title),
                         systemImage: mode == model.playbackMode ? "checkmark" : mode.symbolName
                     )
                 }
@@ -624,7 +624,7 @@ struct LyricsPanel: View {
                 ContentUnavailableView(
                     "Lyrics unavailable",
                     systemImage: "wifi.exclamationmark",
-                    description: Text(message)
+                    description: Text(localizedUI(message))
                 )
             }
         }

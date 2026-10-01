@@ -3,6 +3,7 @@ package ad.neko.telisten.data
 import android.content.Context
 import android.os.Build
 import ad.neko.telisten.BuildConfig
+import ad.neko.telisten.localize
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -39,7 +40,7 @@ class TelegramRepository(private val context: Context, val store: LibraryStore) 
                     when (update) {
                         is T.UpdateAuthorizationState -> authorization(update.authorizationState)
                         is T.UpdateNewChat -> putChat(update.chat)
-                        is T.UpdateMessageSendFailed -> errors.emit("Telegram could not send the message: ${update.error.message}")
+                        is T.UpdateMessageSendFailed -> errors.emit(localize(context, "Telegram could not send the message: %s", update.error.message))
                         is T.UpdateChatTitle -> { allChats[update.chatId]?.let { allChats[update.chatId] = it.copy(title = update.title); publishChats() } }
                         is T.UpdateChatFolders -> {
                             knownFolders = update.chatFolders
@@ -88,9 +89,9 @@ class TelegramRepository(private val context: Context, val store: LibraryStore) 
                 }
             }
             is T.AuthorizationStateWaitPhoneNumber -> AuthState("phone", "Use the phone number connected to Telegram.")
-            is T.AuthorizationStateWaitCode -> AuthState("code", "Enter the code Telegram sent to ${state.codeInfo.phoneNumber}.")
+            is T.AuthorizationStateWaitCode -> AuthState("code", localize(context, "Enter the code Telegram sent to %s.", state.codeInfo.phoneNumber))
             is T.AuthorizationStateWaitEmailAddress -> AuthState("email", "Telegram requires a login email address.")
-            is T.AuthorizationStateWaitEmailCode -> AuthState("emailCode", "Enter the code sent to ${state.codeInfo.emailAddressPattern}.")
+            is T.AuthorizationStateWaitEmailCode -> AuthState("emailCode", localize(context, "Enter the code sent to %s.", state.codeInfo.emailAddressPattern))
             is T.AuthorizationStateWaitPassword -> AuthState("password", state.passwordHint.ifEmpty { "Your two-step verification password" })
             is T.AuthorizationStateWaitOtherDeviceConfirmation -> AuthState("qr", "Telegram → Settings → Devices → Link Desktop Device", state.link)
             is T.AuthorizationStateReady -> {

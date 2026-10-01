@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="l10n_s_used_ea8ce9d">%s が使用されました</string>
+    <string name="l10n_1_12_characters_uses_this_exact_telegram_6a9c019" formatted="false">1 ～ 12 文字。このアカウントには、この正確な Telegram フォルダー名が使用されます。既存のフォルダーの名前は変更されません。</string>
+    <string name="l10n_accounts_36bae31" formatted="false">アカウント</string>
+    <string name="l10n_add_61cc55a" formatted="false">追加</string>
+    <string name="l10n_add_telegram_api_id_and_telegram_api_has_112d17f" formatted="false">TELEGRAM_API_ID と TELEGRAM_API_HASH を ../.env に追加してリビルドします。今すぐデモを探索できます。</string>
+    <string name="l10n_add_a_search_bot_24843e6" formatted="false">検索ボットを追加する</string>
+    <string name="l10n_add_account_98b0ed8" formatted="false">アカウントを追加</string>
+    <string name="l10n_add_bot_f3d8867" formatted="false">ボットの追加</string>
+    <string name="l10n_add_vote_ac9453f" formatted="false">投票を追加</string>
+    <string name="l10n_after_query_optional_8798de4" formatted="false">クエリ後 (オプション)</string>
+    <string name="l10n_already_broadcasting_92a5053" formatted="false">すでに放送中</string>
+    <string name="l10n_audio_format_changed_restart_listen_toge_aa6cf3a" formatted="false">音声フォーマットが変更されました。このトラックの Listen Together を再起動します。</string>
+    <string name="l10n_audio_service_is_connecting_please_try_a_fd6e5bb" formatted="false">音声サービスが接続中です。もう一度試してください。</string>
+    <string name="l10n_audio_service_is_unavailable_e8ca884" formatted="false">音声サービスが利用できません</string>
+    <string name="l10n_back_to_library_f0926a5" formatted="false">ライブラリに戻る</string>
+    <string name="l10n_before_query_optional_88b769f" formatted="false">クエリの前 (オプション)</string>
+    <string name="l10n_broadcast_connection_failed_2dece2a" formatted="false">ブロードキャスト接続に失敗しました</string>
+    <string name="l10n_broadcast_could_not_keep_up_stop_and_ret_6c01762" formatted="false">放送が追いつきませんでした。停止して再試行してください。</string>
+    <string name="l10n_broadcast_disconnected_b424860" formatted="false">ブロードキャストが切断されました</string>
+    <string name="l10n_broadcast_stopped_4f217ce" formatted="false">放送停止</string>
+    <string name="l10n_browse_your_chats_play_music_and_save_so_a636226" formatted="false">チャットを閲覧したり、音楽を再生したり、曲をオフラインで保存したりできます。</string>
+    <string name="l10n_cancel_77dfd21" formatted="false">キャンセル</string>
+    <string name="l10n_channel_879f0b1" formatted="false">チャンネル</string>
+    <string name="l10n_chat_2ced57f" formatted="false">チャット</string>
+    <string name="l10n_chats_6c9e84c" formatted="false">チャット</string>
+    <string name="l10n_chats_could_not_load_7597e6d" formatted="false">チャットを読み込めませんでした</string>
+    <string name="l10n_choose_a_chat_to_share_the_moment_21d374a" formatted="false">チャットを選択してその瞬間を共有します。</string>
+    <string name="l10n_clear_search_67300d0" formatted="false">検索をクリア</string>
+    <string name="l10n_comments_fce06e2" formatted="false">コメント</string>
+    <string name="l10n_connected_c2f9b7b" formatted="false">接続済み</string>
+    <string name="l10n_connecting_broadcast_862bb91" formatted="false">ブロードキャストを接続中…</string>
+    <string name="l10n_connecting_to_telegram_c0da91e" formatted="false">Telegramに接続する</string>
+    <string name="l10n_connecting_fd3e796" formatted="false">接続中…</string>
+    <string name="l10n_connection_interrupted_f8d01ab" formatted="false">接続が中断されました</string>
+    <string name="l10n_connects_directly_to_telegram_no_teliste_9cf4d6b" formatted="false">Telegram に直接接続します。 Telisten サーバーはありません。</string>
+    <string name="l10n_continue_2e02623" formatted="false">続ける</string>
+    <string name="l10n_could_not_connect_9ed243a" formatted="false">接続できませんでした</string>
+    <string name="l10n_could_not_find_the_host_s_song_in_your_m_25b3903" formatted="false">あなたの音楽の中にホストの曲が見つかりませんでした。</string>
+    <string name="l10n_could_not_join_4937397" formatted="false">参加できませんでした</string>
+    <string name="l10n_could_not_save_download_88cd019" formatted="false">ダウンロードを保存できませんでした</string>
+    <string name="l10n_couldn_t_finish_that_70aa8f3" formatted="false">それを終えることができませんでした</string>
+    <string name="l10n_create_a_playlist_to_collect_songs_from_efba065" formatted="false">プレイリストを作成してチャットから曲を収集します。</string>
+    <string name="l10n_create_your_telegram_account_in_the_offi_1406b70" formatted="false">公式アプリで Telegram アカウントを作成し、ここでサインインします。</string>
+    <string name="l10n_demo_038bc41" formatted="false">デモ</string>
+    <string name="l10n_delete_f6fdbe4" formatted="false">削除</string>
+    <string name="l10n_delete_s_2b61858">%sを削除しますか?</string>
+    <string name="l10n_delete_playlist_b55b186" formatted="false">プレイリストを削除する</string>
+    <string name="l10n_demo_e52c854" formatted="false">デモ</string>
+    <string name="l10n_download_a479c9c" formatted="false">ダウンロード</string>
+    <string name="l10n_download_a_song_from_its_menu_to_listen_959da35" formatted="false">メニューから曲をダウンロードすると、オフラインで聴くことができます。</string>
+    <string name="l10n_download_all_d69edf7" formatted="false">すべてダウンロード</string>
+    <string name="l10n_download_interrupted_tap_download_to_ret_35aa5d3" formatted="false">ダウンロードが中断されました。 「ダウンロード」をタップして再試行します。</string>
+    <string name="l10n_downloaded_c619702" formatted="false">ダウンロード済み</string>
+    <string name="l10n_downloads_a862c2b" formatted="false">ダウンロード</string>
+    <string name="l10n_email_address_c94d317" formatted="false">メールアドレス</string>
+    <string name="l10n_end_session_for_everyone_9ea3044" formatted="false">全員のセッションを終了する</string>
+    <string name="l10n_end_the_current_session_first_0276d05" formatted="false">まず現在のセッションを終了します。</string>
+    <string name="l10n_enter_a_playlist_name_d28e2b6" formatted="false">プレイリスト名を入力してください</string>
+    <string name="l10n_enter_a_valid_https_lyrics_server_url_9bde803" formatted="false">有効な HTTPS 歌詞サーバー URL を入力してください</string>
+    <string name="l10n_enter_the_code_telegram_sent_to_s_13cface">%s に送信されたTelegramのコードを入力してください。</string>
+    <string name="l10n_enter_the_code_sent_to_s_811aac6">%s に送信されたコードを入力してください。</string>
+    <string name="l10n_explore_demo_39d369e" formatted="false">デモを探索する</string>
+    <string name="l10n_favorite_s_6952fe8">お気に入り %s</string>
+    <string name="l10n_favorites_07b3e44" formatted="false">お気に入り</string>
+    <string name="l10n_find_match_8b02192" formatted="false">歌詞を探す</string>
+    <string name="l10n_https_server_url_a8d514a" formatted="false">HTTPSサーバーURL</string>
+    <string name="l10n_host_here_5a9851e" formatted="false">ここのホスト</string>
+    <string name="l10n_host_in_a_chat_you_manage_or_join_a_teli_b3a6b9c" formatted="false">自分が管理するチャットでホストするか、Telisten セッションに参加します。アプリの音声を Telegram にブロードキャストするホスト。 Telisten リスナーは、自分のライブラリから一致する曲を同期します。</string>
+    <string name="l10n_import_lrc_b16601f" formatted="false">LRCのインポート</string>
+    <string name="l10n_in_order_32a183d" formatted="false">順番に再生</string>
+    <string name="l10n_in_sync_with_s_5bb7736">%s と同期中</string>
+    <string name="l10n_invite_contacts_43f0bde" formatted="false">連絡先を招待する</string>
+    <string name="l10n_invited_d_contacts_ffea7c3">%d 人の連絡先を招待しました</string>
+    <string name="l10n_join_session_8941a56" formatted="false">セッションに参加する</string>
+    <string name="l10n_lrclib_or_your_own_compatible_server_1a1ee9e" formatted="false">LRCLIB または独自の互換サーバー</string>
+    <string name="l10n_leave_demo_4b15613" formatted="false">デモを終了する</string>
+    <string name="l10n_leave_demo_3dc5161" formatted="false">デモを終了しますか?</string>
+    <string name="l10n_leave_session_8e22241" formatted="false">セッションを離れる</string>
+    <string name="l10n_library_b8100f5" formatted="false">ライブラリ</string>
+    <string name="l10n_listen_together_needs_a_signed_in_telegr_d27a273" formatted="false">Listen Together にはサインインした Telegram アカウントが必要です。</string>
+    <string name="l10n_listen_offline_486cd6f" formatted="false">オフラインで聴く</string>
+    <string name="l10n_listen_together_7c4268d" formatted="false">一緒に聴く</string>
+    <string name="l10n_live_65c821a" formatted="false">ライブ</string>
+    <string name="l10n_load_more_dfe60ca" formatted="false">さらにロードする</string>
+    <string name="l10n_loading_music_c8a22d9" formatted="false">音楽を読み込み中…</string>
+    <string name="l10n_loading_33ce417" formatted="false">読み込み中…</string>
+    <string name="l10n_login_email_5887f63" formatted="false">ログインメールアドレス</string>
+    <string name="l10n_lyrics_8670cb1" formatted="false">歌詞</string>
+    <string name="l10n_media_controls_could_not_connect_s_16d9e33">メディア コントロールが接続できませんでした: %s</string>
+    <string name="l10n_messages_are_sent_through_your_telegram_5a02ec7" formatted="false">メッセージは Telegram アカウントを通じて送信されます。</string>
+    <string name="l10n_minimize_player_a5a19fb" formatted="false">プレーヤーを最小化する</string>
+    <string name="l10n_move_s_down_eaefe61">%s を下に移動</string>
+    <string name="l10n_move_s_up_79d0fb1">%s を上に移動</string>
+    <string name="l10n_move_bot_up_9cb82d8" formatted="false">ボットを上に移動</string>
+    <string name="l10n_move_down_260ff8a" formatted="false">下に移動</string>
+    <string name="l10n_move_up_b4f57cd" formatted="false">上に移動</string>
+    <string name="l10n_new_account_d33d781" formatted="false">新しいアカウント</string>
+    <string name="l10n_new_playlist_a5474a8" formatted="false">新しいプレイリスト</string>
+    <string name="l10n_next_bc98198" formatted="false">次の曲</string>
+    <string name="l10n_no_app_can_open_this_link_0ceb50b" formatted="false">このリンクを開けないアプリはありません</string>
+    <string name="l10n_no_chats_found_c6bd820" formatted="false">チャットが見つかりませんでした</string>
+    <string name="l10n_no_comments_yet_207b24f" formatted="false">コメントはまだありません。</string>
+    <string name="l10n_no_lyrics_found_75127a1" formatted="false">歌詞が見つかりませんでした</string>
+    <string name="l10n_no_matching_songs_6642d8e" formatted="false">一致する曲がありません</string>
+    <string name="l10n_no_playlists_d1f610b" formatted="false">プレイリストがありません</string>
+    <string name="l10n_no_songs_yet_70cd5c1" formatted="false">まだ曲がありません</string>
+    <string name="l10n_now_playing_1c388f1" formatted="false">再生中</string>
+    <string name="l10n_ok_9ce3bd4" formatted="false">OK</string>
+    <string name="l10n_offline_storage_c9f2f99" formatted="false">オフラインストレージ</string>
+    <string name="l10n_oldest_downloaded_music_is_removed_when_0b6b875" formatted="false">キャッシュがこの制限に達すると、ダウンロードされた最も古い音楽が削除されます。</string>
+    <string name="l10n_open_this_button_in_telegram_63a9a4e" formatted="false">Telegram でこのボタンを開く</string>
+    <string name="l10n_options_for_s_de37f37">%s のオプション</string>
+    <string name="l10n_password_8be3c94" formatted="false">パスワード</string>
+    <string name="l10n_pause_781961b" formatted="false">一時停止</string>
+    <string name="l10n_phone_number_81_573327d" formatted="false">電話番号 (+81 …)</string>
+    <string name="l10n_play_5d12bd5" formatted="false">再生</string>
+    <string name="l10n_play_a_song_before_starting_a_broadcast_1411680" formatted="false">ブロードキャストを開始する前に曲を再生します。</string>
+    <string name="l10n_playlist_folder_name_13f2970" formatted="false">プレイリストのフォルダー名</string>
+    <string name="l10n_playlist_is_available_offline_54b7ee8" formatted="false">プレイリストはオフラインでも利用可能</string>
+    <string name="l10n_playlist_name_544f755" formatted="false">プレイリスト名</string>
+    <string name="l10n_playlists_77b69f3" formatted="false">プレイリスト</string>
+    <string name="l10n_previous_50f9428" formatted="false">前の曲</string>
+    <string name="l10n_privacy_policy_7ceacdc" formatted="false">プライバシーポリシー</string>
+    <string name="l10n_privacy_policy_data_controls_33efbf8" formatted="false">プライバシーポリシーとデータ管理</string>
+    <string name="l10n_private_telegram_playlist_9593287" formatted="false">非公開の Telegram プレイリスト</string>
+    <string name="l10n_queue_d325fcd" formatted="false">再生キュー</string>
+    <string name="l10n_refresh_qr_code_0d87d27" formatted="false">QRコードを更新</string>
+    <string name="l10n_remove_e963907" formatted="false">削除</string>
+    <string name="l10n_remove_bot_4812ad0" formatted="false">ボットを削除する</string>
+    <string name="l10n_remove_download_1477425" formatted="false">ダウンロードを削除する</string>
+    <string name="l10n_remove_from_playlist_ad3e5d8" formatted="false">プレイリストから削除</string>
+    <string name="l10n_remove_this_song_2e0668e" formatted="false">この曲を削除しますか?</string>
+    <string name="l10n_remove_vote_b212f50" formatted="false">投票を削除する</string>
+    <string name="l10n_rename_d3f4cb8" formatted="false">名前の変更</string>
+    <string name="l10n_rename_playlist_279af0e" formatted="false">プレイリストの名前を変更する</string>
+    <string name="l10n_repeat_one_05f3dda" formatted="false">1曲リピート</string>
+    <string name="l10n_reply_on_telegram_2ab8656" formatted="false">Telegramで返信</string>
+    <string name="l10n_reverse_order_eabc2f7" formatted="false">逆順</string>
+    <string name="l10n_save_efc007a" formatted="false">保存</string>
+    <string name="l10n_save_s_3422946">%sを保存</string>
+    <string name="l10n_save_preferences_d8ab74e" formatted="false">設定を保存する</string>
+    <string name="l10n_save_to_playlist_b97257e" formatted="false">プレイリストに保存</string>
+    <string name="l10n_saved_c0ae8f6" formatted="false">保存されました</string>
+    <string name="l10n_saved_in_demo_2a23a64" formatted="false">デモに保存されました</string>
+    <string name="l10n_saved_to_s_1b18781">%s に保存されました</string>
+    <string name="l10n_scan_with_telegram_c387872" formatted="false">Telegram でスキャン</string>
+    <string name="l10n_search_bce0641" formatted="false">検索</string>
+    <string name="l10n_search_telegram_or_choose_a_chat_to_find_ebea858" formatted="false">Telegram を検索するか、チャットを選択して音楽を見つけます。</string>
+    <string name="l10n_search_all_telegram_b5b4582" formatted="false">Telegram 全体を検索</string>
+    <string name="l10n_search_bots_aeb2b4e" formatted="false">検索ボット</string>
+    <string name="l10n_search_chats_9ad51de" formatted="false">チャットを検索する</string>
+    <string name="l10n_search_for_music_5b96e02" formatted="false">音楽を検索する</string>
+    <string name="l10n_search_library_1c9edba" formatted="false">ライブラリを検索する</string>
+    <string name="l10n_search_playlists_756ad7e" formatted="false">プレイリストを検索する</string>
+    <string name="l10n_search_songs_and_artists_c3c2b98" formatted="false">曲とアーティストを検索する</string>
+    <string name="l10n_search_with_a_bot_4f4676b" formatted="false">ボットで検索する</string>
+    <string name="l10n_searches_send_real_messages_to_this_bot_1863c9e" formatted="false">検索により、実際のメッセージがこのボットに送信されます。</string>
+    <string name="l10n_send_comment_591e0e8" formatted="false">コメントを送信</string>
+    <string name="l10n_send_search_8355677" formatted="false">検索を送信</string>
+    <string name="l10n_send_searches_to_bots_you_choose_0cc525b" formatted="false">選択したボットに検索を送信します</string>
+    <string name="l10n_session_ended_8874019" formatted="false">セッションが終了しました</string>
+    <string name="l10n_settings_c7f73bb" formatted="false">設定</string>
+    <string name="l10n_settings_saved_aef97bb" formatted="false">設定が保存されました</string>
+    <string name="l10n_share_invite_link_a0630b0" formatted="false">招待リンクを共有する</string>
+    <string name="l10n_share_listening_session_81635bd" formatted="false">リスニングセッションを共有する</string>
+    <string name="l10n_show_chats_tab_6273f93" formatted="false">「チャット」タブを表示</string>
+    <string name="l10n_shuffle_5b772b7" formatted="false">シャッフル</string>
+    <string name="l10n_shuffle_all_7e388b3" formatted="false">すべてシャッフルする</string>
+    <string name="l10n_sign_in_to_telegram_fec2628" formatted="false">Telegramにサインインする</string>
+    <string name="l10n_sign_in_with_qr_code_ec732c6" formatted="false">QRコードでサインイン</string>
+    <string name="l10n_sign_out_of_this_account_b4e6788" formatted="false">このアカウントからサインアウトする</string>
+    <string name="l10n_sign_out_b115557" formatted="false">サインアウト？</string>
+    <string name="l10n_signed_out_1b8337c" formatted="false">サインアウトしました</string>
+    <string name="l10n_something_went_wrong_please_try_again_9a3ea05" formatted="false">何か問題が発生しました。もう一度試してください。</string>
+    <string name="l10n_song_title_artist_and_duration_are_sent_cf70a47" formatted="false">曲のタイトル、アーティスト、再生時間がこのサーバーに送信されます。一致した歌詞はオフラインで聴くために保存されます。</string>
+    <string name="l10n_songs_e1404b4" formatted="false">曲</string>
+    <string name="l10n_tap_a_song_s_heart_to_save_it_here_2b963e6" formatted="false">曲のハートをタップしてここに保存します。</string>
+    <string name="l10n_telegram_could_not_send_the_message_s_a49a252">Telegram はメッセージを送信できませんでした: %s</string>
+    <string name="l10n_telegram_did_not_allow_this_track_to_be_3ed619c" formatted="false">Telegram はこのトラックの転送を許可していませんでした。</string>
+    <string name="l10n_telegram_error_6c18eb3" formatted="false">Telegram エラー</string>
+    <string name="l10n_telegram_must_provide_a_secure_rtmps_end_f4f3458" formatted="false">Telegram はブロードキャスト用に安全な RTMPS エンドポイントを提供する必要があります。</string>
+    <string name="l10n_telegram_rejected_the_broadcast_b9113bf" formatted="false">Telegramは放送を拒否しました</string>
+    <string name="l10n_telegram_requires_a_login_email_address_2da6b68" formatted="false">Telegramにはログインメールアドレスが必要です。</string>
+    <string name="l10n_telegram_sign_in_qr_code_2fbf268" formatted="false">Telegram サインイン QR コード</string>
+    <string name="l10n_telegram_settings_devices_link_desktop_d_d910834" formatted="false">Telegram → 設定 → デバイス → デスクトップデバイスをリンク</string>
+    <string name="l10n_telisten_for_android_s_a5374fd">Telisten Android 版 · %s</string>
+    <string name="l10n_telisten_on_telegram_b81361a" formatted="false">Telegram の Telisten</string>
+    <string name="l10n_the_host_ended_this_session_8b94a82" formatted="false">ホストがこのセッションを終了しました</string>
+    <string name="l10n_the_message_will_be_deleted_from_this_te_f1d9a28" formatted="false">メッセージはこの Telegram プレイリストから削除されます。</string>
+    <string name="l10n_there_is_no_active_session_in_this_chat_2fe1fe0" formatted="false">このチャットにはアクティブなセッションがありません。</string>
+    <string name="l10n_this_call_is_not_sharing_telisten_playba_80a3ddf" formatted="false">この呼び出しは Telisten 再生メタデータを共有しません。</string>
+    <string name="l10n_this_deletes_the_playlist_channel_on_tel_7984b9d" formatted="false">これにより、Telegram 上のプレイリスト チャンネルが削除されます。これを元に戻すことはできません。</string>
+    <string name="l10n_this_song_is_not_available_in_your_teleg_12534df" formatted="false">この曲は Telegram ミュージックでは利用できません。 Telegram の招待リンクを使用して聞くことができます。</string>
+    <string name="l10n_this_track_exceeds_the_cache_limit_incre_8819ace" formatted="false">このトラックはキャッシュ制限を超えています。設定で増やしてください。</string>
+    <string name="l10n_toggle_favorite_48e9866" formatted="false">お気に入りを切り替え</string>
+    <string name="l10n_try_a_different_name_or_turn_off_the_sav_a72b093" formatted="false">別の名前を試すか、保存されたフィルターをオフにしてください。</string>
+    <string name="l10n_try_another_match_or_import_an_lrc_file_cf73e1a" formatted="false">別の一致を試すか、LRC ファイルをインポートしてください。</string>
+    <string name="l10n_two_step_verification_2a0b5e8" formatted="false">二段階認証</string>
+    <string name="l10n_unknown_artist_9566f8c" formatted="false">不明なアーティスト</string>
+    <string name="l10n_use_playlist_default_316b1fd" formatted="false">_Playlist のデフォルトを使用する</string>
+    <string name="l10n_use_the_phone_number_connected_to_telegr_6e6c9bb" formatted="false">Telegram に接続されている電話番号を使用します。</string>
+    <string name="l10n_verification_code_80f2f29" formatted="false">検証コード</string>
+    <string name="l10n_vote_64f8729" formatted="false">投票する</string>
+    <string name="l10n_your_account_4ab2910" formatted="false">あなたのアカウント</string>
+    <string name="l10n_your_downloaded_music_remains_available_808d2df" formatted="false">ダウンロードした音楽はこのデバイスで引き続き利用できます。</string>
+    <string name="l10n_your_two_step_verification_password_e751dde" formatted="false">2 段階認証のパスワード</string>
+    <plurals name="l10n_count_playlists">
+        <item quantity="one">%d 件のプレイリスト</item>
+        <item quantity="other">%d 件のプレイリスト</item>
+    </plurals>
+    <plurals name="l10n_count_chats">
+        <item quantity="one">%d 件のチャット</item>
+        <item quantity="other">%d 件のチャット</item>
+    </plurals>
+    <plurals name="l10n_count_songs">
+        <item quantity="one">%d 曲</item>
+        <item quantity="other">%d 曲</item>
+    </plurals>
+    <plurals name="l10n_count_contacts">
+        <item quantity="one">%d 人の連絡先</item>
+        <item quantity="other">%d 人の連絡先</item>
+    </plurals>
+</resources>

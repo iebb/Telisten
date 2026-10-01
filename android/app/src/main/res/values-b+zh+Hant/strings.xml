@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="l10n_s_used_ea8ce9d">已使用 %s</string>
+    <string name="l10n_1_12_characters_uses_this_exact_telegram_6a9c019" formatted="false">1–12 個字元。為此帳戶使用這個確切的 Telegram 資料夾名稱。現有資料夾不會被重新命名。</string>
+    <string name="l10n_accounts_36bae31" formatted="false">帳戶</string>
+    <string name="l10n_add_61cc55a" formatted="false">添加</string>
+    <string name="l10n_add_telegram_api_id_and_telegram_api_has_112d17f" formatted="false">將 TELEGRAM_API_ID 和 TELEGRAM_API_HASH 加入 ../.env，然後重建。現在您可以探索演示。</string>
+    <string name="l10n_add_a_search_bot_24843e6" formatted="false">新增搜尋機器人</string>
+    <string name="l10n_add_account_98b0ed8" formatted="false">新增帳戶</string>
+    <string name="l10n_add_bot_f3d8867" formatted="false">增加機器人</string>
+    <string name="l10n_add_vote_ac9453f" formatted="false">新增投票</string>
+    <string name="l10n_after_query_optional_8798de4" formatted="false">查詢後（可選）</string>
+    <string name="l10n_already_broadcasting_92a5053" formatted="false">已經播出</string>
+    <string name="l10n_audio_format_changed_restart_listen_toge_aa6cf3a" formatted="false">音訊格式已更改。重新啟動「一起聆聽」這首曲目。</string>
+    <string name="l10n_audio_service_is_connecting_please_try_a_fd6e5bb" formatted="false">音訊服務正在連線。請再試一次。</string>
+    <string name="l10n_audio_service_is_unavailable_e8ca884" formatted="false">音訊服務不可用</string>
+    <string name="l10n_back_to_library_f0926a5" formatted="false">返回圖書館</string>
+    <string name="l10n_before_query_optional_88b769f" formatted="false">查詢前（可選）</string>
+    <string name="l10n_broadcast_connection_failed_2dece2a" formatted="false">廣播連線失敗</string>
+    <string name="l10n_broadcast_could_not_keep_up_stop_and_ret_6c01762" formatted="false">廣播跟不上。停止並重試。</string>
+    <string name="l10n_broadcast_disconnected_b424860" formatted="false">廣播已斷開</string>
+    <string name="l10n_broadcast_stopped_4f217ce" formatted="false">廣播停止</string>
+    <string name="l10n_browse_your_chats_play_music_and_save_so_a636226" formatted="false">瀏覽聊天記錄、播放音樂並離線儲存歌曲。</string>
+    <string name="l10n_cancel_77dfd21" formatted="false">取消</string>
+    <string name="l10n_channel_879f0b1" formatted="false">頻道</string>
+    <string name="l10n_chat_2ced57f" formatted="false">聊天</string>
+    <string name="l10n_chats_6c9e84c" formatted="false">聊天記錄</string>
+    <string name="l10n_chats_could_not_load_7597e6d" formatted="false">聊天無法加載</string>
+    <string name="l10n_choose_a_chat_to_share_the_moment_21d374a" formatted="false">選擇一個聊天來分享這一刻。</string>
+    <string name="l10n_clear_search_67300d0" formatted="false">清除搜尋</string>
+    <string name="l10n_comments_fce06e2" formatted="false">評論</string>
+    <string name="l10n_connected_c2f9b7b" formatted="false">已連接</string>
+    <string name="l10n_connecting_broadcast_862bb91" formatted="false">正在連接廣播...</string>
+    <string name="l10n_connecting_to_telegram_c0da91e" formatted="false">連接到Telegram</string>
+    <string name="l10n_connecting_fd3e796" formatted="false">正在連線…</string>
+    <string name="l10n_connection_interrupted_f8d01ab" formatted="false">連線中斷</string>
+    <string name="l10n_connects_directly_to_telegram_no_teliste_9cf4d6b" formatted="false">直接連接到 Telegram。沒有 Telisten 伺服器。</string>
+    <string name="l10n_continue_2e02623" formatted="false">繼續</string>
+    <string name="l10n_could_not_connect_9ed243a" formatted="false">無法連接</string>
+    <string name="l10n_could_not_find_the_host_s_song_in_your_m_25b3903" formatted="false">在您的音樂中找不到主持人的歌曲。</string>
+    <string name="l10n_could_not_join_4937397" formatted="false">無法加入</string>
+    <string name="l10n_could_not_save_download_88cd019" formatted="false">無法儲存下載</string>
+    <string name="l10n_couldn_t_finish_that_70aa8f3" formatted="false">無法完成那個</string>
+    <string name="l10n_create_a_playlist_to_collect_songs_from_efba065" formatted="false">建立一個播放清單來收集聊天中的歌曲。</string>
+    <string name="l10n_create_your_telegram_account_in_the_offi_1406b70" formatted="false">在官方應用程式中建立您的 Telegram 帳戶，然後在此處登入。</string>
+    <string name="l10n_demo_038bc41" formatted="false">示範版</string>
+    <string name="l10n_delete_f6fdbe4" formatted="false">刪除</string>
+    <string name="l10n_delete_s_2b61858">刪除%s？</string>
+    <string name="l10n_delete_playlist_b55b186" formatted="false">刪除播放清單</string>
+    <string name="l10n_demo_e52c854" formatted="false">示範</string>
+    <string name="l10n_download_a479c9c" formatted="false">下載</string>
+    <string name="l10n_download_a_song_from_its_menu_to_listen_959da35" formatted="false">從選單中下載歌曲以離線收聽。</string>
+    <string name="l10n_download_all_d69edf7" formatted="false">下載全部</string>
+    <string name="l10n_download_interrupted_tap_download_to_ret_35aa5d3" formatted="false">下載中斷；點按「下載」重試。</string>
+    <string name="l10n_downloaded_c619702" formatted="false">已下載</string>
+    <string name="l10n_downloads_a862c2b" formatted="false">下載</string>
+    <string name="l10n_email_address_c94d317" formatted="false">電子郵件地址</string>
+    <string name="l10n_end_session_for_everyone_9ea3044" formatted="false">為大家結束會議</string>
+    <string name="l10n_end_the_current_session_first_0276d05" formatted="false">請先結束目前的工作階段。</string>
+    <string name="l10n_enter_a_playlist_name_d28e2b6" formatted="false">輸入播放清單名稱</string>
+    <string name="l10n_enter_a_valid_https_lyrics_server_url_9bde803" formatted="false">輸入有效的 HTTPS 歌詞伺服器 URL</string>
+    <string name="l10n_enter_the_code_telegram_sent_to_s_13cface">輸入 Telegram 傳送至 %s 的驗證碼。</string>
+    <string name="l10n_enter_the_code_sent_to_s_811aac6">輸入傳送至 %s 的驗證碼。</string>
+    <string name="l10n_explore_demo_39d369e" formatted="false">探索演示</string>
+    <string name="l10n_favorite_s_6952fe8">最喜歡的 %s</string>
+    <string name="l10n_favorites_07b3e44" formatted="false">收藏夾</string>
+    <string name="l10n_find_match_8b02192" formatted="false">尋找歌詞</string>
+    <string name="l10n_https_server_url_a8d514a" formatted="false">HTTPS 伺服器網址</string>
+    <string name="l10n_host_here_5a9851e" formatted="false">在此主持</string>
+    <string name="l10n_host_in_a_chat_you_manage_or_join_a_teli_b3a6b9c" formatted="false">主持您管理的聊天，或加入 Telisten 會話。向 Telegram 託管廣播應用程式音訊。 Telisten 聽眾將從自己的音樂庫中同步匹配的歌曲。</string>
+    <string name="l10n_import_lrc_b16601f" formatted="false">導入LRC</string>
+    <string name="l10n_in_order_32a183d" formatted="false">依序播放</string>
+    <string name="l10n_in_sync_with_s_5bb7736">與 %s 同步</string>
+    <string name="l10n_invite_contacts_43f0bde" formatted="false">邀請聯絡人</string>
+    <string name="l10n_invited_d_contacts_ffea7c3">已邀請 %d 位聯絡人</string>
+    <string name="l10n_join_session_8941a56" formatted="false">加入會話</string>
+    <string name="l10n_lrclib_or_your_own_compatible_server_1a1ee9e" formatted="false">LRCLIB 或您自己的相容伺服器</string>
+    <string name="l10n_leave_demo_4b15613" formatted="false">離開演示</string>
+    <string name="l10n_leave_demo_3dc5161" formatted="false">離開演示嗎？</string>
+    <string name="l10n_leave_session_8e22241" formatted="false">離開會話</string>
+    <string name="l10n_library_b8100f5" formatted="false">音樂庫</string>
+    <string name="l10n_listen_together_needs_a_signed_in_telegr_d27a273" formatted="false">Listen Together 需要登入 Telegram 帳戶。</string>
+    <string name="l10n_listen_offline_486cd6f" formatted="false">離線收聽</string>
+    <string name="l10n_listen_together_7c4268d" formatted="false">一起聽</string>
+    <string name="l10n_live_65c821a" formatted="false">直播</string>
+    <string name="l10n_load_more_dfe60ca" formatted="false">加載更多</string>
+    <string name="l10n_loading_music_c8a22d9" formatted="false">正在加載音樂...</string>
+    <string name="l10n_loading_33ce417" formatted="false">加載中...</string>
+    <string name="l10n_login_email_5887f63" formatted="false">登入信箱</string>
+    <string name="l10n_lyrics_8670cb1" formatted="false">歌詞</string>
+    <string name="l10n_media_controls_could_not_connect_s_16d9e33">媒體控制無法連線：%s</string>
+    <string name="l10n_messages_are_sent_through_your_telegram_5a02ec7" formatted="false">訊息透過您的 Telegram 帳戶發送。</string>
+    <string name="l10n_minimize_player_a5a19fb" formatted="false">最小化玩家</string>
+    <string name="l10n_move_s_down_eaefe61">向下移動 %s</string>
+    <string name="l10n_move_s_up_79d0fb1">向上移動 %s</string>
+    <string name="l10n_move_bot_up_9cb82d8" formatted="false">將機器人向上移動</string>
+    <string name="l10n_move_down_260ff8a" formatted="false">下移</string>
+    <string name="l10n_move_up_b4f57cd" formatted="false">向上移動</string>
+    <string name="l10n_new_account_d33d781" formatted="false">新帳戶</string>
+    <string name="l10n_new_playlist_a5474a8" formatted="false">新播放列表</string>
+    <string name="l10n_next_bc98198" formatted="false">下一首</string>
+    <string name="l10n_no_app_can_open_this_link_0ceb50b" formatted="false">沒有應用程式可以打開此鏈接</string>
+    <string name="l10n_no_chats_found_c6bd820" formatted="false">沒有找到聊天記錄</string>
+    <string name="l10n_no_comments_yet_207b24f" formatted="false">還沒有評論。</string>
+    <string name="l10n_no_lyrics_found_75127a1" formatted="false">沒找到歌詞</string>
+    <string name="l10n_no_matching_songs_6642d8e" formatted="false">沒有匹配的歌曲</string>
+    <string name="l10n_no_playlists_d1f610b" formatted="false">沒有播放列表</string>
+    <string name="l10n_no_songs_yet_70cd5c1" formatted="false">還沒有歌曲</string>
+    <string name="l10n_now_playing_1c388f1" formatted="false">正在播放</string>
+    <string name="l10n_ok_9ce3bd4" formatted="false">好的</string>
+    <string name="l10n_offline_storage_c9f2f99" formatted="false">離線儲存</string>
+    <string name="l10n_oldest_downloaded_music_is_removed_when_0b6b875" formatted="false">當快取達到此限制時，最舊下載的音樂將被刪除。</string>
+    <string name="l10n_open_this_button_in_telegram_63a9a4e" formatted="false">在 Telegram 中開啟此按鈕</string>
+    <string name="l10n_options_for_s_de37f37">%s 的選項</string>
+    <string name="l10n_password_8be3c94" formatted="false">密碼</string>
+    <string name="l10n_pause_781961b" formatted="false">暫停</string>
+    <string name="l10n_phone_number_81_573327d" formatted="false">電話號碼（+81 …）</string>
+    <string name="l10n_play_5d12bd5" formatted="false">播放</string>
+    <string name="l10n_play_a_song_before_starting_a_broadcast_1411680" formatted="false">在開始廣播之前播放歌曲。</string>
+    <string name="l10n_playlist_folder_name_13f2970" formatted="false">播放清單資料夾名稱</string>
+    <string name="l10n_playlist_is_available_offline_54b7ee8" formatted="false">播放清單可離線使用</string>
+    <string name="l10n_playlist_name_544f755" formatted="false">播放清單名稱</string>
+    <string name="l10n_playlists_77b69f3" formatted="false">播放列表</string>
+    <string name="l10n_previous_50f9428" formatted="false">上一首</string>
+    <string name="l10n_privacy_policy_7ceacdc" formatted="false">隱私權政策</string>
+    <string name="l10n_privacy_policy_data_controls_33efbf8" formatted="false">隱私權政策和資料控制</string>
+    <string name="l10n_private_telegram_playlist_9593287" formatted="false">私人 Telegram 播放列表</string>
+    <string name="l10n_queue_d325fcd" formatted="false">播放佇列</string>
+    <string name="l10n_refresh_qr_code_0d87d27" formatted="false">刷新二維碼</string>
+    <string name="l10n_remove_e963907" formatted="false">刪除</string>
+    <string name="l10n_remove_bot_4812ad0" formatted="false">刪除機器人</string>
+    <string name="l10n_remove_download_1477425" formatted="false">刪除下載</string>
+    <string name="l10n_remove_from_playlist_ad3e5d8" formatted="false">從播放清單中刪除</string>
+    <string name="l10n_remove_this_song_2e0668e" formatted="false">刪除這首歌嗎？</string>
+    <string name="l10n_remove_vote_b212f50" formatted="false">刪除投票</string>
+    <string name="l10n_rename_d3f4cb8" formatted="false">重新命名</string>
+    <string name="l10n_rename_playlist_279af0e" formatted="false">重新命名播放列表</string>
+    <string name="l10n_repeat_one_05f3dda" formatted="false">單曲循環</string>
+    <string name="l10n_reply_on_telegram_2ab8656" formatted="false">回覆Telegram</string>
+    <string name="l10n_reverse_order_eabc2f7" formatted="false">顛倒順序</string>
+    <string name="l10n_save_efc007a" formatted="false">儲存</string>
+    <string name="l10n_save_s_3422946">保存%s</string>
+    <string name="l10n_save_preferences_d8ab74e" formatted="false">儲存首選項</string>
+    <string name="l10n_save_to_playlist_b97257e" formatted="false">儲存到播放列表</string>
+    <string name="l10n_saved_c0ae8f6" formatted="false">已儲存</string>
+    <string name="l10n_saved_in_demo_2a23a64" formatted="false">保存在演示中</string>
+    <string name="l10n_saved_to_s_1b18781">已儲存至 %s</string>
+    <string name="l10n_scan_with_telegram_c387872" formatted="false">使用 Telegram 掃描</string>
+    <string name="l10n_search_bce0641" formatted="false">搜尋</string>
+    <string name="l10n_search_telegram_or_choose_a_chat_to_find_ebea858" formatted="false">搜尋 Telegram 或選擇聊天來尋找音樂。</string>
+    <string name="l10n_search_all_telegram_b5b4582" formatted="false">搜尋整個 Telegram</string>
+    <string name="l10n_search_bots_aeb2b4e" formatted="false">搜尋機器人</string>
+    <string name="l10n_search_chats_9ad51de" formatted="false">搜尋聊天記錄</string>
+    <string name="l10n_search_for_music_5b96e02" formatted="false">搜尋音樂</string>
+    <string name="l10n_search_library_1c9edba" formatted="false">搜尋庫</string>
+    <string name="l10n_search_playlists_756ad7e" formatted="false">搜尋播放列表</string>
+    <string name="l10n_search_songs_and_artists_c3c2b98" formatted="false">搜尋歌曲和藝術家</string>
+    <string name="l10n_search_with_a_bot_4f4676b" formatted="false">使用机器人搜索</string>
+    <string name="l10n_searches_send_real_messages_to_this_bot_1863c9e" formatted="false">搜尋會向該機器人發送真實訊息。</string>
+    <string name="l10n_send_comment_591e0e8" formatted="false">發送評論</string>
+    <string name="l10n_send_search_8355677" formatted="false">發送搜尋</string>
+    <string name="l10n_send_searches_to_bots_you_choose_0cc525b" formatted="false">將搜尋發送到您選擇的機器人</string>
+    <string name="l10n_session_ended_8874019" formatted="false">會議結束</string>
+    <string name="l10n_settings_c7f73bb" formatted="false">設定</string>
+    <string name="l10n_settings_saved_aef97bb" formatted="false">設定已儲存</string>
+    <string name="l10n_share_invite_link_a0630b0" formatted="false">分享邀請連結</string>
+    <string name="l10n_share_listening_session_81635bd" formatted="false">分享聆聽環節</string>
+    <string name="l10n_show_chats_tab_6273f93" formatted="false">顯示聊天選項卡</string>
+    <string name="l10n_shuffle_5b772b7" formatted="false">隨機播放</string>
+    <string name="l10n_shuffle_all_7e388b3" formatted="false">全部隨機播放</string>
+    <string name="l10n_sign_in_to_telegram_fec2628" formatted="false">登入 Telegram</string>
+    <string name="l10n_sign_in_with_qr_code_ec732c6" formatted="false">使用二維碼登入</string>
+    <string name="l10n_sign_out_of_this_account_b4e6788" formatted="false">登出此帳戶</string>
+    <string name="l10n_sign_out_b115557" formatted="false">登出？</string>
+    <string name="l10n_signed_out_1b8337c" formatted="false">已退出</string>
+    <string name="l10n_something_went_wrong_please_try_again_9a3ea05" formatted="false">出了點問題。請再試一次。</string>
+    <string name="l10n_song_title_artist_and_duration_are_sent_cf70a47" formatted="false">歌曲標題、藝術家和持續時間將發送到此伺服器。儲存相符的歌詞以供離線收聽。</string>
+    <string name="l10n_songs_e1404b4" formatted="false">歌曲</string>
+    <string name="l10n_tap_a_song_s_heart_to_save_it_here_2b963e6" formatted="false">點擊歌曲的心即可儲存在此。</string>
+    <string name="l10n_telegram_could_not_send_the_message_s_a49a252">Telegram 無法傳送訊息：%s</string>
+    <string name="l10n_telegram_did_not_allow_this_track_to_be_3ed619c" formatted="false">Telegram 不允許轉發此曲目。</string>
+    <string name="l10n_telegram_error_6c18eb3" formatted="false">Telegram 錯誤</string>
+    <string name="l10n_telegram_must_provide_a_secure_rtmps_end_f4f3458" formatted="false">Telegram 必須提供安全的 RTMPS 端點用於廣播。</string>
+    <string name="l10n_telegram_rejected_the_broadcast_b9113bf" formatted="false">Telegram 拒絕廣播</string>
+    <string name="l10n_telegram_requires_a_login_email_address_2da6b68" formatted="false">Telegram 需要登入電子郵件地址。</string>
+    <string name="l10n_telegram_sign_in_qr_code_2fbf268" formatted="false">Telegram 登入二維碼</string>
+    <string name="l10n_telegram_settings_devices_link_desktop_d_d910834" formatted="false">Telegram → 設定 → 裝置 → 連結桌面設備</string>
+    <string name="l10n_telisten_for_android_s_a5374fd">Telisten Android 版 · %s</string>
+    <string name="l10n_telisten_on_telegram_b81361a" formatted="false">Telegram 上的 Telisten</string>
+    <string name="l10n_the_host_ended_this_session_8b94a82" formatted="false">主持人結束本次會議</string>
+    <string name="l10n_the_message_will_be_deleted_from_this_te_f1d9a28" formatted="false">該訊息將從該 Telegram 播放清單中刪除。</string>
+    <string name="l10n_there_is_no_active_session_in_this_chat_2fe1fe0" formatted="false">此聊天中沒有活動會話。</string>
+    <string name="l10n_this_call_is_not_sharing_telisten_playba_80a3ddf" formatted="false">此呼叫不共享 Telisten 播放元資料。</string>
+    <string name="l10n_this_deletes_the_playlist_channel_on_tel_7984b9d" formatted="false">這將刪除 Telegram 上的播放清單頻道。此操作無法撤銷。</string>
+    <string name="l10n_this_song_is_not_available_in_your_teleg_12534df" formatted="false">您的 Telegram 音樂中沒有這首歌。您可以使用 Telegram 邀請鏈收聽。</string>
+    <string name="l10n_this_track_exceeds_the_cache_limit_incre_8819ace" formatted="false">該曲目超出了快取限制。在“設定”中增加它。</string>
+    <string name="l10n_toggle_favorite_48e9866" formatted="false">切換收藏夾</string>
+    <string name="l10n_try_a_different_name_or_turn_off_the_sav_a72b093" formatted="false">嘗試使用不同的名稱或關閉已儲存的篩選器。</string>
+    <string name="l10n_try_another_match_or_import_an_lrc_file_cf73e1a" formatted="false">嘗試其他符合或匯入 LRC 檔案。</string>
+    <string name="l10n_two_step_verification_2a0b5e8" formatted="false">兩步驟驗證</string>
+    <string name="l10n_unknown_artist_9566f8c" formatted="false">未知藝術家</string>
+    <string name="l10n_use_playlist_default_316b1fd" formatted="false">使用 _Playlist 預設值</string>
+    <string name="l10n_use_the_phone_number_connected_to_telegr_6e6c9bb" formatted="false">使用連接到 Telegram 的電話號碼。</string>
+    <string name="l10n_verification_code_80f2f29" formatted="false">驗證碼</string>
+    <string name="l10n_vote_64f8729" formatted="false">投票</string>
+    <string name="l10n_your_account_4ab2910" formatted="false">您的帳戶</string>
+    <string name="l10n_your_downloaded_music_remains_available_808d2df" formatted="false">您下載的音樂在此裝置上仍然可用。</string>
+    <string name="l10n_your_two_step_verification_password_e751dde" formatted="false">您的兩步驟驗證密碼</string>
+    <plurals name="l10n_count_playlists">
+        <item quantity="one">%d 個播放列表</item>
+        <item quantity="other">%d 個播放列表</item>
+    </plurals>
+    <plurals name="l10n_count_chats">
+        <item quantity="one">%d 個聊天</item>
+        <item quantity="other">%d 個聊天</item>
+    </plurals>
+    <plurals name="l10n_count_songs">
+        <item quantity="one">%d 首歌曲</item>
+        <item quantity="other">%d 首歌曲</item>
+    </plurals>
+    <plurals name="l10n_count_contacts">
+        <item quantity="one">%d 位聯絡人</item>
+        <item quantity="other">%d 位聯絡人</item>
+    </plurals>
+</resources>

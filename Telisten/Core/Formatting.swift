@@ -1,5 +1,9 @@
 import Foundation
 
+func localizedUI(_ text: String) -> String {
+    Bundle.main.localizedString(forKey: text, value: text, table: "Localizable")
+}
+
 @MainActor
 enum DisplayFormat {
     static let bytes: ByteCountFormatter = {
