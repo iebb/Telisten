@@ -5,5 +5,6 @@ App Store Connect accepts 1–10 screenshots per device class. Keep exported scr
 - `iPhone-6.9`: 1320 × 2868 pixels
 - `iPad-13`: 2064 × 2752 pixels
 - `Mac`: 1280 × 800 pixels
+- `VisionPro`: 3840 × 2160 pixels
 
-The repository's Debug-only `--demo` launch argument provides deterministic, non-account screenshots. Optional routes are `--demo-chat`, `--demo-playlist`, and `--demo-now-playing`.
+The repository's Debug-only `--demo` launch argument provides deterministic, non-account screenshots with fictional tracks and original sample lyrics. Optional routes are `--demo-chat`, `--demo-playlist`, and `--demo-now-playing`.

@@ -1306,6 +1306,26 @@ final class AppModel {
             lyricsState = .unavailable
             return
         }
+        if isDemo {
+            let value = TrackLyrics(
+                trackID: track.id,
+                source: "Demo",
+                lines: [
+                    LyricLine(sequence: 0, time: 0, text: "Lanterns drift across the avenue"),
+                    LyricLine(sequence: 1, time: 24, text: "A quiet rhythm finds its way"),
+                    LyricLine(sequence: 2, time: 44, text: "The city folds into the blue"),
+                    LyricLine(sequence: 3, time: 65, text: "We carry daylight into night"),
+                    LyricLine(sequence: 4, time: 85, text: "And let the distant lights align")
+                ],
+                isSynced: true,
+                matchedTitle: track.displayTitle,
+                matchedArtist: track.displayArtist,
+                matchedDuration: track.duration
+            )
+            lyricsCandidates = [value]
+            lyricsState = .loaded(value)
+            return
+        }
         #endif
         if let url = await cache.localURL(for: track),
            await useEmbeddedLyrics(for: track, at: url) { return }
@@ -2824,11 +2844,11 @@ final class AppModel {
         let arguments = ProcessInfo.processInfo.arguments
         let demoTrackChatID = arguments.contains("--demo-playlist") ? playlist.id : source.id
         let samples = [
-            ("The Chain", "Fleetwood Mac", 271.0, 18),
-            ("Midnight City", "M83", 244.0, 12),
-            ("Dreams", "The Cranberries", 271.0, 9),
-            ("Space Song", "Beach House", 320.0, 24),
-            ("Electric Feel", "MGMT", 229.0, 7)
+            ("Glass Horizon", "Kitta Studio", 271.0, 18),
+            ("Night Transit", "Kitta Studio", 244.0, 12),
+            ("Amber Window", "Kitta Studio", 271.0, 9),
+            ("Northern Light", "Kitta Studio", 320.0, 24),
+            ("Slow Current", "Kitta Studio", 229.0, 7)
         ]
         let sampleTracks = samples.enumerated().map { index, item in
             Track(
@@ -2879,7 +2899,7 @@ final class AppModel {
                     call: GroupCallReference(
                         id: 5001,
                         accessHash: 1,
-                        title: "♫ The Chain — Fleetwood Mac · 0:48/4:31",
+                        title: "♫ Glass Horizon — Kitta Studio · 0:48/4:31",
                         participantCount: 4
                     ),
                     role: .host,
