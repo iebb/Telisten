@@ -7,13 +7,26 @@ struct PlayerBar: View {
     #endif
     var bottomSafeArea: CGFloat = 0
     var usesWideLayout = false
+    @State private var playPauseTaps = 0
+
+    /// iPhone (compact width) gets a simplified bar: larger type, only
+    /// Play/Pause and Next with 44 pt targets, and a display-only progress bar.
+    /// The iPad wide bar, macOS and visionOS keep the full control set.
+    private var usesCompactPhoneLayout: Bool {
+        #if os(iOS)
+        !usesWideLayout
+        #else
+        false
+        #endif
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             CompactSeekBar(
                 currentTime: model.player.currentTime,
                 duration: model.player.duration,
-                onSeek: model.player.seek
+                onSeek: model.player.seek,
+                allowsDragging: !usesCompactPhoneLayout
             )
             HStack(spacing: 10) {
                 if let track = model.player.track {
@@ -21,13 +34,13 @@ struct PlayerBar: View {
                         model.showNowPlaying = true
                     } label: {
                         HStack(spacing: 10) {
-                            TrackArtwork(model: model, track: track, size: 40)
+                            TrackArtwork(model: model, track: track, size: usesCompactPhoneLayout ? 44 : 40)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(track.displayTitle)
-                                    .font(.caption.weight(.semibold))
+                                    .font(usesCompactPhoneLayout ? .subheadline.weight(.semibold) : .caption.weight(.semibold))
                                     .lineLimit(1)
                                 Text(track.displayArtist)
-                                    .font(.caption2)
+                                    .font(usesCompactPhoneLayout ? .footnote : .caption2)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                             }
@@ -57,47 +70,51 @@ struct PlayerBar: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                HStack(spacing: 13) {
-                    #if os(macOS)
-                    Button(showsLyrics ? "Hide Lyrics" : "Lyrics", systemImage: "quote.bubble") {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showsLyrics.toggle()
+                if usesCompactPhoneLayout {
+                    compactPhoneControls
+                } else {
+                    HStack(spacing: 13) {
+                        #if os(macOS)
+                        Button(showsLyrics ? "Hide Lyrics" : "Lyrics", systemImage: "quote.bubble") {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showsLyrics.toggle()
+                            }
                         }
-                    }
-                    .labelStyle(.titleAndIcon)
-                    .foregroundStyle(showsLyrics ? Color.telistenAccent : Color.secondary)
-                    .accessibilityValue(showsLyrics ? "Shown" : "Hidden")
-                    .keyboardShortcut("l", modifiers: .command)
-                    #endif
-                    #if os(macOS) || os(visionOS)
-                    OpenLyricsWindowButton()
-                        .labelStyle(.iconOnly)
-                    #endif
-                    Button("Previous", systemImage: "backward.fill") { model.previous() }
-                        .labelStyle(.iconOnly)
-                    if model.player.isLoading {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(width: 28, height: 28)
-                            .accessibilityLabel("Loading \(model.player.track?.displayTitle ?? "track")")
-                    } else {
-                        Button(model.player.isPlaying ? "Pause" : "Play", systemImage: model.player.isPlaying ? "pause.circle.fill" : "play.circle.fill") {
-                            model.player.toggle()
+                        .labelStyle(.titleAndIcon)
+                        .foregroundStyle(showsLyrics ? Color.telistenAccent : Color.secondary)
+                        .accessibilityValue(showsLyrics ? "Shown" : "Hidden")
+                        .keyboardShortcut("l", modifiers: .command)
+                        #endif
+                        #if os(macOS) || os(visionOS)
+                        OpenLyricsWindowButton()
+                            .labelStyle(.iconOnly)
+                        #endif
+                        Button("Previous", systemImage: "backward.fill") { model.previous() }
+                            .labelStyle(.iconOnly)
+                        if model.player.isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                                .frame(width: 28, height: 28)
+                                .accessibilityLabel("Loading \(model.player.track?.displayTitle ?? "track")")
+                        } else {
+                            Button(model.player.isPlaying ? "Pause" : "Play", systemImage: model.player.isPlaying ? "pause.circle.fill" : "play.circle.fill") {
+                                model.player.toggle()
+                            }
+                            .labelStyle(.iconOnly)
+                            .font(.system(size: 28))
                         }
-                        .labelStyle(.iconOnly)
-                        .font(.system(size: 28))
+                        Button("Next", systemImage: "forward.fill") { model.next() }
+                            .labelStyle(.iconOnly)
+                        Button(model.playbackMode.title, systemImage: model.playbackMode.symbolName) {
+                            model.cyclePlaybackMode()
+                        }
+                            .labelStyle(.iconOnly)
+                            .contentTransition(.symbolEffect(.replace))
+                            .accessibilityValue(localizedUI(model.playbackMode.title))
+                            .accessibilityHint("Switches to \(model.playbackMode.next.title.lowercased())")
                     }
-                    Button("Next", systemImage: "forward.fill") { model.next() }
-                        .labelStyle(.iconOnly)
-                    Button(model.playbackMode.title, systemImage: model.playbackMode.symbolName) {
-                        model.cyclePlaybackMode()
-                    }
-                        .labelStyle(.iconOnly)
-                        .contentTransition(.symbolEffect(.replace))
-                        .accessibilityValue(model.playbackMode.title)
-                        .accessibilityHint("Switches to \(model.playbackMode.next.title.lowercased())")
+                    .font(.callout)
                 }
-                .font(.callout)
             }
             #if os(visionOS)
             .buttonStyle(.borderless)
@@ -106,9 +123,13 @@ struct PlayerBar: View {
             .buttonStyle(.plain)
             #endif
             .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.vertical, usesCompactPhoneLayout ? 3 : 7)
+            // The control row always wins over the lyric strip below it.
+            .zIndex(1)
         }
-        .overlay(alignment: .bottom) {
+        // Drawn behind the bar so it can never take a touch from the controls.
+        // Its top edge sits at the bar's bottom edge, inside the safe area.
+        .background(alignment: .bottom) {
             if let lyricPreview, bottomSafeArea > 0, !usesWideLayout {
                 VStack(alignment: .center, spacing: 0) {
                     ForEach(Array(lyricPreview.enumerated()), id: \.offset) { index, line in
@@ -118,16 +139,20 @@ struct PlayerBar: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                             .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, minHeight: bottomSafeArea, alignment: .center)
-                .offset(y: max(bottomSafeArea - 6, 0))
+                // The tappable area is only the visible text box.
                 .contentShape(Rectangle())
                 .onTapGesture { model.showNowPlaying = true }
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Lyrics preview")
+                .accessibilityAddTraits(.isButton)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .fixedSize(horizontal: false, vertical: true)
+                // A zero-height anchor on the bar's bottom edge; the strip hangs
+                // below it, so its top edge is exactly the bar's bottom edge.
+                .frame(height: 0, alignment: .top)
             }
         }
         // A single surface covers both controls and safe-area lyrics. Separate
@@ -138,6 +163,44 @@ struct PlayerBar: View {
                 .padding(.bottom, -bottomSafeArea)
                 .ignoresSafeArea(edges: .bottom)
         }
+    }
+
+    private var compactPhoneControls: some View {
+        HStack(spacing: 4) {
+            Group {
+                if model.player.isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("Loading \(model.player.track?.displayTitle ?? "track")")
+                } else {
+                    Button {
+                        playPauseTaps += 1
+                        model.player.toggle()
+                    } label: {
+                        Image(systemName: model.player.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 22))
+                            .contentTransition(.symbolEffect(.replace))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel(localizedUI(model.player.isPlaying ? "Pause" : "Play"))
+                    #if os(iOS)
+                    .sensoryFeedback(.impact(weight: .light), trigger: playPauseTaps)
+                    #endif
+                }
+            }
+            .frame(width: 44, height: 44)
+            Button {
+                model.next()
+            } label: {
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 20))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Next")
+        }
+        .foregroundStyle(.primary)
     }
 
     private var lyricPreview: [String]? {
@@ -173,6 +236,8 @@ private struct CompactSeekBar: View {
     let currentTime: TimeInterval
     let duration: TimeInterval
     let onSeek: (TimeInterval) -> Void
+    /// The iPhone mini player shows progress only; seeking happens in Now Playing.
+    var allowsDragging = true
 
     @State private var scrubFraction: CGFloat?
 
@@ -214,25 +279,12 @@ private struct CompactSeekBar: View {
                         let fraction = min(max(value.location.x / width, 0), 1)
                         onSeek(duration * fraction)
                         scrubFraction = nil
-                    }
+                    },
+                including: allowsDragging ? .all : .none
             )
         }
         .frame(height: 3)
-        .accessibilityElement()
-        .accessibilityLabel("Playback position")
-        .accessibilityValue("\(DisplayFormat.duration(currentTime)) of \(DisplayFormat.duration(duration))")
-        .accessibilityAdjustableAction { direction in
-            guard canSeek else { return }
-            let step = max(duration * 0.05, 10)
-            switch direction {
-            case .increment:
-                onSeek(min(currentTime + step, duration))
-            case .decrement:
-                onSeek(max(currentTime - step, 0))
-            @unknown default:
-                break
-            }
-        }
+        .playbackPositionAccessibility(currentTime: currentTime, duration: duration, onSeek: onSeek)
     }
 
     private var canSeek: Bool {

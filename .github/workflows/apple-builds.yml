@@ -33,7 +33,7 @@ jobs:
           if [[ -n "$TELEGRAM_API_ID" && -n "$TELEGRAM_API_HASH" ]]; then
             ./Scripts/generate-local-config.sh
           fi
-      - name: Test playlists, offline lyrics, downloads, and playback
+      - name: Test playlists, offline lyrics, downloads, playback, and demo playback
         run: |
           bash Scripts/test-playlist-mirror.sh
           bash Scripts/test-offline-lyrics.sh
@@ -41,6 +41,7 @@ jobs:
           bash Scripts/test-audio-documents.sh
           bash Scripts/test-playback.sh
           bash Scripts/test-cache-store.sh
+          bash Scripts/test-demo-playback.sh
       - name: Build iOS Simulator
         run: >-
           xcodebuild -quiet -project Telisten.xcodeproj -scheme Telisten-iOS

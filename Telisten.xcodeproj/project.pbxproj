@@ -231,6 +231,7 @@
 		35F94DD2AF0BD0A9DC2FC105 /* messages.getBotCallbackAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CB8B04A21DBA30802ACF1B5 /* messages.getBotCallbackAnswer.swift */; };
 		36676B84D04F0FB62451048F /* messages.forwardMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C9B063B74458BDB674AB70A /* messages.forwardMessages.swift */; };
 		36687CC8CE4C5AEAD723C388 /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5CF5DAB218AEAEA7D8B04E /* AudioPlayer.swift */; };
+		88618363990880525F7D91DD /* DemoAudioSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789F567ED1D2F0EEC674E3EE /* DemoAudioSample.swift */; };
 		369C7C6F35F8D9DD3E084976 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = F211A21921571C827033271B /* Theme.swift */; };
 		371338BCF265F966A92E57FB /* PageBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1DD1A53C2E89E709D6B762 /* PageBlock.swift */; };
 		372D98AB30AB93575749552D /* auth.LoggedOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1CA6374514396D2CAFB9FC /* auth.LoggedOut.swift */; };
@@ -392,6 +393,7 @@
 		6087B1F2A53BA16AB47AA135 /* PhoneConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA58F1D07203C6C30C57C78 /* PhoneConnection.swift */; };
 		60BBFFA0E3E195C112D99C68 /* RequestedPeer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5146AC7B97023E46E5ED850 /* RequestedPeer.swift */; };
 		60C446DB44413362AD12F26B /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5CF5DAB218AEAEA7D8B04E /* AudioPlayer.swift */; };
+		E5F677150C6C6828593DE4AF /* DemoAudioSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789F567ED1D2F0EEC674E3EE /* DemoAudioSample.swift */; };
 		60E578EA2F70B2A30B1546EC /* PageRelatedArticle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F76EBCA3315209D8BE81A6 /* PageRelatedArticle.swift */; };
 		61060271265EC649CF7339E3 /* messages.addChatUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 573873461441EFCDE9542FBC /* messages.addChatUser.swift */; };
 		6139840A81A3979F45B8D2C0 /* StoryFwdHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD4AA4A00A181F17097579E2 /* StoryFwdHeader.swift */; };
@@ -893,6 +895,7 @@
 		EEB88151E6E468ACA3D63A2E /* messages.AffectedMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 436A621D1F40BF5D33FF1E41 /* messages.AffectedMessages.swift */; };
 		EEF7DB0FE6177C6AA04AAD84 /* Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A065497ED165324D5CBEFDE8 /* Formatting.swift */; };
 		EF14D1E81C2B296FE89805FE /* AudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5CF5DAB218AEAEA7D8B04E /* AudioPlayer.swift */; };
+		F49C1E1BBED12D80C4ECE4DA /* DemoAudioSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789F567ED1D2F0EEC674E3EE /* DemoAudioSample.swift */; };
 		EF89AF5E17EF3B0DB7D2FCB2 /* messages.Dialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDE9D451439E8937275CF911 /* messages.Dialogs.swift */; };
 		EF96EA54ADC68BBD01FDA904 /* auth.logOut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2850045F9932CB84D5A9CAFF /* auth.logOut.swift */; };
 		EFE84B8EC527F81388883E6E /* KeyboardButtonRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0610EA91E3D242A8A9656D99 /* KeyboardButtonRow.swift */; };
@@ -971,6 +974,7 @@
 		0B0A3E32B6D9071BEC8C711A /* Photo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Photo.swift; sourceTree = "<group>"; };
 		0BD2CD3FA8725D15FEF58225 /* StarsSubscriptionPricing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StarsSubscriptionPricing.swift; sourceTree = "<group>"; };
 		0C5CF5DAB218AEAEA7D8B04E /* AudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayer.swift; sourceTree = "<group>"; };
+		789F567ED1D2F0EEC674E3EE /* DemoAudioSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoAudioSample.swift; sourceTree = "<group>"; };
 		0CB949EB459DD006187547F2 /* StickerSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickerSet.swift; sourceTree = "<group>"; };
 		0CCAE98378E09EDD85DCB706 /* MessagePeerReaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagePeerReaction.swift; sourceTree = "<group>"; };
 		0D1567DD651186CD20493D4C /* GroupCallParticipantVideo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupCallParticipantVideo.swift; sourceTree = "<group>"; };
@@ -1689,6 +1693,7 @@
 			isa = PBXGroup;
 			children = (
 				0C5CF5DAB218AEAEA7D8B04E /* AudioPlayer.swift */,
+				789F567ED1D2F0EEC674E3EE /* DemoAudioSample.swift */,
 				86FA2BBE87DED0C981DCD8AF /* ListenTogetherBroadcaster.swift */,
 				9AA615A898392D5704AF86F1 /* StreamingAudioResource.swift */,
 			);
@@ -1923,6 +1928,7 @@
 				EC7C995D876673211AAFC98A /* ArtworkStore.swift in Sources */,
 				665ED63474BB82DCA5DBB181 /* AuctionBidLevel.swift in Sources */,
 				60C446DB44413362AD12F26B /* AudioPlayer.swift in Sources */,
+				E5F677150C6C6828593DE4AF /* DemoAudioSample.swift in Sources */,
 				749E9EE12920521638CC3BAE /* Authorization.swift in Sources */,
 				9B1FD52519AEA1E932CDF16D /* BaseTheme.swift in Sources */,
 				96B512D1A1DC5599DC520807 /* Birthday.swift in Sources */,
@@ -2235,6 +2241,7 @@
 				77DC65110CE5515DF76946A4 /* ArtworkStore.swift in Sources */,
 				0C021BA9E0C607824B0766EE /* AuctionBidLevel.swift in Sources */,
 				36687CC8CE4C5AEAD723C388 /* AudioPlayer.swift in Sources */,
+				88618363990880525F7D91DD /* DemoAudioSample.swift in Sources */,
 				074FF520148EA979BF810949 /* Authorization.swift in Sources */,
 				53308E4965C17F8FD4390C9D /* BaseTheme.swift in Sources */,
 				A2E31A530357B198C30D4594 /* Birthday.swift in Sources */,
@@ -2547,6 +2554,7 @@
 				9E334BA29740BB2D5E157CB6 /* ArtworkStore.swift in Sources */,
 				05FDFB0E23095293C2C445C7 /* AuctionBidLevel.swift in Sources */,
 				EF14D1E81C2B296FE89805FE /* AudioPlayer.swift in Sources */,
+				F49C1E1BBED12D80C4ECE4DA /* DemoAudioSample.swift in Sources */,
 				225D2A0DB4EA81E35DDD7CFE /* Authorization.swift in Sources */,
 				646A623F4E1B03473FD9D74C /* BaseTheme.swift in Sources */,
 				9FFFDB13ADBD84806D7908AE /* Birthday.swift in Sources */,

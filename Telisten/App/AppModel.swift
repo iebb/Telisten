@@ -145,6 +145,9 @@ final class AppModel {
     @ObservationIgnored private var botSearchOperationID: UUID?
     @ObservationIgnored private var botSearchConversationStartID: Int32?
     @ObservationIgnored private var botSearchRefreshTask: Task<Void, Never>?
+    #if DEBUG
+    @ObservationIgnored private var demoTracks: [Track] = []
+    #endif
 
     init() {
         let defaults = UserDefaults.standard
@@ -184,17 +187,17 @@ final class AppModel {
     func start() async {
         await refreshCacheUsage()
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--offline") {
+        if LaunchArguments.contains("--offline") {
             phase = canOpenLibrary ? .ready : .signedOut
-            if ProcessInfo.processInfo.arguments.contains("--offline-downloads") {
+            if LaunchArguments.contains("--offline-downloads") {
                 await select(.downloads)
-                if ProcessInfo.processInfo.arguments.contains("--offline-play-first"), let first = tracks.first {
+                if LaunchArguments.contains("--offline-play-first"), let first = tracks.first {
                     play(first, from: tracks)
                 }
             }
             return
         }
-        if ProcessInfo.processInfo.arguments.contains("--demo") {
+        if LaunchArguments.contains("--demo") {
             await loadDemo()
             return
         }
@@ -576,6 +579,9 @@ final class AppModel {
             selectedChat = nil
             tracks = []
             guard let config = searchBots.first(where: { $0.id == id }) else { return }
+            #if DEBUG
+            if isDemo { return }
+            #endif
             isLoading = true
             defer { isLoading = false }
             do {
@@ -620,6 +626,19 @@ final class AppModel {
         remoteHasMoreTracks = true
         visibleTrackLimit = Int(Self.chatMusicPageSize)
 
+        #if DEBUG
+        if isDemo {
+            // Demo chats and playlists have no Telegram peer behind them; show
+            // the built-in demo tracks (or this chat's demo edits) offline.
+            let local = cachedTracks(in: chat)
+            tracks = (local.isEmpty ? demoTracks : local).filter { matchesSearch($0, query: query) }
+            remoteHasMoreTracks = false
+            hasMoreTracks = false
+            isLoading = false
+            errorMessage = nil
+            return
+        }
+        #endif
         let localTracks = cachedTracks(in: chat).filter { matchesSearch($0, query: query) }
         tracks = Array(localTracks.prefix(visibleTrackLimit))
         hasMoreTracks = localTracks.count > tracks.count
@@ -812,6 +831,12 @@ final class AppModel {
               !isLoading,
               !isLoadingMore,
               let chat = selectedChat else { return }
+        #if DEBUG
+        if isDemo {
+            hasMoreTracks = false
+            return
+        }
+        #endif
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         isLoadingMore = true
         loadMoreError = nil
@@ -1301,7 +1326,7 @@ final class AppModel {
 
     func loadLyrics(for track: Track) async {
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("--demo-no-lyrics") {
+        if LaunchArguments.contains("--demo-no-lyrics") {
             lyricsCandidates = []
             lyricsState = .unavailable
             return
@@ -1752,6 +1777,12 @@ final class AppModel {
     }
 
     private func prepareAndPlay(_ track: Track) async {
+        #if DEBUG
+        if isDemo {
+            await prepareDemoPlayback(of: track)
+            return
+        }
+        #endif
         if let url = await cache.localURL(for: track) {
             guard !Task.isCancelled, player.track?.id == track.id else { return }
             cachedIDs.insert(track.id)
@@ -1813,6 +1844,17 @@ final class AppModel {
     }
 
     private func cachedFile(for track: Track) async throws -> URL {
+        #if DEBUG
+        if isDemo {
+            // Demo "downloads" complete instantly and stay in memory only, so
+            // demo tracks never enter the real offline cache or Downloads list.
+            let url = try await Task.detached(priority: .userInitiated) {
+                try DemoAudioSample.fileURL()
+            }.value
+            downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
+            return url
+        }
+        #endif
         if let url = await cache.localURL(for: track) {
             cachedIDs.insert(track.id)
             downloads[track.id] = DownloadStatus(progress: 1, isCached: true)
@@ -2841,7 +2883,7 @@ final class AppModel {
         allChats = chats
         playlists = [playlist]
         savedChatIDs = [source.id]
-        let arguments = ProcessInfo.processInfo.arguments
+        let arguments = LaunchArguments.all
         let demoTrackChatID = arguments.contains("--demo-playlist") ? playlist.id : source.id
         let samples = [
             ("Glass Horizon", "Kitta Studio", 271.0, 18),
@@ -2870,9 +2912,17 @@ final class AppModel {
             )
         }
         install(sampleTracks)
+        demoTracks = sampleTracks
         queue = sampleTracks
         currentQueueIndex = 0
         player.preview(sampleTracks[0], at: 48)
+        // Attach the local demo sample to the previewed track (paused at 0:48)
+        // so the mini player's play button works without tapping a track first.
+        let previewTrack = sampleTracks[0]
+        playbackTask?.cancel()
+        playbackTask = Task { [weak self] in
+            await self?.prepareDemoPlayback(of: previewTrack, autoplay: false, startingAt: 48)
+        }
 
         if arguments.contains("--demo-partial-cache") {
             await seedDemoPartialCache(for: sampleTracks[0])
@@ -2918,6 +2968,34 @@ final class AppModel {
             showNowPlaying = true
         }
         await loadLyrics(for: sampleTracks[0])
+    }
+
+    /// Demo playback never touches Telegram: it plays `DemoAudioSample`, a
+    /// short sample synthesized locally, repeated up to the track's stated
+    /// duration so the scrubber, remaining time and timed lyrics stay honest.
+    private func prepareDemoPlayback(
+        of track: Track,
+        autoplay: Bool = true,
+        startingAt start: TimeInterval = 0
+    ) async {
+        let length = track.duration.isFinite && track.duration > 0 ? track.duration : DemoAudioSample.duration
+        do {
+            let url = try await Task.detached(priority: .userInitiated) {
+                try DemoAudioSample.fileURL()
+            }.value
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
+            let asset = try await DemoAudioSample.loopedAsset(from: url, duration: length)
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
+            knownTracks[track.id] = track
+            await player.loadDemo(track, asset: asset, autoplay: autoplay, startingAt: start)
+        } catch {
+            guard !Task.isCancelled, player.track?.id == track.id else { return }
+            player.failLoading()
+            errorMessage = "The demo sample could not be played."
+            return
+        }
+        guard autoplay, !Task.isCancelled, player.track?.id == track.id else { return }
+        await loadLyrics(for: track)
     }
 
     private func seedDemoPartialCache(for track: Track) async {

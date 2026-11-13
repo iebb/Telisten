@@ -77,7 +77,7 @@ struct ListenTogetherView: View {
         }
         #if DEBUG
         .onAppear {
-            if ProcessInfo.processInfo.arguments.contains("--demo-listen-together-contacts") {
+            if LaunchArguments.contains("--demo-listen-together-contacts") {
                 showContactPicker = true
             }
         }

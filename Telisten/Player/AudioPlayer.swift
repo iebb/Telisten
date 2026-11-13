@@ -210,6 +210,31 @@ final class AudioPlayer {
         wantsPlayback = false
         updateNowPlaying()
     }
+
+    /// Demo mode: plays a locally built asset (see `DemoAudioSample`) through the
+    /// same item, status, time and end-of-track observers as a cached file.
+    func loadDemo(
+        _ track: Track,
+        asset: AVAsset,
+        autoplay: Bool = true,
+        startingAt start: TimeInterval = 0
+    ) async {
+        guard self.track?.id == track.id else { return }
+        streamingResource?.cancelAll()
+        streamingResource = nil
+        let item = AVPlayerItem(asset: asset)
+        install(item, track: track, autoplay: autoplay)
+        guard start > 0 else { return }
+        // Keep showing the requested position while the item becomes ready.
+        currentTime = start
+        var attempts = 0
+        while item.status == .unknown, attempts < 60 {
+            attempts += 1
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        guard player.currentItem === item, item.status == .readyToPlay else { return }
+        seek(to: start)
+    }
     #endif
 
     private func installTimeObserver() {

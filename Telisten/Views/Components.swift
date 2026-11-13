@@ -189,3 +189,48 @@ private struct CardModifier: ViewModifier {
 extension View {
     func telistenCard() -> some View { modifier(CardModifier()) }
 }
+
+/// One VoiceOver model for every playback position bar: "0:48 of 4:31",
+/// adjustable in steps of 5% of the track (at least 10 seconds).
+struct PlaybackPositionAccessibility: ViewModifier {
+    let currentTime: TimeInterval
+    let duration: TimeInterval
+    let onSeek: (TimeInterval) -> Void
+
+    static func step(for duration: TimeInterval) -> TimeInterval {
+        max(duration * 0.05, 10)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .accessibilityElement()
+            .accessibilityLabel("Playback position")
+            .accessibilityValue(String(
+                format: localizedUI("%@ of %@"),
+                DisplayFormat.duration(currentTime),
+                DisplayFormat.duration(duration)
+            ))
+            .accessibilityAdjustableAction { direction in
+                guard duration.isFinite, duration > 0 else { return }
+                let step = Self.step(for: duration)
+                switch direction {
+                case .increment:
+                    onSeek(min(currentTime + step, duration))
+                case .decrement:
+                    onSeek(max(currentTime - step, 0))
+                @unknown default:
+                    break
+                }
+            }
+    }
+}
+
+extension View {
+    func playbackPositionAccessibility(
+        currentTime: TimeInterval,
+        duration: TimeInterval,
+        onSeek: @escaping (TimeInterval) -> Void
+    ) -> some View {
+        modifier(PlaybackPositionAccessibility(currentTime: currentTime, duration: duration, onSeek: onSeek))
+    }
+}

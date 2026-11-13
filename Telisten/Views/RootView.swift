@@ -17,7 +17,7 @@ struct RootView: View {
         .tint(.telistenAccent)
         #if DEBUG && (os(macOS) || os(visionOS))
         .task {
-            if ProcessInfo.processInfo.arguments.contains("--demo-floating-lyrics") {
+            if LaunchArguments.contains("--demo-floating-lyrics") {
                 openWindow(id: LyricsWindow.id, value: LyricsWindow.currentPlayback)
             }
         }

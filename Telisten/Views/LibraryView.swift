@@ -59,7 +59,7 @@ struct LibraryView: View {
     @Bindable var model: AppModel
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     #if DEBUG
-    @State private var showSettings = ProcessInfo.processInfo.arguments.contains("--demo-settings")
+    @State private var showSettings = LaunchArguments.contains("--demo-settings")
     #else
     @State private var showSettings = false
     #endif
@@ -106,6 +106,9 @@ struct LibraryView: View {
             #if os(iOS)
             .fullScreenCover(isPresented: compactPlayerPresentation(wideLayout: wideLayout), onDismiss: presentPendingSettings) {
                 NowPlayingView(model: model, presentationDetent: .constant(.large), showsCloseButton: true)
+                    // The player draws its own opaque surface so a swipe-down
+                    // reveals the library while the cover follows the finger.
+                    .presentationBackground(.clear)
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView(model: model)
