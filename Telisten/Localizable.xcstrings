@@ -4120,43 +4120,43 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "双人间"
+            "value": "双行"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "雙人間"
+            "value": "雙行"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ダブル"
+            "value": "2行"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đôi"
+            "value": "Hai dòng"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Double"
+            "value": "Deux lignes"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "doble"
+            "value": "Dos líneas"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "더블"
+            "value": "두 줄"
           }
         }
       }
@@ -6657,6 +6657,58 @@
         }
       }
     },
+    "In order": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In order"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "顺序播放"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "順序播放"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "順番に再生"
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phát theo thứ tự"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans l'ordre"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En orden"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "순서대로 재생"
+          }
+        }
+      }
+    },
     "Invite": {
       "localizations": {
         "en": {
@@ -7656,25 +7708,25 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "线路"
+            "value": "行数"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "線路"
+            "value": "行數"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ライン"
+            "value": "行数"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "dòng"
+            "value": "Số dòng"
           }
         },
         "fr": {
@@ -7692,7 +7744,7 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "라인"
+            "value": "줄 수"
           }
         }
       }
@@ -10869,58 +10921,6 @@
         }
       }
     },
-    "Order": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Order"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "订单"
-          }
-        },
-        "zh-Hant": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "訂單"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "注文"
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Đặt hàng"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Commande"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Orden"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "주문"
-          }
-        }
-      }
-    },
     "Other": {
       "localizations": {
         "en": {
@@ -13480,25 +13480,25 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "颠倒顺序"
+            "value": "倒序播放"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "顛倒順序"
+            "value": "倒序播放"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "逆順"
+            "value": "逆順に再生"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Đảo ngược thứ tự"
+            "value": "Phát ngược thứ tự"
           }
         },
         "fr": {
@@ -13516,7 +13516,7 @@
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "역순"
+            "value": "역순 재생"
           }
         }
       }
@@ -15768,43 +15768,43 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "单人"
+            "value": "单行"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "單人"
+            "value": "單行"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "シングル"
+            "value": "1行"
           }
         },
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Độc thân"
+            "value": "Một dòng"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Célibataire"
+            "value": "Une ligne"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "soltero"
+            "value": "Una línea"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "싱글"
+            "value": "한 줄"
           }
         }
       }
