@@ -105,13 +105,13 @@ struct PlayerBar: View {
                         }
                         Button("Next", systemImage: "forward.fill") { model.next() }
                             .labelStyle(.iconOnly)
-                        Button(model.playbackMode.title, systemImage: model.playbackMode.symbolName) {
+                        Button(localizedUI(model.playbackMode.title), systemImage: model.playbackMode.symbolName) {
                             model.cyclePlaybackMode()
                         }
                             .labelStyle(.iconOnly)
                             .contentTransition(.symbolEffect(.replace))
                             .accessibilityValue(localizedUI(model.playbackMode.title))
-                            .accessibilityHint("Switches to \(model.playbackMode.next.title.lowercased())")
+                            .accessibilityHint("Switches to \(localizedUI(model.playbackMode.next.title).lowercased())")
                     }
                     .font(.callout)
                 }
