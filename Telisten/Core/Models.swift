@@ -247,7 +247,7 @@ enum PlaybackMode: String, CaseIterable, Codable, Sendable {
     var symbolName: String {
         switch self {
         case .shuffle: "shuffle"
-        case .order: "repeat"
+        case .order: "arrow.right.to.line"
         case .reverseOrder: "arrow.up.arrow.down"
         case .repeatOne: "repeat.1"
         }
@@ -256,7 +256,7 @@ enum PlaybackMode: String, CaseIterable, Codable, Sendable {
     var title: String {
         switch self {
         case .shuffle: "Shuffle"
-        case .order: "Order"
+        case .order: "In order"
         case .reverseOrder: "Reverse order"
         case .repeatOne: "Repeat one"
         }
